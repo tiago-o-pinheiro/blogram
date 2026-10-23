@@ -1,0 +1,22 @@
+{
+  "mediaField.drop.photo": "Drop a photo here",
+  "mediaField.drop.image": "Drop an image here",
+  "mediaField.drop.video": "Drop a video here",
+  "mediaField.release": "Release to add",
+  "mediaField.choose.photo": "Choose photo",
+  "mediaField.choose.image": "Choose image",
+  "mediaField.choose.video": "Choose video",
+  "mediaField.replace": "Replace",
+  "mediaField.remove": "Remove",
+  "mediaField.undo": "Undo",
+  "mediaField.current.photo": "Current photo",
+  "mediaField.current.image": "Current image",
+  "mediaField.current.video": "Current video",
+  "mediaField.formats": "Accepted formats",
+  "mediaField.maxSize": "Up to {{max}}",
+  "mediaField.videoNote": "Vertical videos work too.",
+  "mediaField.or": "or",
+  "mediaField.selected": "Selected {{name}}",
+  "mediaField.error.type": "{{name}} can't be used. Accepted formats: {{formats}}.",
+  "mediaField.error.size": "{{name}} is {{size}}. The limit is {{max}}, so choose a smaller file."
+}

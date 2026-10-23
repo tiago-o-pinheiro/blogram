@@ -15,8 +15,6 @@
   "profileAdmin.save": "Save profile",
   "profileAdmin.saving": "Saving",
   "profileAdmin.saved": "Profile saved.",
-  "profileAdmin.error.photoType": "Choose a JPEG, PNG or WebP image.",
-  "profileAdmin.error.photoSize": "Choose an image of 10 MB or less.",
   "languageForm.label": "Default site language",
   "languageForm.hint": "Used for visitors whose browser language is not available.",
   "languageForm.en": "English",

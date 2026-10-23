@@ -2,6 +2,8 @@ import { StatusCodes } from 'http-status-codes'
 import { Type, type Static } from 'typebox'
 import { Value } from 'typebox/value'
 
+import { Models } from '@/models'
+
 import { GlobalError } from '@/server/errors/global-error'
 
 export const Env = Type.Object({
@@ -31,9 +33,16 @@ export const Env = Type.Object({
   S3_ACCESS_KEY_ID: Type.Optional(Type.String({ minLength: 1 })),
   S3_SECRET_ACCESS_KEY: Type.Optional(Type.String({ minLength: 1 })),
   S3_FORCE_PATH_STYLE: Type.Boolean({ default: true }),
-  UPLOAD_MAX_IMAGE_BYTES: Type.Integer({ minimum: 1, default: 10485760 }),
+  UPLOAD_MAX_IMAGE_BYTES: Type.Integer({
+    minimum: 1,
+    default: Models.DEFAULT_UPLOAD_MAX_IMAGE_BYTES,
+  }),
   UPLOAD_MAX_IMAGE_PIXELS: Type.Integer({ minimum: 1, default: 50000000 }),
-  UPLOAD_MAX_VIDEO_BYTES: Type.Integer({ minimum: 1, maximum: 2147483647, default: 268435456 }),
+  UPLOAD_MAX_VIDEO_BYTES: Type.Integer({
+    minimum: 1,
+    maximum: 2147483647,
+    default: Models.DEFAULT_UPLOAD_MAX_VIDEO_BYTES,
+  }),
 })
 export type Env = Static<typeof Env>
 

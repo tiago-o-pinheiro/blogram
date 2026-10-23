@@ -4,6 +4,8 @@ import { parseEnv as parseDotenv } from 'node:util'
 
 import { describe, expect, it } from 'vitest'
 
+import { Models } from '@/models'
+
 import { parseEnv } from './env'
 
 describe('parseEnv', () => {
@@ -76,7 +78,8 @@ describe('parseEnv', () => {
     expect(env.STORAGE_LOCAL_DIR).toBe('.data/uploads')
     expect(env.S3_REGION).toBe('auto')
     expect(env.S3_FORCE_PATH_STYLE).toBe(true)
-    expect(env.UPLOAD_MAX_IMAGE_BYTES).toBe(10485760)
+    expect(env.UPLOAD_MAX_IMAGE_BYTES).toBe(Models.DEFAULT_UPLOAD_MAX_IMAGE_BYTES)
+    expect(env.UPLOAD_MAX_VIDEO_BYTES).toBe(Models.DEFAULT_UPLOAD_MAX_VIDEO_BYTES)
   })
 
   it('Given s3 variables as strings, should convert the flag and the upload limit', () => {

@@ -8,7 +8,9 @@ import { createStorageKey, storage, type StorageDriver } from '@/server/lib/stor
 
 import { inspectVideo } from './video'
 
-const ALLOWED_FORMATS = ['jpeg', 'png', 'webp']
+const ALLOWED_FORMATS: readonly string[] = Models.IMAGE_UPLOAD_TYPES.map((type) =>
+  type.replace('image/', ''),
+)
 const DEFAULT_MAX_INPUT_PIXELS = 50_000_000
 const POST_IMAGE_MAX_EDGE = 2560
 const POST_IMAGE_QUALITY = 85

@@ -1,95 +1,56 @@
 'use client'
 
-import { ArrowRight, Camera, Upload, X } from 'lucide-react'
-import Image from 'next/image'
-import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react'
+import { ArrowRight } from 'lucide-react'
+import { type FormEvent, useEffect, useState } from 'react'
 
 import { Button } from '@/design-system/ui/button'
 import { Card } from '@/design-system/ui/card'
 import { Field } from '@/design-system/ui/field'
-import { Input } from '@/design-system/ui/input'
+import { type MediaSelection } from '@/design-system/ui/media-input'
 import { Textarea } from '@/design-system/ui/textarea'
 import { type TranslationKey } from '@/i18n'
 import { useT } from '@/i18n/i18n-context'
 import {
+  DEFAULT_UPLOAD_MAX_IMAGE_BYTES,
   isProfileBundle,
   PROFILE_DESCRIPTION_MAX,
   PROFILE_NAME_MAX,
   PROFILE_PHOTO_PATH,
 } from '@/models/models'
 
+import { MediaField } from '@/components/media-field'
+
 import { ProfilePreview } from './profile-preview'
 import { useSetupWizardActions, useSetupWizardState } from './setup-wizard-context'
 import { SetupApiError, saveSetupProfile, uploadSetupPhoto } from '../api/setup-api'
 import { toSetupMessageKey } from '../lib/to-setup-message'
 
-const ACCEPTED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp']
-const BYTES_PER_MEGABYTE = 1048576
-
-export const ProfileStep = ({ maxPhotoBytes = 10485760 }: { maxPhotoBytes?: number }) => {
+export const ProfileStep = ({
+  maxPhotoBytes = DEFAULT_UPLOAD_MAX_IMAGE_BYTES,
+}: {
+  maxPhotoBytes?: number
+}) => {
   const t = useT()
   const { profile, photoPreviewUrl } = useSetupWizardState()
   const { setProfile, setPhotoPreviewUrl, goTo } = useSetupWizardActions()
   const [name, setName] = useState(profile?.name ?? '')
   const [description, setDescription] = useState(profile?.description ?? '')
-  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [photo, setPhoto] = useState<MediaSelection | null>(null)
   const [errorKey, setErrorKey] = useState<TranslationKey | null>(null)
   const [isPending, setIsPending] = useState(false)
-  const objectUrlRef = useRef<string | null>(null)
-  const photoInputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(
-    () => () => {
-      if (objectUrlRef.current) {
-        URL.revokeObjectURL(objectUrlRef.current)
-        objectUrlRef.current = null
-        setPhotoPreviewUrl(null)
-      }
-    },
-    [setPhotoPreviewUrl],
-  )
+  useEffect(() => () => setPhotoPreviewUrl(null), [setPhotoPreviewUrl])
 
-  const replaceObjectUrl = (nextUrl: string | null) => {
-    if (objectUrlRef.current) {
-      URL.revokeObjectURL(objectUrlRef.current)
-    }
-    objectUrlRef.current = nextUrl
-    setPhotoPreviewUrl(nextUrl)
-  }
-
-  const handlePhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) {
-      return
-    }
-    if (!ACCEPTED_PHOTO_TYPES.includes(file.type)) {
-      event.target.value = ''
-      setErrorKey('wizard.profile.error.photoType')
-      return
-    }
-    if (file.size > maxPhotoBytes) {
-      event.target.value = ''
-      setErrorKey('errors.setup.tooLarge')
-      return
-    }
+  const handlePhotoChange = (selection: MediaSelection | null) => {
     setErrorKey(null)
-    setPhotoFile(file)
-    replaceObjectUrl(URL.createObjectURL(file))
+    setPhoto(selection)
+    setPhotoPreviewUrl(selection?.previewUrl ?? null)
   }
 
   const bundle = { name: name.trim(), description: description.trim() }
   const isNameMissing = bundle.name.length === 0
-  const photoSrc = photoPreviewUrl ?? (profile?.hasPhoto ? PROFILE_PHOTO_PATH : null)
-  const maxPhotoMegabytes = Math.max(1, Math.floor(maxPhotoBytes / BYTES_PER_MEGABYTE))
-
-  const handleUndoPhoto = () => {
-    setPhotoFile(null)
-    replaceObjectUrl(null)
-    setErrorKey(null)
-    if (photoInputRef.current) {
-      photoInputRef.current.value = ''
-    }
-  }
+  const savedPhotoSrc = profile?.hasPhoto ? PROFILE_PHOTO_PATH : null
+  const photoSrc = photoPreviewUrl ?? savedPhotoSrc
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -101,7 +62,7 @@ export const ProfileStep = ({ maxPhotoBytes = 10485760 }: { maxPhotoBytes?: numb
     setIsPending(true)
     try {
       const saved = await saveSetupProfile(bundle)
-      setProfile(photoFile ? await uploadSetupPhoto(photoFile) : saved)
+      setProfile(photo ? await uploadSetupPhoto(photo.file) : saved)
     } catch (error) {
       setIsPending(false)
       setErrorKey(
@@ -117,69 +78,18 @@ export const ProfileStep = ({ maxPhotoBytes = 10485760 }: { maxPhotoBytes?: numb
     <div className="grid items-start gap-8 lg:grid-cols-2 lg:gap-12">
       <form onSubmit={(event) => void handleSubmit(event)} className="flex flex-col gap-6">
         <Card className="rounded-xl border-border/20 bg-surface/60 p-4 shadow-none sm:p-5">
-          <div className="flex items-start gap-4">
-            {photoSrc ? (
-              <Image
-                src={photoSrc}
-                alt=""
-                width={72}
-                height={72}
-                unoptimized
-                className="size-16 shrink-0 rounded-full object-cover sm:size-18"
-              />
-            ) : (
-              <div
-                aria-hidden="true"
-                className="flex size-16 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground sm:size-18"
-              >
-                <Camera className="size-6" />
-              </div>
-            )}
-            <div className="flex min-w-0 flex-1 flex-col gap-2">
-              <p className="text-sm font-medium">{t('wizard.profile.photo')}</p>
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                {t('wizard.profile.photoHint', { max: maxPhotoMegabytes })}
-              </p>
-              <Input
-                ref={photoInputRef}
-                className="hidden"
-                tabIndex={-1}
-                aria-label={t('wizard.profile.photo')}
-                name="photo"
-                type="file"
-                accept={ACCEPTED_PHOTO_TYPES.join(',')}
-                disabled={isPending}
-                onChange={handlePhotoChange}
-              />
-              <div className="flex flex-wrap gap-2 pt-1">
-                <Button
-                  variant="secondary"
-                  className="rounded-full border border-input"
-                  disabled={isPending}
-                  onClick={() => photoInputRef.current?.click()}
-                >
-                  <Upload className="size-4" aria-hidden="true" />
-                  {t(photoSrc ? 'wizard.profile.changePhoto' : 'wizard.profile.choosePhoto')}
-                </Button>
-                {photoFile ? (
-                  <Button
-                    variant="ghost"
-                    className="rounded-full"
-                    disabled={isPending}
-                    onClick={handleUndoPhoto}
-                  >
-                    <X className="size-4" aria-hidden="true" />
-                    {t('wizard.profile.undoPhoto')}
-                  </Button>
-                ) : null}
-              </div>
-            </div>
-          </div>
-          {photoFile ? (
-            <p role="status" className="text-xs break-all text-muted-foreground">
-              {t('wizard.profile.selectedPhoto', { name: photoFile.name })}
-            </p>
-          ) : null}
+          <MediaField
+            name="photo"
+            label={t('wizard.profile.photo')}
+            kind="photo"
+            layout="avatar"
+            maxBytes={maxPhotoBytes}
+            value={photo}
+            savedSrc={savedPhotoSrc}
+            alt=""
+            isDisabled={isPending}
+            onChange={handlePhotoChange}
+          />
         </Card>
         <Field
           label={t('wizard.profile.name')}

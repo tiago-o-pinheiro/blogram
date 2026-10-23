@@ -1,19 +1,20 @@
 'use client'
 
-import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react'
+import { type FormEvent, useState } from 'react'
 
 import { Button } from '@/design-system/ui/button'
 import { Field } from '@/design-system/ui/field'
-import { Select } from '@/design-system/ui/select'
+import { cn } from '@/design-system/ui/lib/cn'
+import { type MediaSelection } from '@/design-system/ui/media-input'
 import { Textarea } from '@/design-system/ui/textarea'
 import { type TranslationKey } from '@/i18n'
 import { useT } from '@/i18n/i18n-context'
 import * as Models from '@/models/models'
 
 import { LinkFields, type LinkFieldsValue } from './link-fields'
-import { ACCEPTED_IMAGE_TYPES, PhotoFields } from './photo-fields'
+import { PostMediaFields } from './post-media-fields'
+import { PostTypePicker } from './post-type-picker'
 import {
   createPost,
   fetchLinkMetadata,
@@ -22,29 +23,35 @@ import {
   replacePostVideo,
   updatePost,
 } from '../api/posts-api'
-import { toImageSrc } from '../lib/to-image-src'
 import { toPostsMessageKey } from '../lib/to-posts-message'
 
 type PostFormProps = {
   post?: Models.Post
+  maxImageBytes: number
+  maxVideoBytes: number
 }
 
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024
+type Replacement = {
+  upload: (id: string, file: File) => Promise<Models.Post>
+  successKey: TranslationKey
+}
 
-const ACCEPTED_VIDEO_TYPES = ['video/mp4', 'video/webm']
+const IMAGE_REPLACEMENT: Replacement = { upload: replacePostImage, successKey: 'postForm.replaced' }
 
-const toPreviewSrc = (post: Models.Post | undefined): string | null =>
-  post?.image ? toImageSrc(post.image, 960) : null
+const VIDEO_REPLACEMENT: Replacement = {
+  upload: replacePostVideo,
+  successKey: 'postForm.videoReplaced',
+}
 
-export const PostForm = ({ post }: PostFormProps) => {
+export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) => {
   const t = useT()
   const router = useRouter()
   const isEdit = post !== undefined
   const [postType, setPostType] = useState<Models.PostType>(post?.type ?? 'photo')
   const [text, setText] = useState(post?.text ?? '')
   const [altText, setAltText] = useState(post?.image?.altText ?? '')
-  const [file, setFile] = useState<File | null>(null)
-  const [poster, setPoster] = useState<File | null>(null)
+  const [file, setFile] = useState<MediaSelection | null>(null)
+  const [poster, setPoster] = useState<MediaSelection | null>(null)
   const [link, setLink] = useState<LinkFieldsValue>({
     url: post?.link?.url ?? post?.youtube?.url ?? '',
     title: post?.link?.title ?? '',
@@ -53,12 +60,24 @@ export const PostForm = ({ post }: PostFormProps) => {
   })
   const [isFetchingMetadata, setIsFetchingMetadata] = useState(false)
   const [hasMetadataError, setHasMetadataError] = useState(false)
-  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null)
   const [errorKey, setErrorKey] = useState<TranslationKey | null>(null)
   const [statusKey, setStatusKey] = useState<TranslationKey | null>(null)
   const [isPending, setIsPending] = useState(false)
-  const objectUrlRef = useRef<string | null>(null)
+  const fileMediaId = postType === 'video' ? post?.video?.id : post?.image?.id
+  const posterMediaId = post?.image?.id
+  const [previousFileMediaId, setPreviousFileMediaId] = useState(fileMediaId)
+  const [previousPosterMediaId, setPreviousPosterMediaId] = useState(posterMediaId)
   const isLink = postType === 'link' || postType === 'news'
+  const hasMedia = postType !== 'youtube'
+
+  if (fileMediaId !== previousFileMediaId) {
+    setPreviousFileMediaId(fileMediaId)
+    setFile(null)
+  }
+  if (posterMediaId !== previousPosterMediaId) {
+    setPreviousPosterMediaId(posterMediaId)
+    setPoster(null)
+  }
 
   const handleMetadata = async () => {
     setIsFetchingMetadata(true)
@@ -83,109 +102,50 @@ export const PostForm = ({ post }: PostFormProps) => {
     }
   }
 
-  useEffect(
-    () => () => {
-      if (objectUrlRef.current) {
-        URL.revokeObjectURL(objectUrlRef.current)
-        objectUrlRef.current = null
-      }
-    },
-    [],
-  )
-
-  const replaceObjectUrl = (nextUrl: string | null) => {
-    if (objectUrlRef.current) {
-      URL.revokeObjectURL(objectUrlRef.current)
-    }
-    objectUrlRef.current = nextUrl
-    setLocalPreviewUrl(nextUrl)
-  }
-
   const reportFailure = (error: unknown) => {
     setErrorKey(
       error instanceof PostsApiError ? toPostsMessageKey(error.status) : 'posts.error.generic',
     )
   }
 
-  const handleReplace = async (nextFile: File) => {
-    if (!post) {
-      return
-    }
+  const handleTypeChange = (nextType: Models.PostType) => {
+    setPostType(nextType)
+    setFile(null)
+    setPoster(null)
+    setErrorKey(null)
+    setStatusKey(null)
+  }
+
+  const handleReplace = async (
+    id: string,
+    selection: MediaSelection,
+    replacement: Replacement,
+    clearSelection: () => void,
+  ) => {
     setIsPending(true)
     try {
-      await replacePostImage(post.id, nextFile)
+      await replacement.upload(id, selection.file)
+      setStatusKey(replacement.successKey)
+      router.refresh()
     } catch (error) {
-      setIsPending(false)
       reportFailure(error)
-      return
+      clearSelection()
+    } finally {
+      setIsPending(false)
     }
-    setIsPending(false)
-    setStatusKey('postForm.replaced')
-    router.refresh()
   }
 
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const nextFile = event.target.files?.[0]
-    setStatusKey(null)
-    if (!nextFile) {
-      if (postType === 'video') {
-        setPoster(null)
-      } else {
-        setFile(null)
-      }
-      replaceObjectUrl(null)
-      return
-    }
-    if (!ACCEPTED_IMAGE_TYPES.includes(nextFile.type) || nextFile.size > MAX_IMAGE_BYTES) {
-      event.target.value = ''
-      if (postType === 'video') {
-        setPoster(null)
-      } else {
-        setFile(null)
-      }
-      replaceObjectUrl(null)
-      setErrorKey(
-        ACCEPTED_IMAGE_TYPES.includes(nextFile.type)
-          ? 'posts.error.tooLarge'
-          : 'postForm.error.imageType',
-      )
-      return
-    }
-    setErrorKey(null)
-    if (isEdit) {
-      void handleReplace(nextFile)
-      return
-    }
-    if (postType === 'video') {
-      setPoster(nextFile)
-    } else {
-      setFile(nextFile)
-    }
-    replaceObjectUrl(URL.createObjectURL(nextFile))
-  }
-
-  const handleVideoChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const nextFile = event.target.files?.[0] ?? null
-    if (nextFile && !ACCEPTED_VIDEO_TYPES.includes(nextFile.type)) {
-      event.target.value = ''
-      setFile(null)
-      setErrorKey('postForm.error.videoType')
-      return
-    }
+  const handleSelection = (
+    selection: MediaSelection | null,
+    setSelection: (nextSelection: MediaSelection | null) => void,
+    replacement: Replacement,
+  ) => {
     setErrorKey(null)
     setStatusKey(null)
-    if (post && nextFile) {
-      setIsPending(true)
-      void replacePostVideo(post.id, nextFile)
-        .then(() => {
-          setStatusKey('postForm.videoReplaced')
-          router.refresh()
-        })
-        .catch(reportFailure)
-        .finally(() => setIsPending(false))
-      return
+    setSelection(selection)
+    if (post && selection) {
+      void handleReplace(post.id, selection, replacement, () => setSelection(null))
     }
-    setFile(nextFile)
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -206,8 +166,8 @@ export const PostForm = ({ post }: PostFormProps) => {
           type: postType,
           text,
           altText,
-          ...(file ? { file } : {}),
-          ...(poster ? { poster } : {}),
+          ...(file ? { file: file.file } : {}),
+          ...(poster ? { poster: poster.file } : {}),
           ...(isLink ? link : {}),
           ...(postType === 'youtube' ? { url: link.url } : {}),
         })
@@ -231,51 +191,41 @@ export const PostForm = ({ post }: PostFormProps) => {
   const isUrlMissing = (isLink || postType === 'youtube') && !link.url.trim()
 
   return (
-    <form onSubmit={(event) => void handleSubmit(event)} className="flex flex-col gap-4">
+    <form
+      onSubmit={(event) => void handleSubmit(event)}
+      className="flex flex-col gap-6 rounded-2xl border border-border/20 bg-card p-4 sm:p-6"
+    >
       {!isEdit ? (
-        <Select
-          label={t('postForm.type')}
-          name="type"
+        <PostTypePicker
+          legend={t('postForm.typeLegend')}
           value={postType}
-          disabled={isPending}
-          onChange={(event) => {
-            const nextType = Models.POST_TYPES.find((type) => type === event.target.value)
-            if (nextType) {
-              setPostType(nextType)
-              setFile(null)
-              setPoster(null)
-              replaceObjectUrl(null)
-              setErrorKey(null)
-              setStatusKey(null)
-            }
-          }}
-        >
-          {Models.POST_TYPES.map((type) => (
-            <option key={type} value={type}>
-              {t(`posts.type.${type}`)}
-            </option>
-          ))}
-        </Select>
-      ) : null}
-      {postType === 'photo' ? (
-        <PhotoFields
-          text={text}
-          altText={altText}
-          previewSrc={localPreviewUrl ?? toPreviewSrc(post)}
-          isEdit={isEdit}
           isDisabled={isPending}
-          onTextChange={(value) => {
-            setStatusKey(null)
-            setText(value)
-          }}
-          onAltTextChange={(value) => {
-            setStatusKey(null)
-            setAltText(value)
-          }}
-          onFileChange={handleFileChange}
+          onChange={handleTypeChange}
         />
-      ) : (
-        <>
+      ) : null}
+      <div className={cn('grid gap-6 lg:items-start', hasMedia && 'lg:grid-cols-2')}>
+        {hasMedia ? (
+          <PostMediaFields
+            key={postType}
+            postType={postType}
+            post={post}
+            file={file}
+            poster={poster}
+            altText={altText}
+            isDisabled={isPending}
+            maxImageBytes={maxImageBytes}
+            maxVideoBytes={maxVideoBytes}
+            onFileChange={(selection) =>
+              handleSelection(
+                selection,
+                setFile,
+                postType === 'video' ? VIDEO_REPLACEMENT : IMAGE_REPLACEMENT,
+              )
+            }
+            onPosterChange={(selection) => handleSelection(selection, setPoster, IMAGE_REPLACEMENT)}
+          />
+        ) : null}
+        <div className={cn('flex flex-col gap-4', !hasMedia && 'max-w-2xl')}>
           {postType === 'youtube' ? (
             <Field
               label={t('postForm.youtubeUrl')}
@@ -297,45 +247,22 @@ export const PostForm = ({ post }: PostFormProps) => {
               onFetchMetadata={() => void handleMetadata()}
             />
           ) : null}
-          {postType === 'video' ? (
+          {hasMedia ? (
             <Field
-              label={t('postForm.video')}
-              name="file"
-              type="file"
-              accept={ACCEPTED_VIDEO_TYPES.join(',')}
+              label={t('postForm.altText')}
+              name="altText"
+              value={altText}
+              maxLength={Models.ALT_TEXT_MAX}
               disabled={isPending}
-              onChange={handleVideoChange}
+              autoComplete="off"
+              onChange={(event) => {
+                setStatusKey(null)
+                setAltText(event.target.value)
+              }}
             />
           ) : null}
-          {postType !== 'youtube' ? (
-            <>
-              {(localPreviewUrl ?? toPreviewSrc(post)) ? (
-                <Image
-                  unoptimized
-                  width={post?.image?.width ?? 960}
-                  height={post?.image?.height ?? 960}
-                  src={localPreviewUrl ?? toPreviewSrc(post) ?? ''}
-                  alt={altText}
-                  className="max-h-96 w-full rounded-md object-contain"
-                />
-              ) : null}
-              <Field
-                label={t(postType === 'video' ? 'postForm.poster' : 'postForm.cover')}
-                name="poster"
-                type="file"
-                accept={ACCEPTED_IMAGE_TYPES.join(',')}
-                disabled={isPending}
-                onChange={handleFileChange}
-              />
-              <Field
-                label={t('postForm.altText')}
-                name="altText"
-                value={altText}
-                maxLength={Models.ALT_TEXT_MAX}
-                disabled={isPending}
-                onChange={(event) => setAltText(event.target.value)}
-              />
-            </>
+          {postType === 'photo' && altText.trim().length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t('postForm.altTextHint')}</p>
           ) : null}
           <Textarea
             label={t('postForm.text')}
@@ -344,10 +271,13 @@ export const PostForm = ({ post }: PostFormProps) => {
             maxLength={Models.POST_TEXT_MAX}
             rows={4}
             disabled={isPending}
-            onChange={(event) => setText(event.target.value)}
+            onChange={(event) => {
+              setStatusKey(null)
+              setText(event.target.value)
+            }}
           />
-        </>
-      )}
+        </div>
+      </div>
       {errorKey ? (
         <p role="alert" className="text-sm text-danger">
           {t(errorKey)}
@@ -358,16 +288,18 @@ export const PostForm = ({ post }: PostFormProps) => {
           {t(statusKey)}
         </p>
       ) : null}
-      <Button
-        type="submit"
-        disabled={
-          isFileMissing || isUrlMissing || (isLink && !link.title.trim()) || isFetchingMetadata
-        }
-        isLoading={isPending}
-        loadingLabel={isEdit ? t('postForm.saving') : t('postForm.creating')}
-      >
-        {isEdit ? t('postForm.save') : t('postForm.create')}
-      </Button>
+      <div className="flex justify-end border-t border-border/20 pt-6">
+        <Button
+          type="submit"
+          disabled={
+            isFileMissing || isUrlMissing || (isLink && !link.title.trim()) || isFetchingMetadata
+          }
+          isLoading={isPending}
+          loadingLabel={isEdit ? t('postForm.saving') : t('postForm.creating')}
+        >
+          {isEdit ? t('postForm.save') : t('postForm.create')}
+        </Button>
+      </div>
     </form>
   )
 }

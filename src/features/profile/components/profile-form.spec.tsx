@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getMessages } from '@/i18n'
 import { I18nProvider } from '@/i18n/i18n-context'
+import { DEFAULT_UPLOAD_MAX_IMAGE_BYTES } from '@/models/models'
 
 import { ProfileForm } from './profile-form'
 
@@ -14,13 +15,16 @@ vi.mock('next/navigation', () => ({
 }))
 
 const PROFILE = { name: 'Ada', description: 'Writer', hasPhoto: false }
+const FIVE_MEGABYTES = 5 * 1024 ** 2
 
-const renderForm = (profile = PROFILE) =>
+const renderForm = (profile = PROFILE, maxPhotoBytes = DEFAULT_UPLOAD_MAX_IMAGE_BYTES) =>
   render(
     <I18nProvider locale="en" messages={getMessages('en')}>
-      <ProfileForm profile={profile} />
+      <ProfileForm profile={profile} maxPhotoBytes={maxPhotoBytes} />
     </I18nProvider>,
   )
+
+const toPhoto = (name: string) => new File(['a'], name, { type: 'image/png' })
 
 const createObjectURL = vi.fn()
 const revokeObjectURL = vi.fn()
@@ -64,7 +68,14 @@ describe('ProfileForm', () => {
     )
   })
 
-  it('Given a file that is not an accepted image, should show an alert and no preview', async () => {
+  it('Given a photo limit, should show it in the legend of the photo input', () => {
+    renderForm(PROFILE, FIVE_MEGABYTES)
+
+    expect(screen.getByText('Up to 5 MB')).toBeVisible()
+    expect(screen.getByLabelText('Profile photo')).toHaveAccessibleDescription(/Up to 5 MB/)
+  })
+
+  it('Given a file that is not an accepted image, should alert with its name and no preview', async () => {
     const user = userEvent.setup({ applyAccept: false })
     renderForm()
 
@@ -73,35 +84,50 @@ describe('ProfileForm', () => {
       new File(['t'], 't.txt', { type: 'text/plain' }),
     )
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Choose a JPEG, PNG or WebP image.')
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "t.txt can't be used. Accepted formats: JPEG, PNG or WebP.",
+    )
     expect(createObjectURL).not.toHaveBeenCalled()
   })
 
-  it('Given an oversize image, should show a size alert and no preview', async () => {
+  it('Given an image over the given limit, should alert with the limit and no preview', async () => {
     const user = userEvent.setup()
-    renderForm()
-    const file = new File(['a'], 'big.png', { type: 'image/png' })
-    Object.defineProperty(file, 'size', { value: 10 * 1024 * 1024 + 1 })
+    renderForm(PROFILE, FIVE_MEGABYTES)
+    const file = toPhoto('big.png')
+    Object.defineProperty(file, 'size', { value: FIVE_MEGABYTES * 2 })
 
     await user.upload(screen.getByLabelText('Profile photo'), file)
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('10 MB or less')
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'big.png is 10 MB. The limit is 5 MB, so choose a smaller file.',
+    )
     expect(createObjectURL).not.toHaveBeenCalled()
   })
 
-  it('Given a chosen photo, should preview it through an object URL', async () => {
+  it('Given a chosen photo, should preview it in the live profile through its object URL', async () => {
     const user = userEvent.setup()
     renderForm()
 
-    await user.upload(
-      screen.getByLabelText('Profile photo'),
-      new File(['a'], 'a.png', { type: 'image/png' }),
-    )
+    await user.upload(screen.getByLabelText('Profile photo'), toPhoto('a.png'))
 
     expect(screen.getByRole('img', { name: 'Profile photo of Ada' })).toHaveAttribute(
       'src',
       'blob:one',
     )
+  })
+
+  it('Given a saved photo and a chosen one, should restore the saved photo on Undo', async () => {
+    const user = userEvent.setup()
+    renderForm({ ...PROFILE, hasPhoto: true })
+
+    await user.upload(screen.getByLabelText('Profile photo'), toPhoto('a.png'))
+    await user.click(screen.getByRole('button', { name: 'Undo' }))
+
+    expect(screen.getByRole('img', { name: 'Profile photo of Ada' })).toHaveAttribute(
+      'src',
+      '/api/profile/photo?v=0',
+    )
+    expect(revokeObjectURL).toHaveBeenCalledExactlyOnceWith('blob:one')
   })
 
   it('Given Save with a photo, should save the profile then upload the photo and refresh', async () => {
@@ -113,10 +139,7 @@ describe('ProfileForm', () => {
       .mockResolvedValueOnce(Response.json(saved))
     renderForm()
 
-    await user.upload(
-      screen.getByLabelText('Profile photo'),
-      new File(['a'], 'a.png', { type: 'image/png' }),
-    )
+    await user.upload(screen.getByLabelText('Profile photo'), toPhoto('a.png'))
     await user.click(screen.getByRole('button', { name: 'Save profile' }))
 
     expect(await screen.findByRole('status')).toHaveTextContent('Profile saved.')
@@ -125,6 +148,25 @@ describe('ProfileForm', () => {
       '/api/admin/profile/photo',
     ])
     expect(refresh).toHaveBeenCalledTimes(1)
+  })
+
+  it('Given a saved upload, should show the new saved photo and revoke the object URL', async () => {
+    const user = userEvent.setup()
+    const saved = { name: 'Ada', description: 'Writer', hasPhoto: true }
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(Response.json(saved))
+      .mockResolvedValueOnce(Response.json(saved))
+    renderForm()
+
+    await user.upload(screen.getByLabelText('Profile photo'), toPhoto('a.png'))
+    await user.click(screen.getByRole('button', { name: 'Save profile' }))
+
+    expect(await screen.findByRole('status')).toBeVisible()
+    expect(screen.getByRole('img', { name: 'Profile photo of Ada' })).toHaveAttribute(
+      'src',
+      '/api/profile/photo?v=1',
+    )
+    expect(revokeObjectURL).toHaveBeenCalledExactlyOnceWith('blob:one')
   })
 
   it('Given Save without a photo, should call only the profile endpoint', async () => {
@@ -160,7 +202,19 @@ describe('ProfileForm', () => {
     expect(refresh).not.toHaveBeenCalled()
   })
 
-  it('Given a pending save, should disable the fields and the button', async () => {
+  it('Given a failed save and a newly chosen photo, should clear the server error', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 422 }))
+    renderForm()
+    await user.click(screen.getByRole('button', { name: 'Save profile' }))
+    expect(await screen.findByRole('alert')).toBeVisible()
+
+    await user.upload(screen.getByLabelText('Profile photo'), toPhoto('a.png'))
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('Given a pending save, should disable the fields, the photo input and the button', async () => {
     const user = userEvent.setup()
     vi.spyOn(globalThis, 'fetch').mockReturnValue(new Promise(() => undefined))
     renderForm()
@@ -169,5 +223,6 @@ describe('ProfileForm', () => {
 
     expect(await screen.findByRole('button', { name: /Saving|Save profile/ })).toBeDisabled()
     expect(screen.getByLabelText('Name')).toBeDisabled()
+    expect(screen.getByLabelText('Profile photo')).toBeDisabled()
   })
 })

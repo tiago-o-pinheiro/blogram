@@ -7,6 +7,7 @@ import { getServerTranslator } from '@/i18n/server'
 import { PageShell } from '@/components/page-shell'
 import { PostDeleteAction } from '@/features/posts/components/post-delete-action'
 import { PostForm } from '@/features/posts/components/post-form'
+import { env } from '@/server/config/env'
 import { NotFoundError } from '@/server/errors/http-errors'
 import { requireOwnerPage } from '@/server/modules/auth/guards/admin-page.guard'
 import { postService } from '@/server/modules/posts/services/post.service'
@@ -29,14 +30,18 @@ const Page = async ({ params }: PageProps) => {
   })
 
   return (
-    <PageShell title={t('postForm.editTitle')}>
+    <PageShell isWide title={t('postForm.editTitle')}>
       <Link
         href={`/admin/posts/${post.id}/preview`}
         className={buttonVariants({ variant: 'secondary', className: 'w-fit' })}
       >
         {t('postList.preview')}
       </Link>
-      <PostForm post={post} />
+      <PostForm
+        post={post}
+        maxImageBytes={env.UPLOAD_MAX_IMAGE_BYTES}
+        maxVideoBytes={env.UPLOAD_MAX_VIDEO_BYTES}
+      />
       <PostDeleteAction post={post} />
     </PageShell>
   )

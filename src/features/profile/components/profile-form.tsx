@@ -1,10 +1,11 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react'
+import { type FormEvent, useState } from 'react'
 
 import { Button } from '@/design-system/ui/button'
 import { Field } from '@/design-system/ui/field'
+import { type MediaSelection } from '@/design-system/ui/media-input'
 import { type TranslationKey } from '@/i18n'
 import { useT } from '@/i18n/i18n-context'
 import {
@@ -15,76 +16,33 @@ import {
   type Profile,
 } from '@/models/models'
 
+import { MediaField } from '@/components/media-field'
 import { ProfileHeader } from '@/features/home/components/profile-header'
 import { toPostsMessageKey } from '@/features/posts/lib/to-posts-message'
 
 import { ProfileApiError, saveProfile, uploadProfilePhoto } from '../api/profile-api'
 
-const ACCEPTED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp']
-const MAX_PHOTO_BYTES = 10 * 1024 * 1024
-
 type ProfileFormProps = {
   profile: Profile
+  maxPhotoBytes: number
 }
 
-export const ProfileForm = ({ profile }: ProfileFormProps) => {
+export const ProfileForm = ({ profile, maxPhotoBytes }: ProfileFormProps) => {
   const t = useT()
   const router = useRouter()
   const [name, setName] = useState(profile.name)
   const [description, setDescription] = useState(profile.description)
-  const [photoFile, setPhotoFile] = useState<File | null>(null)
-  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null)
+  const [photo, setPhoto] = useState<MediaSelection | null>(null)
   const [photoVersion, setPhotoVersion] = useState(0)
   const [hasPhoto, setHasPhoto] = useState(profile.hasPhoto)
   const [errorKey, setErrorKey] = useState<TranslationKey | null>(null)
   const [isSaved, setIsSaved] = useState(false)
   const [isPending, setIsPending] = useState(false)
-  const objectUrlRef = useRef<string | null>(null)
 
-  useEffect(
-    () => () => {
-      if (objectUrlRef.current) {
-        URL.revokeObjectURL(objectUrlRef.current)
-        objectUrlRef.current = null
-      }
-    },
-    [],
-  )
-
-  const replaceObjectUrl = (nextUrl: string | null) => {
-    if (objectUrlRef.current) {
-      URL.revokeObjectURL(objectUrlRef.current)
-    }
-    objectUrlRef.current = nextUrl
-    setPhotoPreviewUrl(nextUrl)
-  }
-
-  const rejectPhoto = (input: HTMLInputElement, key: TranslationKey) => {
-    input.value = ''
-    setPhotoFile(null)
-    replaceObjectUrl(null)
-    setErrorKey(key)
-  }
-
-  const handlePhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    setIsSaved(false)
-    if (!file) {
-      setPhotoFile(null)
-      replaceObjectUrl(null)
-      return
-    }
-    if (!ACCEPTED_PHOTO_TYPES.includes(file.type)) {
-      rejectPhoto(event.target, 'profileAdmin.error.photoType')
-      return
-    }
-    if (file.size > MAX_PHOTO_BYTES) {
-      rejectPhoto(event.target, 'profileAdmin.error.photoSize')
-      return
-    }
+  const handlePhotoChange = (selection: MediaSelection | null) => {
     setErrorKey(null)
-    setPhotoFile(file)
-    replaceObjectUrl(URL.createObjectURL(file))
+    setIsSaved(false)
+    setPhoto(selection)
   }
 
   const bundle = { name: name.trim(), description: description.trim() }
@@ -101,12 +59,10 @@ export const ProfileForm = ({ profile }: ProfileFormProps) => {
     setIsPending(true)
     try {
       await saveProfile(bundle)
-      if (photoFile) {
-        const updated = await uploadProfilePhoto(photoFile)
-        setHasPhoto(updated.hasPhoto)
+      if (photo) {
+        setHasPhoto((await uploadProfilePhoto(photo.file)).hasPhoto)
         setPhotoVersion((version) => version + 1)
-        setPhotoFile(null)
-        replaceObjectUrl(null)
+        setPhoto(null)
       }
     } catch (error) {
       setIsPending(false)
@@ -150,12 +106,15 @@ export const ProfileForm = ({ profile }: ProfileFormProps) => {
             setDescription(event.target.value)
           }}
         />
-        <Field
+        <MediaField
           label={t('profileAdmin.photo')}
           name="photo"
-          type="file"
-          accept={ACCEPTED_PHOTO_TYPES.join(',')}
-          disabled={isPending}
+          kind="photo"
+          layout="avatar"
+          maxBytes={maxPhotoBytes}
+          value={photo}
+          savedSrc={savedPhotoSrc}
+          isDisabled={isPending}
           onChange={handlePhotoChange}
         />
         {errorKey ? (
@@ -185,7 +144,7 @@ export const ProfileForm = ({ profile }: ProfileFormProps) => {
           as="h2"
           name={name || t('profileAdmin.namePlaceholder')}
           description={description}
-          photoSrc={photoPreviewUrl ?? savedPhotoSrc}
+          photoSrc={photo?.previewUrl ?? savedPhotoSrc}
         />
       </section>
     </div>

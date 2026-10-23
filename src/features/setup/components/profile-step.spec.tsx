@@ -9,21 +9,35 @@ import { ProfileStep } from './profile-step'
 import { SetupWizardProvider, useSetupWizardState } from './setup-wizard-context'
 
 const PROFILE = { name: 'Ada', description: 'Writer', hasPhoto: false }
+const TWO_MEGABYTES = 2 * 1024 ** 2
 
 const StepProbe = () => {
-  const { step } = useSetupWizardState()
-  return <p data-testid="step">{step}</p>
+  const { step, photoPreviewUrl } = useSetupWizardState()
+  return (
+    <>
+      <p data-testid="step">{step}</p>
+      <p data-testid="preview-url">{photoPreviewUrl ?? 'none'}</p>
+    </>
+  )
 }
 
+type StepTreeProps = {
+  initialProfile: typeof PROFILE | null
+  maxPhotoBytes?: number
+  isStepShown?: boolean
+}
+
+const StepTree = ({ initialProfile, maxPhotoBytes, isStepShown = true }: StepTreeProps) => (
+  <I18nProvider locale="en" messages={getMessages('en')}>
+    <SetupWizardProvider initialProfile={initialProfile}>
+      {isStepShown ? <ProfileStep maxPhotoBytes={maxPhotoBytes} /> : null}
+      <StepProbe />
+    </SetupWizardProvider>
+  </I18nProvider>
+)
+
 const renderStep = (initialProfile: typeof PROFILE | null = null, maxPhotoBytes?: number) =>
-  render(
-    <I18nProvider locale="en" messages={getMessages('en')}>
-      <SetupWizardProvider initialProfile={initialProfile}>
-        <ProfileStep maxPhotoBytes={maxPhotoBytes} />
-        <StepProbe />
-      </SetupWizardProvider>
-    </I18nProvider>,
-  )
+  render(<StepTree initialProfile={initialProfile} maxPhotoBytes={maxPhotoBytes} />)
 
 const createObjectURL = vi.fn()
 const revokeObjectURL = vi.fn()
@@ -75,7 +89,7 @@ describe('ProfileStep', () => {
     )
   })
 
-  it('Given a chosen photo, should preview it before saving and revoke the previous URL on change', async () => {
+  it('Given a chosen photo, should preview it before saving and revoke the previous URL on replace', async () => {
     const user = userEvent.setup()
     renderStep(PROFILE)
     const input = screen.getByLabelText('Profile photo')
@@ -85,26 +99,29 @@ describe('ProfileStep', () => {
       'src',
       'blob:one',
     )
+    expect(screen.getByTestId('preview-url')).toHaveTextContent('blob:one')
 
     await user.upload(input, new File(['b'], 'b.png', { type: 'image/png' }))
     expect(screen.getByRole('img', { name: 'Profile photo of Ada' })).toHaveAttribute(
       'src',
       'blob:two',
     )
+    expect(screen.getByTestId('preview-url')).toHaveTextContent('blob:two')
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:one')
   })
 
-  it('Given an unmount with a chosen photo, should revoke its URL', async () => {
+  it('Given an unmount with a chosen photo, should revoke its URL and clear the wizard preview', async () => {
     const user = userEvent.setup()
-    const { unmount } = renderStep(PROFILE)
+    const { rerender } = renderStep(PROFILE)
     await user.upload(
       screen.getByLabelText('Profile photo'),
       new File(['a'], 'a.png', { type: 'image/png' }),
     )
 
-    unmount()
+    rerender(<StepTree initialProfile={PROFILE} isStepShown={false} />)
 
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:one')
+    expect(screen.getByTestId('preview-url')).toHaveTextContent('none')
   })
 
   it('Given a file that is not an accepted image, should show an alert and no preview image', async () => {
@@ -116,7 +133,9 @@ describe('ProfileStep', () => {
       new File(['t'], 't.txt', { type: 'text/plain' }),
     )
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Choose a JPEG, PNG or WebP image.')
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "t.txt can't be used. Accepted formats: JPEG, PNG or WebP.",
+    )
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
     expect(createObjectURL).not.toHaveBeenCalled()
   })
@@ -135,13 +154,22 @@ describe('ProfileStep', () => {
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
-  it('Given the default size limit, should state it in whole megabytes', () => {
+  it('Given the default size limit, should state it in the legend with the accepted formats', () => {
     renderStep()
 
-    expect(screen.getByText('JPEG, PNG or WebP, up to 10 MB.')).toBeVisible()
+    expect(screen.getByText('Up to 10 MB')).toBeVisible()
+    expect(screen.getByText('JPEG')).toBeVisible()
+    expect(screen.getByText('PNG')).toBeVisible()
+    expect(screen.getByText('WebP')).toBeVisible()
   })
 
-  it('Given a chosen photo, should rename the button, show the file name and offer undo', async () => {
+  it('Given a size limit prop, should state that limit in the legend', () => {
+    renderStep(null, TWO_MEGABYTES)
+
+    expect(screen.getByText('Up to 2 MB')).toBeVisible()
+  })
+
+  it('Given a chosen photo, should offer Replace and Remove and show the file name and size', async () => {
     const user = userEvent.setup()
     renderStep()
 
@@ -150,13 +178,15 @@ describe('ProfileStep', () => {
       new File(['a'], 'a.png', { type: 'image/png' }),
     )
 
-    expect(screen.getByRole('button', { name: 'Change photo' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Replace' })).toBeVisible()
     expect(screen.queryByRole('button', { name: 'Choose photo' })).not.toBeInTheDocument()
-    expect(screen.getByRole('status')).toHaveTextContent('Selected: a.png')
-    expect(screen.getByRole('button', { name: 'Undo' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Remove' })).toBeVisible()
+    expect(screen.getByText('a.png')).toBeVisible()
+    expect(screen.getByText('1 B')).toBeVisible()
+    expect(screen.getByText('Selected a.png')).toBeInTheDocument()
   })
 
-  it('Given Undo after choosing a photo, should drop it, revoke its URL and restore the placeholder', async () => {
+  it('Given Remove after choosing a photo, should drop it, revoke its URL and restore the placeholder', async () => {
     const user = userEvent.setup()
     renderStep()
     await user.upload(
@@ -164,13 +194,13 @@ describe('ProfileStep', () => {
       new File(['a'], 'a.png', { type: 'image/png' }),
     )
 
-    await user.click(screen.getByRole('button', { name: 'Undo' }))
+    await user.click(screen.getByRole('button', { name: 'Remove' }))
 
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:one')
     expect(screen.getByRole('button', { name: 'Choose photo' })).toBeVisible()
-    expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Remove' })).not.toBeInTheDocument()
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(screen.getByTestId('preview-url')).toHaveTextContent('none')
   })
 
   it('Given Undo with a saved photo, should show the saved photo again', async () => {
@@ -183,11 +213,13 @@ describe('ProfileStep', () => {
 
     await user.click(screen.getByRole('button', { name: 'Undo' }))
 
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:one')
     expect(screen.getByRole('img', { name: 'Profile photo of Ada' })).toHaveAttribute(
       'src',
       '/api/profile/photo',
     )
-    expect(screen.getByRole('button', { name: 'Change photo' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Replace' })).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument()
   })
 
   it('Given an image over the size limit, should show an alert and keep the previous photo', async () => {
@@ -198,12 +230,14 @@ describe('ProfileStep', () => {
 
     await user.upload(input, new File(['abcdef'], 'big.png', { type: 'image/png' }))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('That file is too large.')
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'big.png is 6 B. The limit is 5 B, so choose a smaller file.',
+    )
     expect(screen.getByRole('img', { name: 'Profile photo of Ada' })).toHaveAttribute(
       'src',
       'blob:one',
     )
-    expect(screen.getByRole('status')).toHaveTextContent('Selected: a.png')
+    expect(screen.getByText('a.png')).toBeVisible()
     expect(createObjectURL).toHaveBeenCalledOnce()
   })
 
@@ -215,7 +249,9 @@ describe('ProfileStep', () => {
 
     await user.upload(input, new File(['t'], 't.txt', { type: 'text/plain' }))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Choose a JPEG, PNG or WebP image.')
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "t.txt can't be used. Accepted formats: JPEG, PNG or WebP.",
+    )
     expect(screen.getByRole('img', { name: 'Profile photo of Ada' })).toHaveAttribute(
       'src',
       'blob:one',
@@ -266,7 +302,7 @@ describe('ProfileStep', () => {
     expect(screen.getByTestId('step')).toHaveTextContent('1')
   })
 
-  it('Given a pending save, should disable the button and fields', async () => {
+  it('Given a pending save, should disable the button, the fields and the photo picker', async () => {
     const user = userEvent.setup()
     vi.spyOn(globalThis, 'fetch').mockReturnValue(new Promise(() => undefined))
     renderStep()
@@ -276,5 +312,7 @@ describe('ProfileStep', () => {
 
     expect(await screen.findByRole('button', { name: /Continue/ })).toBeDisabled()
     expect(screen.getByLabelText('Name')).toBeDisabled()
+    expect(screen.getByLabelText('Profile photo')).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Choose photo' })).toBeDisabled()
   })
 })

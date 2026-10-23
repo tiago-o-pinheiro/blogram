@@ -4,6 +4,7 @@ import enCommon from './en/common.json'
 import enFeed from './en/feed.json'
 import enFinalize from './en/finalize.json'
 import enGoogle from './en/google.json'
+import enMediaField from './en/mediaField.json'
 import enPostForm from './en/postForm.json'
 import enPostList from './en/postList.json'
 import enPostPreview from './en/postPreview.json'
@@ -16,6 +17,7 @@ import esCommon from './es/common.json'
 import esFeed from './es/feed.json'
 import esFinalize from './es/finalize.json'
 import esGoogle from './es/google.json'
+import esMediaField from './es/mediaField.json'
 import esPostForm from './es/postForm.json'
 import esPostList from './es/postList.json'
 import esPostPreview from './es/postPreview.json'
@@ -34,6 +36,7 @@ const en = {
   ...enFeed,
   ...enGoogle,
   ...enAdmin,
+  ...enMediaField,
   ...enPostList,
   ...enPostForm,
   ...enPostPreview,
@@ -49,6 +52,7 @@ const es: Readonly<Record<keyof typeof en, string>> = {
   ...esFeed,
   ...esGoogle,
   ...esAdmin,
+  ...esMediaField,
   ...esPostList,
   ...esPostForm,
   ...esPostPreview,

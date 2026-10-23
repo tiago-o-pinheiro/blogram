@@ -1,11 +1,8 @@
 {
   "postForm.newTitle": "Nueva publicación",
   "postForm.editTitle": "Editar publicación",
-  "postForm.type": "Tipo de publicación",
+  "postForm.typeLegend": "¿Qué quieres publicar?",
   "postForm.photo": "Foto",
-  "postForm.newImage": "Nueva imagen",
-  "postForm.replaceImage": "Reemplazar imagen",
-  "postForm.cancelReplace": "Cancelar",
   "postForm.altText": "Texto alternativo",
   "postForm.altTextHint": "Describe la imagen para ayudar a quienes usan lectores de pantalla.",
   "postForm.video": "Archivo de vídeo",
@@ -20,7 +17,6 @@
   "postForm.metadata": "Obtener vista previa",
   "postForm.metadataLoading": "Obteniendo vista previa",
   "postForm.metadataError": "No se pudo obtener la vista previa. Puedes completar los campos y publicar igualmente.",
-  "postForm.error.videoType": "Elige un vídeo MP4 o WebM.",
   "postForm.text": "Pie de foto",
   "postForm.previewAlt": "Vista previa de la foto seleccionada",
   "postForm.create": "Crear borrador",
@@ -29,6 +25,5 @@
   "postForm.saving": "Guardando",
   "postForm.saved": "Cambios guardados.",
   "postForm.replacing": "Reemplazando",
-  "postForm.replaced": "Imagen reemplazada.",
-  "postForm.error.imageType": "Elige una imagen JPEG, PNG o WebP."
+  "postForm.replaced": "Imagen reemplazada."
 }

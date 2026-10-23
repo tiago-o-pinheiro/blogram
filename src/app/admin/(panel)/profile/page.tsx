@@ -5,6 +5,7 @@ import { getServerTranslator } from '@/i18n/server'
 import { PageShell } from '@/components/page-shell'
 import { LanguageForm } from '@/features/profile/components/language-form'
 import { ProfileForm } from '@/features/profile/components/profile-form'
+import { env } from '@/server/config/env'
 import { requireOwnerPage } from '@/server/modules/auth/guards/admin-page.guard'
 import { profileService } from '@/server/modules/profile/services/profile.service'
 
@@ -24,7 +25,7 @@ const Page = async () => {
 
   return (
     <PageShell title={t('adminShell.profile')}>
-      <ProfileForm profile={profile} />
+      <ProfileForm profile={profile} maxPhotoBytes={env.UPLOAD_MAX_IMAGE_BYTES} />
       <LanguageForm settings={settings} />
     </PageShell>
   )

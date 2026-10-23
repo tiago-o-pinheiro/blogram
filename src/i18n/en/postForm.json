@@ -1,11 +1,8 @@
 {
   "postForm.newTitle": "New post",
   "postForm.editTitle": "Edit post",
-  "postForm.type": "Post type",
+  "postForm.typeLegend": "What are you posting?",
   "postForm.photo": "Photo",
-  "postForm.newImage": "New image",
-  "postForm.replaceImage": "Replace image",
-  "postForm.cancelReplace": "Cancel",
   "postForm.altText": "Alt text",
   "postForm.altTextHint": "Describe the image to help people using screen readers.",
   "postForm.video": "Video file",
@@ -20,7 +17,6 @@
   "postForm.metadata": "Get link preview",
   "postForm.metadataLoading": "Getting link preview",
   "postForm.metadataError": "Could not get a preview. You can fill in the fields and publish anyway.",
-  "postForm.error.videoType": "Choose an MP4 or WebM video.",
   "postForm.text": "Caption",
   "postForm.previewAlt": "Preview of the selected photo",
   "postForm.create": "Create draft",
@@ -29,6 +25,5 @@
   "postForm.saving": "Saving",
   "postForm.saved": "Changes saved.",
   "postForm.replacing": "Replacing",
-  "postForm.replaced": "Image replaced.",
-  "postForm.error.imageType": "Choose a JPEG, PNG or WebP image."
+  "postForm.replaced": "Image replaced."
 }
