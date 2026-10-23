@@ -4,8 +4,10 @@ import { Models } from '@/models'
 
 import { env } from '@/server/config/env'
 import { PayloadTooLargeError, ValidationError } from '@/server/errors/http-errors'
+import { type DbTransaction } from '@/server/lib/db'
 import { createStorageKey, storage, type StorageDriver } from '@/server/lib/storage'
 
+import { MediaCleanupService } from './media-cleanup.service'
 import { inspectVideo } from './video'
 
 const ALLOWED_FORMATS: readonly string[] = Models.IMAGE_UPLOAD_TYPES.map((type) =>
@@ -68,7 +70,11 @@ const toRendered = async (pipeline: Sharp): Promise<RenderedImage> => {
 }
 
 export class MediaService {
-  constructor(private readonly dependencies: MediaServiceDependencies) {}
+  private readonly cleanup: MediaCleanupService
+
+  constructor(private readonly dependencies: MediaServiceDependencies) {
+    this.cleanup = new MediaCleanupService(dependencies.storage)
+  }
 
   processProfilePhoto = async (
     file: File,
@@ -76,14 +82,25 @@ export class MediaService {
     if (file.size > this.dependencies.getMaxBytes()) {
       throw new PayloadTooLargeError('Image is too large')
     }
+    await this.cleanup.drain()
     const input = Buffer.from(await file.arrayBuffer())
     const output = await this.toProfilePhoto(input)
     const key = createStorageKey(PROFILE_PHOTO_PREFIX, PROFILE_PHOTO_EXTENSION)
-    await this.dependencies.storage.put(key, output, PROFILE_PHOTO_CONTENT_TYPE)
+    try {
+      await this.dependencies.storage.put(key, output, PROFILE_PHOTO_CONTENT_TYPE)
+    } catch (error) {
+      await this.deleteObjects([key])
+      throw error
+    }
     return { key, contentType: PROFILE_PHOTO_CONTENT_TYPE }
   }
 
-  deleteObject = (key: string): Promise<void> => this.dependencies.storage.delete(key)
+  deleteObject = (key: string): Promise<void> => this.deleteObjects([key])
+
+  enqueueCleanup = (tx: DbTransaction, keys: string[]): Promise<void> =>
+    this.cleanup.enqueue(tx, keys)
+
+  drainCleanup = (): Promise<{ deleted: number; pending: number }> => this.cleanup.drain()
 
   processPostVideo = async (file: File): Promise<ProcessedVideo> => {
     if (file.size > (this.dependencies.getMaxVideoBytes?.() ?? env.UPLOAD_MAX_VIDEO_BYTES)) {
@@ -92,22 +109,29 @@ export class MediaService {
     if (file.size === 0) {
       throw new ValidationError('A video file is required')
     }
+    await this.cleanup.drain()
     const input = new Uint8Array(await file.arrayBuffer())
     const metadata = await inspectVideo(input)
     const extension = metadata.contentType === 'video/mp4' ? 'mp4' : 'webm'
     const key = createStorageKey('videos', extension)
-    await this.dependencies.storage.put(key, input, metadata.contentType)
+    try {
+      await this.dependencies.storage.put(key, input, metadata.contentType)
+    } catch (error) {
+      await this.deleteObjects([key])
+      throw error
+    }
     return { ...metadata, key, size: input.byteLength }
   }
 
   deleteObjects = async (keys: string[]): Promise<void> => {
-    await Promise.allSettled(keys.map((key) => this.dependencies.storage.delete(key)))
+    await this.cleanup.schedule(keys)
   }
 
   processPostImage = async (file: File): Promise<ProcessedImage> => {
     if (file.size > this.dependencies.getMaxBytes()) {
       throw new PayloadTooLargeError('Image is too large')
     }
+    await this.cleanup.drain()
     const input = Buffer.from(await file.arrayBuffer())
     const rendered = await this.renderPostImage(input)
     const written: string[] = []
@@ -139,8 +163,8 @@ export class MediaService {
 
   private putPostObject = async (data: Uint8Array, written: string[]): Promise<string> => {
     const key = createStorageKey(POST_IMAGE_PREFIX, POST_IMAGE_EXTENSION)
-    await this.dependencies.storage.put(key, data, POST_IMAGE_CONTENT_TYPE)
     written.push(key)
+    await this.dependencies.storage.put(key, data, POST_IMAGE_CONTENT_TYPE)
     return key
   }
 

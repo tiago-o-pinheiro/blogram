@@ -17,6 +17,46 @@ const renderLike = (id: string) =>
 beforeEach(() => localStorage.clear())
 
 describe('Anonymous like button', () => {
+  it('BH-8: Given refreshed server likes, should show the latest counter', () => {
+    const view = renderLike('Refresh123')
+
+    view.rerender(
+      <I18nProvider locale="en" messages={getMessages('en')}>
+        <LikeButton id="Refresh123" likes={8} />
+      </I18nProvider>,
+    )
+
+    expect(screen.getByText('8')).toBeVisible()
+  })
+
+  it('BH-8: Given older server props, should retain confirmed likes', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json({ likes: 7 }))
+    const view = renderLike('Confirmed1')
+
+    await user.click(screen.getByRole('button', { name: 'Like' }))
+    expect(await screen.findByText('7')).toBeVisible()
+    view.rerender(
+      <I18nProvider locale="en" messages={getMessages('en')}>
+        <LikeButton id="Confirmed1" likes={4} />
+      </I18nProvider>,
+    )
+
+    expect(screen.getByText('7')).toBeVisible()
+    view.rerender(
+      <I18nProvider locale="en" messages={getMessages('en')}>
+        <LikeButton id="Confirmed1" likes={9} />
+      </I18nProvider>,
+    )
+    expect(screen.getByText('9')).toBeVisible()
+    view.rerender(
+      <I18nProvider locale="en" messages={getMessages('en')}>
+        <LikeButton id="Confirmed1" likes={4} />
+      </I18nProvider>,
+    )
+    expect(screen.getByText('9')).toBeVisible()
+  })
+
   it('Given a confirmed like, should remember it after a reload', async () => {
     const user = userEvent.setup()
     const fetcher = vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json({ likes: 4 }))

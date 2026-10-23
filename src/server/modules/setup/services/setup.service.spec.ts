@@ -8,11 +8,13 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { ForbiddenError, ValidationError } from '@/server/errors/http-errors'
 import { db } from '@/server/lib/db'
+import { type StorageDriver } from '@/server/lib/storage'
 import { createLocalDriver } from '@/server/lib/storage/local-driver'
 import { user } from '@/server/modules/auth/schemas/auth.table'
 import { authService } from '@/server/modules/auth/services/auth.service'
 import { installationService } from '@/server/modules/installation/services/installation.service'
 import { MediaService } from '@/server/modules/media/services/media.service'
+import { profile } from '@/server/modules/profile/schemas/profile.table'
 import { ProfileService } from '@/server/modules/profile/services/profile.service'
 import { SetupAuthService } from '@/server/modules/setup/services/setup-auth.service'
 import { SetupSessionService } from '@/server/modules/setup/services/setup-session.service'
@@ -26,6 +28,14 @@ const OWNER = {
   identifier: 'owner@example.test',
   password: PASSWORD,
   passwordConfirmation: PASSWORD,
+}
+
+const deferred = () => {
+  let resolve: () => void = () => undefined
+  const promise = new Promise<void>((fulfill) => {
+    resolve = fulfill
+  })
+  return { promise, resolve }
 }
 
 describe('SetupService', () => {
@@ -108,6 +118,7 @@ describe('SetupService', () => {
     })
 
     it('Given no session, should report locked with no profile', async () => {
+      await service.saveProfile({ name: 'Private draft', description: 'Not published' })
       const state = await service.getState(new Headers())
 
       expect(state.isUnlocked).toBe(false)
@@ -116,6 +127,53 @@ describe('SetupService', () => {
   })
 
   describe('uploadPhoto', () => {
+    it('BH-2: Given a photo staged while setup finalizes, should keep the completed photo and clean up the staged object', async () => {
+      await service.saveProfile({ name: 'Ada', description: 'Original profile' })
+      const file = new File([new Uint8Array(await createPng())], 'me.png', { type: 'image/png' })
+      await service.uploadPhoto(file)
+      const [original] = await db.select({ key: profile.photoKey }).from(profile)
+      const driver = createLocalDriver(directory)
+      const staged = deferred()
+      const resumed = deferred()
+      let stagedKey = ''
+      const delayedStorage: StorageDriver = {
+        ...driver,
+        put: async (key, body, contentType) => {
+          await driver.put(key, body, contentType)
+          stagedKey = key
+          staged.resolve()
+          await resumed.promise
+        },
+      }
+      const interrupted = new SetupService({
+        installation: installationService,
+        profiles,
+        sessions,
+        setupAuth: new SetupAuthService(() => SETUP_PASSWORD),
+        media: new MediaService({ storage: delayedStorage, getMaxBytes: () => 1_000_000 }),
+        owners: authService,
+      })
+      const uploadOutcome = interrupted.uploadPhoto(file).then(
+        () => null,
+        (error: unknown) => error,
+      )
+      await staged.promise
+      try {
+        await service.finalize(OWNER)
+      } finally {
+        resumed.resolve()
+      }
+
+      expect(await uploadOutcome).toBeInstanceOf(ForbiddenError)
+      const [completed] = await db.select({ key: profile.photoKey }).from(profile)
+      expect(completed?.key).toBe(original?.key)
+      expect(await driver.get(stagedKey)).toBeNull()
+      expect((await service.getState(new Headers())).profile).toMatchObject({
+        name: 'Ada',
+        hasPhoto: true,
+      })
+    })
+
     it('Given a png, should mark the profile as having a photo', async () => {
       await service.saveProfile({ name: 'Ada', description: '' })
       const file = new File([new Uint8Array(await createPng())], 'me.png', { type: 'image/png' })
@@ -133,6 +191,19 @@ describe('SetupService', () => {
   })
 
   describe('finalize', () => {
+    it('Given a completed installation, should refuse a profile mutation through the service', async () => {
+      await service.saveProfile({ name: 'Ada', description: 'Final profile' })
+      await service.finalize(OWNER)
+
+      await expect(
+        service.saveProfile({ name: 'Late write', description: '' }),
+      ).rejects.toBeInstanceOf(ForbiddenError)
+      expect((await service.getState(new Headers())).profile).toMatchObject({
+        name: 'Ada',
+        description: 'Final profile',
+      })
+    })
+
     it('Given a valid owner, should complete, create one owner and revoke setup sessions', async () => {
       await service.saveProfile({ name: 'Ada', description: '' })
       const headers = await toCookieHeaders()

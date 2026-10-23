@@ -18,10 +18,15 @@ export const LikeButton = ({ id, likes }: { id: string; likes: number }) => {
     () => readLiked(id),
     () => false,
   )
-  const [count, setCount] = useState(likes)
+  const [confirmation, setConfirmation] = useState({ id, likes })
+  const count = Math.max(likes, confirmation.id === id ? confirmation.likes : 0)
   const [isSaving, setIsSaving] = useState(false)
   const [hasError, setHasError] = useState(false)
   const isSubmitting = useRef(false)
+
+  if (confirmation.id !== id || likes > confirmation.likes) {
+    setConfirmation({ id, likes })
+  }
 
   const handleLike = async () => {
     if (isSubmitting.current || readLiked(id)) {
@@ -37,7 +42,10 @@ export const LikeButton = ({ id, likes }: { id: string; likes: number }) => {
         setHasError(true)
         return
       }
-      setCount(body.likes)
+      setConfirmation((currentConfirmation) => ({
+        id,
+        likes: Math.max(body.likes, currentConfirmation.id === id ? currentConfirmation.likes : 0),
+      }))
       rememberLike(id)
     } catch {
       setHasError(true)

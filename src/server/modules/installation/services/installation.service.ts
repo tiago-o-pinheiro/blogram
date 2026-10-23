@@ -21,8 +21,20 @@ export class InstallationService {
     return 'pending'
   }
 
-  assertPending = async (): Promise<void> => {
-    if ((await this.getStatus()) === 'completed') {
+  assertPending = async (tx?: DbTransaction): Promise<void> => {
+    if (!tx) {
+      if ((await this.getStatus()) === 'completed') {
+        throw new ForbiddenError('Installation is already completed')
+      }
+      return
+    }
+    await this.ensureRow(tx)
+    const [row] = await tx
+      .select({ status: installation.status })
+      .from(installation)
+      .where(eq(installation.id, SINGLETON_ID))
+      .for('update')
+    if (row?.status === 'completed') {
       throw new ForbiddenError('Installation is already completed')
     }
   }

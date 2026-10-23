@@ -16,6 +16,7 @@ import { db, type DbTransaction } from '@/server/lib/db'
 import { toPagination, toPaginationMeta } from '@/server/lib/pagination'
 import { storage, type StorageDriver, type StorageObject } from '@/server/lib/storage'
 import { media } from '@/server/modules/media/schemas/media.table'
+import { MediaCleanupService } from '@/server/modules/media/services/media-cleanup.service'
 import { mediaService, type MediaService } from '@/server/modules/media/services/media.service'
 import { post } from '@/server/modules/posts/schemas/post.table'
 
@@ -90,10 +91,12 @@ export class PostService {
   private readonly storage: StorageDriver
   private readonly media: Pick<MediaService, 'processPostImage' | 'deleteObjects'> &
     Partial<Pick<MediaService, 'processPostVideo'>>
+  private readonly cleanup: MediaCleanupService
 
   constructor(dependencies: PostServiceDependencies) {
     this.storage = dependencies.storage
     this.media = dependencies.media ?? mediaService
+    this.cleanup = new MediaCleanupService(this.storage)
   }
 
   createPhotoDraft = async (input: {
@@ -186,17 +189,27 @@ export class PostService {
 
   updatePost = async (id: string, update: Models.PostUpdate): Promise<Models.Post> => {
     const record = await this.requireRecord(id)
-    const dto = toPost(record)
-    const details =
-      record.post.type === 'youtube'
-        ? normalizeYoutubeUrl(update.url ?? dto.youtube?.url ?? '')
-        : record.post.type === 'link' || record.post.type === 'news'
-          ? toLink({ ...dto.link, ...update })
-          : record.post.details
     await db.transaction(async (tx) => {
+      const currentPost = await this.lockPost(tx, record.post.id)
+      const dto = toPost({ ...record, post: currentPost })
+      const hasDetails =
+        update.url !== undefined ||
+        update.title !== undefined ||
+        update.description !== undefined ||
+        update.source !== undefined
+      const details =
+        currentPost.type === 'youtube'
+          ? normalizeYoutubeUrl(update.url ?? dto.youtube?.url ?? '')
+          : currentPost.type === 'link' || currentPost.type === 'news'
+            ? toLink({ ...dto.link, ...update })
+            : currentPost.details
       await tx
         .update(post)
-        .set({ text: update.text ?? record.post.text, details, updatedAt: new Date() })
+        .set({
+          ...(update.text !== undefined ? { text: update.text } : {}),
+          ...(hasDetails ? { details } : {}),
+          updatedAt: new Date(),
+        })
         .where(eq(post.id, record.post.id))
       if (update.altText !== undefined) {
         await tx
@@ -211,9 +224,9 @@ export class PostService {
   replaceImage = async (id: string, file: File): Promise<Models.Post> => {
     const record = await this.requireRecord(id)
     const processed = await this.media.processPostImage(file)
-    let replacedKeys: string[]
     try {
-      replacedKeys = await db.transaction(async (tx) => {
+      await db.transaction(async (tx) => {
+        await this.lockPost(tx, record.post.id)
         const [previous] = await tx
           .select()
           .from(media)
@@ -234,13 +247,13 @@ export class PostService {
           variants: processed.variants,
         })
         await tx.update(post).set({ updatedAt: new Date() }).where(eq(post.id, record.post.id))
-        return previous ? toStoredKeys(previous) : []
+        await this.cleanup.enqueue(tx, previous ? toStoredKeys(previous) : [])
       })
     } catch (error) {
       await this.media.deleteObjects([processed.key, ...processed.variants.map((v) => v.key)])
       throw error
     }
-    await this.media.deleteObjects(replacedKeys)
+    await this.cleanup.drain()
     return this.getPost(id)
   }
 
@@ -250,9 +263,9 @@ export class PostService {
       throw new ValidationError('Only uploaded video posts accept video replacement')
     }
     const processed = await (this.media.processPostVideo ?? mediaService.processPostVideo)(file)
-    let replacedKeys: string[]
     try {
-      replacedKeys = await db.transaction(async (tx) => {
+      await db.transaction(async (tx) => {
+        await this.lockPost(tx, record.post.id)
         const [previous] = await tx
           .select()
           .from(media)
@@ -271,13 +284,13 @@ export class PostService {
           sizeBytes: processed.size,
         })
         await tx.update(post).set({ updatedAt: new Date() }).where(eq(post.id, record.post.id))
-        return previous ? toStoredKeys(previous) : []
+        await this.cleanup.enqueue(tx, previous ? toStoredKeys(previous) : [])
       })
     } catch (error) {
       await this.media.deleteObjects([processed.key])
       throw error
     }
-    await this.media.deleteObjects(replacedKeys)
+    await this.cleanup.drain()
     return this.getPost(id)
   }
 
@@ -298,29 +311,32 @@ export class PostService {
         throw new ValidationError('A link URL and title are required before publishing')
       }
     }
-    await db
-      .update(post)
-      .set({
-        status,
-        publishedAt:
-          status === 'published'
-            ? (record.post.publishedAt ?? new Date())
-            : record.post.publishedAt,
-        updatedAt: new Date(),
-      })
-      .where(eq(post.id, record.post.id))
+    await db.transaction(async (tx) => {
+      const currentPost = await this.lockPost(tx, record.post.id)
+      await tx
+        .update(post)
+        .set({
+          status,
+          publishedAt:
+            status === 'published'
+              ? (currentPost.publishedAt ?? new Date())
+              : currentPost.publishedAt,
+          updatedAt: new Date(),
+        })
+        .where(eq(post.id, record.post.id))
+    })
     return this.getPost(id)
   }
 
   deletePost = async (id: string): Promise<void> => {
     const record = await this.requireRecord(id)
-    await db.delete(post).where(eq(post.id, record.post.id))
-    if (record.media) {
-      await this.media.deleteObjects(toStoredKeys(record.media))
-    }
-    if (record.video) {
-      await this.media.deleteObjects(toStoredKeys(record.video))
-    }
+    await db.transaction(async (tx) => {
+      await this.lockPost(tx, record.post.id)
+      const files = await tx.select().from(media).where(eq(media.postId, record.post.id))
+      await this.cleanup.enqueue(tx, files.flatMap(toStoredKeys))
+      await tx.delete(post).where(eq(post.id, record.post.id))
+    })
+    await this.cleanup.drain()
   }
 
   readMedia = async (
@@ -347,6 +363,10 @@ export class PostService {
     const target = this.resolveTarget(row.media, access.variant ?? 'full')
     const range = toByteRange(access.range, row.media.sizeBytes)
     if (access.isHead) {
+      const object = await this.storage.get(target.key, { range: { start: 0, end: 0 } })
+      if (!object) {
+        throw new NotFoundError('Media not found')
+      }
       return {
         object: {
           body: new Uint8Array(),
@@ -376,6 +396,14 @@ export class PostService {
       throw new NotFoundError('Media not found')
     }
     return { key: found.key, contentType: found.contentType }
+  }
+
+  private lockPost = async (tx: DbTransaction, id: string): Promise<PostRow> => {
+    const [currentPost] = await tx.select().from(post).where(eq(post.id, id)).for('update')
+    if (!currentPost) {
+      throw new NotFoundError('Post not found')
+    }
+    return currentPost
   }
 
   private selectRecords = (where?: SQL) =>

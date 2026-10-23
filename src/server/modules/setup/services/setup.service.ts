@@ -23,7 +23,7 @@ type SetupServiceDependencies = {
   profiles: Pick<ProfileService, 'getProfile' | 'saveProfile' | 'setPhoto'>
   sessions: Pick<SetupSessionService, 'readToken' | 'isValid' | 'revokeAll'>
   setupAuth: Pick<SetupAuthService, 'isConfigured'>
-  media: Pick<MediaService, 'processProfilePhoto' | 'deleteObject'>
+  media: Pick<MediaService, 'processProfilePhoto' | 'deleteObjects' | 'drainCleanup'>
   owners: Pick<AuthService, 'createOwner' | 'signInOwner'>
 }
 
@@ -32,11 +32,13 @@ export class SetupService {
 
   getState = async (headers: Headers): Promise<Models.SetupState> => {
     const { installation, profiles, setupAuth } = this.dependencies
+    const status = await installation.getStatus()
+    const isUnlocked = status === 'pending' && (await this.hasSetupSession(headers))
     return {
-      status: await installation.getStatus(),
+      status,
       isConfigured: setupAuth.isConfigured(),
-      isUnlocked: await this.hasSetupSession(headers),
-      profile: await profiles.getProfile(),
+      isUnlocked,
+      profile: status === 'completed' || isUnlocked ? await profiles.getProfile() : null,
     }
   }
 
@@ -52,19 +54,31 @@ export class SetupService {
   }
 
   saveProfile = (bundle: Models.ProfileBundle): Promise<Models.Profile> =>
-    this.dependencies.profiles.saveProfile(bundle)
+    db.transaction(async (tx) => {
+      await this.dependencies.installation.assertPending(tx)
+      return this.dependencies.profiles.saveProfile(bundle, tx)
+    })
 
   uploadPhoto = async (file: File): Promise<Models.Profile> => {
-    const { media, profiles } = this.dependencies
+    const { installation, media, profiles } = this.dependencies
+    await installation.assertPending()
     const photo = await media.processProfilePhoto(file)
-    const previousKey = await profiles.setPhoto(photo.key, photo.contentType)
-    if (previousKey) {
-      await media.deleteObject(previousKey).catch(() => undefined)
+    let saved: Models.Profile
+    try {
+      saved = await db.transaction(async (tx) => {
+        await installation.assertPending(tx)
+        await profiles.setPhoto(photo.key, photo.contentType, tx)
+        const draft = await profiles.getProfile(tx)
+        if (!draft) {
+          throw new ValidationError('Profile is incomplete')
+        }
+        return draft
+      })
+    } catch (error) {
+      await media.deleteObjects([photo.key])
+      throw error
     }
-    const saved = await profiles.getProfile()
-    if (!saved) {
-      throw new ValidationError('Profile is incomplete')
-    }
+    await media.drainCleanup()
     return saved
   }
 
@@ -77,12 +91,12 @@ export class SetupService {
     if (!identifier) {
       throw new ValidationError('Owner identifier is invalid')
     }
-    await installation.assertPending()
-    const draft = await profiles.getProfile()
-    if (!draft || draft.name.length === 0) {
-      throw new ValidationError('Profile is incomplete')
-    }
     await db.transaction(async (tx) => {
+      await installation.assertPending(tx)
+      const draft = await profiles.getProfile(tx)
+      if (!draft || draft.name.length === 0) {
+        throw new ValidationError('Profile is incomplete')
+      }
       const { id } = await owners.createOwner(tx, {
         identifier: identifier.value,
         password: owner.password,

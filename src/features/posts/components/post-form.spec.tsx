@@ -120,6 +120,114 @@ afterEach(() => {
 })
 
 describe('PostForm create', () => {
+  it('BH-6: Given another link URL, should replace previous automatic metadata', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        Response.json({
+          url: 'https://first.test/article',
+          title: '::first-title::',
+          description: '::first-description::',
+          source: '::first-source::',
+        }),
+      )
+      .mockResolvedValueOnce(
+        Response.json({
+          url: 'https://second.test/article',
+          title: '::second-title::',
+          description: '::second-description::',
+          source: '::second-source::',
+        }),
+      )
+    renderForm()
+
+    await user.click(screen.getByRole('radio', { name: 'Link' }))
+    await user.type(screen.getByLabelText('Destination URL'), 'https://first.test/article')
+    await user.click(screen.getByRole('button', { name: 'Get link preview' }))
+    await vi.waitFor(() => expect(screen.getByLabelText('Title')).toHaveValue('::first-title::'))
+    await user.clear(screen.getByLabelText('Destination URL'))
+    await user.type(screen.getByLabelText('Destination URL'), 'https://second.test/article')
+    await user.click(screen.getByRole('button', { name: 'Get link preview' }))
+
+    await vi.waitFor(() => expect(screen.getByLabelText('Title')).toHaveValue('::second-title::'))
+    expect(screen.getByLabelText('Description')).toHaveValue('::second-description::')
+    expect(screen.getByLabelText('Original source')).toHaveValue('::second-source::')
+  })
+
+  it('BH-6: Given edited automatic title, should preserve it across URLs', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        Response.json({
+          url: 'https://first.test/article',
+          title: '::first-title::',
+          description: '::first-description::',
+          source: '::first-source::',
+        }),
+      )
+      .mockResolvedValueOnce(
+        Response.json({
+          url: 'https://second.test/article',
+          title: '::second-title::',
+          description: '::second-description::',
+          source: '::second-source::',
+        }),
+      )
+    renderForm()
+
+    await user.click(screen.getByRole('radio', { name: 'Link' }))
+    await user.type(screen.getByLabelText('Destination URL'), 'https://first.test/article')
+    await user.click(screen.getByRole('button', { name: 'Get link preview' }))
+    await vi.waitFor(() => expect(screen.getByLabelText('Title')).toHaveValue('::first-title::'))
+    await user.clear(screen.getByLabelText('Title'))
+    await user.type(screen.getByLabelText('Title'), '::manual-title::')
+    await user.clear(screen.getByLabelText('Destination URL'))
+    await user.type(screen.getByLabelText('Destination URL'), 'https://second.test/article')
+    await user.click(screen.getByRole('button', { name: 'Get link preview' }))
+
+    await vi.waitFor(() =>
+      expect(screen.getByLabelText('Description')).toHaveValue('::second-description::'),
+    )
+    expect(screen.getByLabelText('Title')).toHaveValue('::manual-title::')
+    expect(screen.getByLabelText('Original source')).toHaveValue('::second-source::')
+  })
+
+  it('BH-6: Given deliberately cleared description, should keep it empty', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        Response.json({
+          url: 'https://first.test/article',
+          title: '::first-title::',
+          description: '::first-description::',
+          source: '::first-source::',
+        }),
+      )
+      .mockResolvedValueOnce(
+        Response.json({
+          url: 'https://second.test/article',
+          title: '::second-title::',
+          description: '::second-description::',
+          source: '::second-source::',
+        }),
+      )
+    renderForm()
+
+    await user.click(screen.getByRole('radio', { name: 'Link' }))
+    await user.type(screen.getByLabelText('Destination URL'), 'https://first.test/article')
+    await user.click(screen.getByRole('button', { name: 'Get link preview' }))
+    await vi.waitFor(() =>
+      expect(screen.getByLabelText('Description')).toHaveValue('::first-description::'),
+    )
+    await user.clear(screen.getByLabelText('Description'))
+    await user.clear(screen.getByLabelText('Destination URL'))
+    await user.type(screen.getByLabelText('Destination URL'), 'https://second.test/article')
+    await user.click(screen.getByRole('button', { name: 'Get link preview' }))
+
+    await vi.waitFor(() => expect(screen.getByLabelText('Title')).toHaveValue('::second-title::'))
+    expect(screen.getByLabelText('Description')).toHaveValue('')
+  })
+
   it('Given YouTube selected, should show its URL without uploads', async () => {
     const user = userEvent.setup()
     renderForm()
@@ -372,9 +480,22 @@ describe('PostForm create', () => {
 })
 
 describe('PostForm edit', () => {
-  it('Given an edited video, should replace its uploaded file and keep it until the refreshed post arrives', async () => {
+  it('BH-7: Given committed replacement, should not offer ineffective Undo', async () => {
     const user = userEvent.setup()
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json(VIDEO_POST))
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json(REFRESHED_IMAGE_POST))
+    renderForm({ post: POST })
+
+    await user.upload(getFileInput('Photo'), pngFile())
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Image replaced.')
+    expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument()
+  })
+
+  it('Given a saved video replacement, should use its server reference immediately', async () => {
+    const user = userEvent.setup()
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(Response.json(REFRESHED_VIDEO_POST))
     const { rerender } = renderForm({ post: VIDEO_POST })
 
     await user.upload(
@@ -387,8 +508,12 @@ describe('PostForm edit', () => {
     expect(fetchSpy.mock.calls[0]?.[1]?.method).toBe('PUT')
     expect(readBody(fetchSpy).get('file')).toBeInstanceOf(File)
     expect(refresh).toHaveBeenCalledTimes(1)
-    expect(screen.getByText('replacement.webm')).toBeVisible()
-    expect(revokeObjectURL).not.toHaveBeenCalled()
+    expect(screen.queryByText('replacement.webm')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Video file', { selector: 'video' })).toHaveAttribute(
+      'src',
+      `/api/media/${REFRESHED_VIDEO_ID}`,
+    )
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:one')
 
     rerender(toForm(REFRESHED_VIDEO_POST))
 
@@ -396,9 +521,9 @@ describe('PostForm edit', () => {
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:one')
   })
 
-  it('Given an edited video, should keep its new file when only the poster was refreshed', async () => {
+  it('Given a saved video, should retain it when its poster refreshes', async () => {
     const user = userEvent.setup()
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json(VIDEO_POST))
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json(REFRESHED_VIDEO_POST))
     const { rerender } = renderForm({ post: VIDEO_POST })
 
     await user.upload(
@@ -408,7 +533,10 @@ describe('PostForm edit', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('Video replaced.')
     rerender(toForm({ ...VIDEO_POST, image: { ...IMAGE, id: REFRESHED_IMAGE_ID } }))
 
-    expect(screen.getByText('replacement.webm')).toBeVisible()
+    expect(screen.getByLabelText('Video file', { selector: 'video' })).toHaveAttribute(
+      'src',
+      `/api/media/${REFRESHED_VIDEO_ID}`,
+    )
   })
 
   it('Given an edited video poster, should replace the image through the image endpoint', async () => {
@@ -456,7 +584,9 @@ describe('PostForm edit', () => {
 
   it('Given a new photo, should call the image endpoint, refresh and keep previewing the new photo', async () => {
     const user = userEvent.setup()
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json(POST))
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(Response.json(REFRESHED_IMAGE_POST))
     renderForm({ post: POST })
 
     await user.upload(getFileInput('Photo'), pngFile())
@@ -466,8 +596,12 @@ describe('PostForm edit', () => {
     expect(url).toBe('/api/admin/posts/AbCdEfGh12/image')
     expect(init?.method).toBe('PUT')
     expect(refresh).toHaveBeenCalledTimes(1)
-    expect(screen.getByText('a.png')).toBeVisible()
-    expect(screen.getByRole('img', { name: 'A sunrise' })).toHaveAttribute('src', 'blob:one')
+    expect(screen.queryByText('a.png')).not.toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'A sunrise' })).toHaveAttribute(
+      'src',
+      `/api/media/${REFRESHED_IMAGE_ID}?variant=w960`,
+    )
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:one')
   })
 
   it('Given a replaced photo, should show the saved image once the refreshed post arrives', async () => {

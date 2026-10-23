@@ -34,13 +34,24 @@ type PostFormProps = {
 type Replacement = {
   upload: (id: string, file: File) => Promise<Models.Post>
   successKey: TranslationKey
+  media: 'image' | 'video'
 }
 
-const IMAGE_REPLACEMENT: Replacement = { upload: replacePostImage, successKey: 'postForm.replaced' }
+type LinkDraft = {
+  fields: LinkFieldsValue
+  manual: Record<'title' | 'description' | 'source', boolean>
+}
+
+const IMAGE_REPLACEMENT: Replacement = {
+  upload: replacePostImage,
+  successKey: 'postForm.replaced',
+  media: 'image',
+}
 
 const VIDEO_REPLACEMENT: Replacement = {
   upload: replacePostVideo,
   successKey: 'postForm.videoReplaced',
+  media: 'video',
 }
 
 export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) => {
@@ -52,31 +63,59 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
   const [altText, setAltText] = useState(post?.image?.altText ?? '')
   const [file, setFile] = useState<MediaSelection | null>(null)
   const [poster, setPoster] = useState<MediaSelection | null>(null)
-  const [link, setLink] = useState<LinkFieldsValue>({
-    url: post?.link?.url ?? post?.youtube?.url ?? '',
-    title: post?.link?.title ?? '',
-    description: post?.link?.description ?? '',
-    source: post?.link?.source ?? '',
+  const [linkDraft, setLinkDraft] = useState<LinkDraft>({
+    fields: {
+      url: post?.link?.url ?? post?.youtube?.url ?? '',
+      title: post?.link?.title ?? '',
+      description: post?.link?.description ?? '',
+      source: post?.link?.source ?? '',
+    },
+    manual: {
+      title: post?.link !== undefined,
+      description: post?.link !== undefined,
+      source: post?.link !== undefined,
+    },
   })
   const [isFetchingMetadata, setIsFetchingMetadata] = useState(false)
   const [hasMetadataError, setHasMetadataError] = useState(false)
   const [errorKey, setErrorKey] = useState<TranslationKey | null>(null)
   const [statusKey, setStatusKey] = useState<TranslationKey | null>(null)
   const [isPending, setIsPending] = useState(false)
-  const fileMediaId = postType === 'video' ? post?.video?.id : post?.image?.id
-  const posterMediaId = post?.image?.id
-  const [previousFileMediaId, setPreviousFileMediaId] = useState(fileMediaId)
-  const [previousPosterMediaId, setPreviousPosterMediaId] = useState(posterMediaId)
+  const [savedImage, setSavedImage] = useState(post?.image ?? null)
+  const [savedVideo, setSavedVideo] = useState(post?.video)
+  const [previousImageId, setPreviousImageId] = useState(post?.image?.id)
+  const [previousVideoId, setPreviousVideoId] = useState(post?.video?.id)
+  const link = linkDraft.fields
+  const mediaPost = post ? { ...post, image: savedImage, video: savedVideo } : undefined
   const isLink = postType === 'link' || postType === 'news'
   const hasMedia = postType !== 'youtube'
 
-  if (fileMediaId !== previousFileMediaId) {
-    setPreviousFileMediaId(fileMediaId)
-    setFile(null)
-  }
-  if (posterMediaId !== previousPosterMediaId) {
-    setPreviousPosterMediaId(posterMediaId)
+  if (post?.image?.id !== previousImageId) {
+    setPreviousImageId(post?.image?.id)
+    setSavedImage(post?.image ?? null)
+    if (postType !== 'video') {
+      setFile(null)
+    }
     setPoster(null)
+  }
+  if (post?.video?.id !== previousVideoId) {
+    setPreviousVideoId(post?.video?.id)
+    setSavedVideo(post?.video)
+    if (postType === 'video') {
+      setFile(null)
+    }
+  }
+
+  const handleLinkChange = (fields: LinkFieldsValue) => {
+    setLinkDraft((currentDraft) => ({
+      fields,
+      manual: {
+        title: currentDraft.manual.title || fields.title !== currentDraft.fields.title,
+        description:
+          currentDraft.manual.description || fields.description !== currentDraft.fields.description,
+        source: currentDraft.manual.source || fields.source !== currentDraft.fields.source,
+      },
+    }))
   }
 
   const handleMetadata = async () => {
@@ -85,14 +124,19 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
     try {
       const metadata = await fetchLinkMetadata(link.url)
       setHasMetadataError(!metadata.title)
-      setLink((currentLink) =>
-        currentLink.url !== link.url
-          ? currentLink
+      setLinkDraft((currentDraft) =>
+        currentDraft.fields.url !== link.url
+          ? currentDraft
           : {
-              ...metadata,
-              title: currentLink.title || metadata.title,
-              description: currentLink.description || metadata.description,
-              source: currentLink.source || metadata.source,
+              manual: currentDraft.manual,
+              fields: {
+                ...metadata,
+                title: currentDraft.manual.title ? currentDraft.fields.title : metadata.title,
+                description: currentDraft.manual.description
+                  ? currentDraft.fields.description
+                  : metadata.description,
+                source: currentDraft.manual.source ? currentDraft.fields.source : metadata.source,
+              },
             },
       )
     } catch {
@@ -124,7 +168,13 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
   ) => {
     setIsPending(true)
     try {
-      await replacement.upload(id, selection.file)
+      const savedPost = await replacement.upload(id, selection.file)
+      if (replacement.media === 'image') {
+        setSavedImage(savedPost.image)
+      } else {
+        setSavedVideo(savedPost.video)
+      }
+      clearSelection()
       setStatusKey(replacement.successKey)
       router.refresh()
     } catch (error) {
@@ -208,7 +258,7 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
           <PostMediaFields
             key={postType}
             postType={postType}
-            post={post}
+            post={mediaPost}
             file={file}
             poster={poster}
             altText={altText}
@@ -234,7 +284,7 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
               required
               value={link.url}
               disabled={isPending}
-              onChange={(event) => setLink({ ...link, url: event.target.value })}
+              onChange={(event) => handleLinkChange({ ...link, url: event.target.value })}
             />
           ) : null}
           {isLink ? (
@@ -243,7 +293,7 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
               isDisabled={isPending}
               isFetching={isFetchingMetadata}
               hasMetadataError={hasMetadataError}
-              onChange={setLink}
+              onChange={handleLinkChange}
               onFetchMetadata={() => void handleMetadata()}
             />
           ) : null}
