@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "name": "blogram",
+  "scope": "@blogram",
+  "layout": "single",
+  "packageManager": "pnpm",
+  "frontend": "next",
+  "backend": "next",
+  "validation": "typebox",
+  "ui": "shadcn",
+  "state": ["context"],
+  "orm": "drizzle",
+  "auth": "better-auth",
+  "extras": ["git-hooks", "claude-hooks", "ci", "i18n"],
+  "pipeline": {
+    "profile": "budget",
+    "maxFixLoops": {
+      "S": 2,
+      "M": 3,
+      "L": 4
+    },
+    "planApproval": ["L"]
+  },
+  "recipes": [
+    {
+      "id": "orm-drizzle",
+      "status": "done"
+    },
+    {
+      "id": "auth-better-auth",
+      "status": "done"
+    },
+    {
+      "id": "ui-shadcn",
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+import { Type } from 'typebox'
+import { describe, expect, it } from 'vitest'
+
+import { Models } from '@/models'
+
+import { ValidationError } from '@/server/errors/http-errors'
+
+import { readBody, readParams, readQuery } from './handler'
+
+describe('readQuery', () => {
+  it('Given numeric query strings, should convert them to numbers', () => {
+    const request = new Request('http://test/api/things?page=2&pageSize=5')
+
+    expect(readQuery(Models.PaginationQuery, request)).toEqual({ page: 2, pageSize: 5 })
+  })
+
+  it('Given no query, should apply the schema defaults', () => {
+    const request = new Request('http://test/api/things')
+
+    expect(readQuery(Models.PaginationQuery, request)).toMatchObject({ page: 1 })
+  })
+
+  it.each(['::page::', '1.5', '0x10'])(
+    'Given page %s, which is not a plain integer, should throw a validation error',
+    (page) => {
+      const request = new Request(`http://test/api/things?page=${page}`)
+
+      expect(() => readQuery(Models.PaginationQuery, request)).toThrow(ValidationError)
+    },
+  )
+})
+
+describe('readParams', () => {
+  it('Given a numeric route param, should convert it', async () => {
+    const schema = Type.Object({ id: Type.Integer() })
+
+    await expect(readParams(schema, { params: Promise.resolve({ id: '7' }) })).resolves.toEqual({
+      id: 7,
+    })
+  })
+})
+
+describe('readBody', () => {
+  it('Given a body missing a defaulted field, should apply the default', async () => {
+    const schema = Type.Object({ title: Type.String(), body: Type.String({ default: '' }) })
+    const request = new Request('http://test/api/things', {
+      method: 'POST',
+      body: JSON.stringify({ title: '::title::' }),
+    })
+
+    await expect(readBody(schema, request)).resolves.toEqual({ title: '::title::', body: '' })
+  })
+})

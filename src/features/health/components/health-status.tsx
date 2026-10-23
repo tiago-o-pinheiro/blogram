@@ -1,0 +1,74 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+
+import { Button } from '@/design-system/ui/button'
+import { Skeleton } from '@/design-system/ui/skeleton'
+
+import { getHealth } from '../api/get-health'
+
+type HealthPhase = 'loading' | 'ok' | 'error'
+
+const useHealth = () => {
+  const [phase, setPhase] = useState<HealthPhase>('loading')
+  const [attempt, setAttempt] = useState(0)
+
+  useEffect(() => {
+    let active = true
+    const check = async () => {
+      try {
+        await getHealth()
+        if (active) {
+          setPhase('ok')
+        }
+      } catch {
+        if (active) {
+          setPhase('error')
+        }
+      }
+    }
+    void check()
+    return () => {
+      active = false
+    }
+  }, [attempt])
+
+  const refetch = () => {
+    setPhase('loading')
+    setAttempt((current) => current + 1)
+  }
+
+  return { phase, refetch }
+}
+
+const HealthStatusSkeleton = () => (
+  <div role="status" aria-label="Checking API status" className="flex flex-col gap-2">
+    <Skeleton className="h-5 w-32" />
+    <Skeleton className="h-4 w-48" />
+  </div>
+)
+
+export const HealthStatus = () => {
+  const { phase, refetch } = useHealth()
+
+  return (
+    <section
+      aria-labelledby="health-status-title"
+      className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 shadow-sm"
+    >
+      <h2 id="health-status-title" className="text-lg font-semibold">
+        API status
+      </h2>
+      {phase === 'loading' ? <HealthStatusSkeleton /> : null}
+      {phase === 'ok' ? <p className="text-foreground">The API is online.</p> : null}
+      {phase === 'error' ? (
+        <div role="alert" className="flex flex-col items-start gap-3">
+          <p className="text-danger">We could not reach the API.</p>
+          <Button variant="secondary" onClick={refetch}>
+            Retry
+          </Button>
+        </div>
+      ) : null}
+    </section>
+  )
+}
