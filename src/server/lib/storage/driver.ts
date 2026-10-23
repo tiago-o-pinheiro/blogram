@@ -2,15 +2,20 @@ import { randomUUID } from 'node:crypto'
 
 import { ValidationError } from '@/server/errors/http-errors'
 
+export type ByteRange = { start: number; end?: number }
+
+export type StorageReadOptions = { range?: ByteRange }
+
 export type StorageObject = {
   body: Uint8Array
   contentType: string
   size: number
+  range?: { start: number; end: number }
 }
 
 export type StorageDriver = {
   put: (key: string, body: Uint8Array, contentType: string) => Promise<void>
-  get: (key: string) => Promise<StorageObject | null>
+  get: (key: string, options?: StorageReadOptions) => Promise<StorageObject | null>
   delete: (key: string) => Promise<void>
 }
 

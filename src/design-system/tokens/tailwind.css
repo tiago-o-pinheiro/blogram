@@ -25,6 +25,8 @@
   --radius-sm: var(--corner-sm);
   --radius-md: var(--corner-md);
   --radius-lg: var(--corner-lg);
+  --radius-xl: var(--corner-xl);
+  --radius-2xl: var(--corner-2xl);
   --radius-full: var(--corner-full);
 
   --font-sans: var(--typeface-sans);

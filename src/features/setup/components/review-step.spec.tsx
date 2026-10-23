@@ -8,7 +8,11 @@ import { I18nProvider } from '@/i18n/i18n-context'
 import { type Profile } from '@/models/models'
 
 import { ReviewStep } from './review-step'
-import { SetupWizardProvider, useSetupWizardActions } from './setup-wizard-context'
+import {
+  SetupWizardProvider,
+  useSetupWizardActions,
+  useSetupWizardState,
+} from './setup-wizard-context'
 
 const router = vi.hoisted(() => ({ replace: vi.fn(), refresh: vi.fn() }))
 
@@ -29,17 +33,59 @@ const SeedOwner = () => {
   return null
 }
 
+const StepProbe = () => {
+  const { step } = useSetupWizardState()
+  return <p data-testid="step">{step}</p>
+}
+
+const GoToReview = () => {
+  const { goTo } = useSetupWizardActions()
+  useEffect(() => {
+    goTo(3)
+  }, [goTo])
+  return null
+}
+
 const renderStep = (profile: Profile | null) =>
   render(
     <I18nProvider locale="en" messages={getMessages('en')}>
       <SetupWizardProvider initialProfile={profile}>
         <SeedOwner />
+        <GoToReview />
+        <StepProbe />
         <ReviewStep />
       </SetupWizardProvider>
     </I18nProvider>,
   )
 
 describe('ReviewStep', () => {
+  it('Given a draft, should say the password is set without showing it', async () => {
+    renderStep(PROFILE)
+
+    expect(await screen.findByText('Password set')).toBeVisible()
+    expect(screen.queryByText(PASSWORD)).not.toBeInTheDocument()
+  })
+
+  it('Given Edit profile, should return to step 1', async () => {
+    const user = userEvent.setup()
+    renderStep(PROFILE)
+    await screen.findByText('owner@example.test')
+
+    await user.click(screen.getByRole('button', { name: 'Edit profile' }))
+
+    expect(screen.getByTestId('step')).toHaveTextContent('1')
+  })
+
+  it('Given Edit account, should return to step 2', async () => {
+    const user = userEvent.setup()
+    renderStep(PROFILE)
+    await screen.findByText('owner@example.test')
+
+    await user.click(screen.getByRole('button', { name: 'Edit account' }))
+
+    expect(screen.getByTestId('step')).toHaveTextContent('2')
+  })
+
   it('Given a draft, should preview the profile and the identifier but never the password', async () => {
     renderStep(PROFILE)
 

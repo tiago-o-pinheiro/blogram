@@ -1,8 +1,35 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { parseEnv as parseDotenv } from 'node:util'
+
 import { describe, expect, it } from 'vitest'
 
 import { parseEnv } from './env'
 
 describe('parseEnv', () => {
+  it('Given the documented example environment, should accept local storage without S3 credentials', () => {
+    const source = parseDotenv(
+      readFileSync(resolve(import.meta.dirname, '../../../.env.example'), 'utf8'),
+    )
+
+    expect(parseEnv(source).STORAGE_DRIVER).toBe('local')
+  })
+  it('Given a production deployment with the development secret, should reject the configuration', () => {
+    expect(() => parseEnv({ NODE_ENV: 'production' })).toThrow(/BETTER_AUTH_SECRET/)
+  })
+
+  it('Given only one Google credential, should reject the incomplete configuration', () => {
+    expect(() => parseEnv({ GOOGLE_CLIENT_ID: 'client-id' })).toThrow(/GOOGLE_CLIENT_SECRET/)
+    expect(() => parseEnv({ GOOGLE_CLIENT_SECRET: 'client-secret' })).toThrow(/GOOGLE_CLIENT_ID/)
+  })
+
+  it('Given both Google credentials or blank optional credentials, should accept the configuration', () => {
+    expect(
+      parseEnv({ GOOGLE_CLIENT_ID: 'client-id', GOOGLE_CLIENT_SECRET: 'client-secret' })
+        .GOOGLE_CLIENT_ID,
+    ).toBe('client-id')
+    expect(parseEnv({ GOOGLE_CLIENT_ID: '', GOOGLE_CLIENT_SECRET: '' }).GOOGLE_CLIENT_ID).toBe('')
+  })
   it('Given no variables, should fall back to the defaults', () => {
     const env = parseEnv({})
 

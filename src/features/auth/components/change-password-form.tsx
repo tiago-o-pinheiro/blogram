@@ -3,11 +3,11 @@
 import { type FormEvent, useRef, useState } from 'react'
 
 import { Button } from '@/design-system/ui/button'
-import { Field } from '@/design-system/ui/field'
 import { type TranslationKey } from '@/i18n'
 import { useT } from '@/i18n/i18n-context'
-import { OWNER_PASSWORD_MAX, OWNER_PASSWORD_MIN } from '@/models/models'
+import { OWNER_PASSWORD_MAX } from '@/models/models'
 
+import { PasswordField } from '@/components/password-field'
 import { authClient } from '@/lib/auth-client'
 
 import { readField } from '../lib/read-field'
@@ -30,10 +30,6 @@ export const ChangePasswordForm = () => {
     const currentPassword = readField(data, 'currentPassword')
     const newPassword = readField(data, 'newPassword')
     setIsDone(false)
-    if (newPassword.length < OWNER_PASSWORD_MIN || newPassword.length > OWNER_PASSWORD_MAX) {
-      setErrorKey('account.errors.length')
-      return
-    }
     if (newPassword !== readField(data, 'confirmPassword')) {
       setErrorKey('account.errors.mismatch')
       return
@@ -58,30 +54,29 @@ export const ChangePasswordForm = () => {
       onSubmit={(event) => void handleSubmit(event)}
       className="flex flex-col gap-4"
     >
-      <Field
+      <PasswordField
         label={t('account.currentPassword')}
         name="currentPassword"
-        type="password"
         required
         autoComplete="current-password"
       />
-      <Field
+      <PasswordField
         label={t('account.newPassword')}
         name="newPassword"
-        type="password"
         required
         autoComplete="new-password"
+        maxLength={OWNER_PASSWORD_MAX}
       />
-      <Field
+      <PasswordField
         label={t('account.confirmPassword')}
         name="confirmPassword"
-        type="password"
         required
         autoComplete="new-password"
+        maxLength={OWNER_PASSWORD_MAX}
       />
       {errorKey ? (
         <p role="alert" className="text-sm text-danger">
-          {t(errorKey, { min: OWNER_PASSWORD_MIN, max: OWNER_PASSWORD_MAX })}
+          {t(errorKey)}
         </p>
       ) : null}
       {isDone ? (

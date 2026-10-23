@@ -4,6 +4,7 @@ import { type Locale } from './index'
 type ResolveLocaleInput = {
   cookie?: string | null
   acceptLanguage?: string | null
+  siteDefault?: string | null
 }
 
 type WeightedTag = { tag: string; quality: number }
@@ -43,12 +44,17 @@ const fromAcceptLanguage = (header: string): Locale | null => {
   return null
 }
 
-export const resolveLocale = ({ cookie, acceptLanguage }: ResolveLocaleInput): Locale => {
+export const resolveLocale = ({
+  cookie,
+  acceptLanguage,
+  siteDefault,
+}: ResolveLocaleInput): Locale => {
   if (isLocale(cookie)) {
     return cookie
   }
-  if (acceptLanguage) {
-    return fromAcceptLanguage(acceptLanguage) ?? DEFAULT_LOCALE
+  const fromHeader = acceptLanguage ? fromAcceptLanguage(acceptLanguage) : null
+  if (fromHeader) {
+    return fromHeader
   }
-  return DEFAULT_LOCALE
+  return isLocale(siteDefault) ? siteDefault : DEFAULT_LOCALE
 }

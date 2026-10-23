@@ -2,9 +2,11 @@ import { getReasonPhrase, StatusCodes } from 'http-status-codes'
 
 import { Models } from '@/models'
 
+import { env } from '@/server/config/env'
 import { TooManyRequestsError, ValidationError } from '@/server/errors/http-errors'
 import { encode } from '@/server/lib/codec'
 import { readBody, type RouteHandler } from '@/server/lib/handler'
+import { MULTIPART_OVERHEAD_BYTES, readMultipart } from '@/server/lib/multipart'
 import {
   postSetupFinalizeApiSchema,
   postSetupUnlockApiSchema,
@@ -88,9 +90,7 @@ export class SetupController {
   }
 
   uploadPhoto: RouteHandler = async (request) => {
-    const form = await request.formData().catch(() => {
-      throw new ValidationError('Request body must be multipart form data')
-    })
+    const form = await readMultipart(request, env.UPLOAD_MAX_IMAGE_BYTES + MULTIPART_OVERHEAD_BYTES)
     const file = form.get('file')
     if (!(file instanceof File)) {
       throw new ValidationError('Field "file" is required')

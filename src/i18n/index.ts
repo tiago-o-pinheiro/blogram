@@ -1,12 +1,24 @@
 import enAccount from './en/account.json'
+import enAdmin from './en/admin.json'
 import enCommon from './en/common.json'
+import enFeed from './en/feed.json'
 import enFinalize from './en/finalize.json'
+import enGoogle from './en/google.json'
+import enPostForm from './en/postForm.json'
+import enPostList from './en/postList.json'
+import enPostPreview from './en/postPreview.json'
 import enSignin from './en/signin.json'
 import enUnlock from './en/unlock.json'
 import enWizard from './en/wizard.json'
 import esAccount from './es/account.json'
+import esAdmin from './es/admin.json'
 import esCommon from './es/common.json'
+import esFeed from './es/feed.json'
 import esFinalize from './es/finalize.json'
+import esGoogle from './es/google.json'
+import esPostForm from './es/postForm.json'
+import esPostList from './es/postList.json'
+import esPostPreview from './es/postPreview.json'
 import esSignin from './es/signin.json'
 import esUnlock from './es/unlock.json'
 import esWizard from './es/wizard.json'
@@ -19,6 +31,12 @@ const en = {
   ...enUnlock,
   ...enWizard,
   ...enFinalize,
+  ...enFeed,
+  ...enGoogle,
+  ...enAdmin,
+  ...enPostList,
+  ...enPostForm,
+  ...enPostPreview,
 }
 
 const es: Readonly<Record<keyof typeof en, string>> = {
@@ -28,6 +46,12 @@ const es: Readonly<Record<keyof typeof en, string>> = {
   ...esUnlock,
   ...esWizard,
   ...esFinalize,
+  ...esFeed,
+  ...esGoogle,
+  ...esAdmin,
+  ...esPostList,
+  ...esPostForm,
+  ...esPostPreview,
 }
 
 export type TranslationKey = keyof typeof en

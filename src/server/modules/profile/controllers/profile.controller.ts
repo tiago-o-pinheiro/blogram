@@ -1,6 +1,17 @@
 import { StatusCodes } from 'http-status-codes'
 
-import { type RouteHandler } from '@/server/lib/handler'
+import { Models } from '@/models'
+
+import { env } from '@/server/config/env'
+import { ValidationError } from '@/server/errors/http-errors'
+import { encode } from '@/server/lib/codec'
+import { readBody, type RouteHandler } from '@/server/lib/handler'
+import { MULTIPART_OVERHEAD_BYTES, readMultipart } from '@/server/lib/multipart'
+import { type SessionRouteHandler } from '@/server/modules/auth/controllers/auth.controller'
+import {
+  putProfileApiSchema,
+  putSettingsApiSchema,
+} from '@/server/modules/profile/schemas/profile.api-schema'
 import {
   profileService,
   type ProfileService,
@@ -28,6 +39,33 @@ export class ProfileController {
         'Cache-Control': 'no-cache',
       },
     })
+  }
+
+  saveProfile: SessionRouteHandler = async (request) => {
+    const body = await readBody(putProfileApiSchema.body, request)
+    const saved = await this.profileService.saveProfile(body)
+    return Response.json(encode(Models.Profile, saved), { status: StatusCodes.OK })
+  }
+
+  uploadPhoto: SessionRouteHandler = async (request) => {
+    const form = await readMultipart(request, env.UPLOAD_MAX_IMAGE_BYTES + MULTIPART_OVERHEAD_BYTES)
+    const file = form.get('file')
+    if (!(file instanceof File)) {
+      throw new ValidationError('Field "file" is required')
+    }
+    const saved = await this.profileService.replacePhoto(file)
+    return Response.json(encode(Models.Profile, saved), { status: StatusCodes.OK })
+  }
+
+  getSettings: SessionRouteHandler = async () =>
+    Response.json(encode(Models.SiteSettings, await this.profileService.getSettings()), {
+      status: StatusCodes.OK,
+    })
+
+  saveSettings: SessionRouteHandler = async (request) => {
+    const body = await readBody(putSettingsApiSchema.body, request)
+    const saved = await this.profileService.saveSettings(body)
+    return Response.json(encode(Models.SiteSettings, saved), { status: StatusCodes.OK })
   }
 }
 

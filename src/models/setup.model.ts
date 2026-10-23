@@ -1,10 +1,10 @@
 import { Type, type Static } from 'typebox'
 import { Value } from 'typebox/value'
 
+import { OWNER_PASSWORD_MAX, OWNER_PASSWORD_MIN } from './owner-password.mjs'
 import { Profile } from './profile.model'
 
-export const OWNER_PASSWORD_MIN = 12
-export const OWNER_PASSWORD_MAX = 128
+export { OWNER_PASSWORD_MAX, OWNER_PASSWORD_MIN }
 
 const EMAIL_PATTERN =
   /^(?!\.)(?!.*\.\.)([a-z0-9_'+\-.]*)[a-z0-9_+-]@([a-z0-9][a-z0-9-]*\.)+[a-z]{2,}$/

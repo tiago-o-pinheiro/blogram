@@ -4,10 +4,10 @@ import { useRouter } from 'next/navigation'
 import { type FormEvent, useState } from 'react'
 
 import { Button } from '@/design-system/ui/button'
-import { Field } from '@/design-system/ui/field'
 import { type TranslationKey } from '@/i18n'
 import { useT } from '@/i18n/i18n-context'
 
+import { PasswordField } from '@/components/password-field'
 import { readField } from '@/features/auth/lib/read-field'
 
 import { SetupApiError, unlockSetup } from '../api/setup-api'
@@ -43,15 +43,7 @@ export const UnlockForm = () => {
 
   return (
     <form onSubmit={(event) => void handleSubmit(event)} className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold">{t('unlock.title')}</h1>
-      <p className="text-muted-foreground">{t('unlock.description')}</p>
-      <Field
-        label={t('unlock.password')}
-        name="password"
-        type="password"
-        required
-        autoComplete="off"
-      />
+      <PasswordField label={t('unlock.password')} name="password" required autoComplete="off" />
       {errorKey ? (
         <p role="alert" className="text-sm text-danger">
           {t(errorKey)}

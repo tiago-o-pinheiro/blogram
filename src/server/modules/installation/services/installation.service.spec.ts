@@ -22,6 +22,18 @@ describe('InstallationService', () => {
     expect(await service.getStatus()).toBe('pending')
   })
 
+  it('Given an existing row, should report its status without writing again', async () => {
+    await service.getStatus()
+    const insertSpy = vi.spyOn(db, 'insert')
+
+    try {
+      expect(await service.getStatus()).toBe('pending')
+      expect(insertSpy).not.toHaveBeenCalled()
+    } finally {
+      insertSpy.mockRestore()
+    }
+  })
+
   it('Given a fresh database, should pass assertPending', async () => {
     await expect(service.assertPending()).resolves.toBeUndefined()
   })

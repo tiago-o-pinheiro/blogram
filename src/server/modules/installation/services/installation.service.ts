@@ -10,12 +10,15 @@ const SINGLETON_ID = 'singleton'
 
 export class InstallationService {
   getStatus = async (): Promise<Models.InstallationStatus> => {
-    await this.ensureRow(db)
     const [row] = await db
       .select({ status: installation.status })
       .from(installation)
       .where(eq(installation.id, SINGLETON_ID))
-    return row?.status ?? 'pending'
+    if (row) {
+      return row.status
+    }
+    await this.ensureRow(db)
+    return 'pending'
   }
 
   assertPending = async (): Promise<void> => {

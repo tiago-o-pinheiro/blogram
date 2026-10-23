@@ -1,0 +1,11 @@
+{
+  "google.title": "Google sign-in",
+  "google.description": "Link Google as another way to sign in. Your password remains available. Linking and unlinking require a sign-in from the last five minutes.",
+  "google.configure": "To enable Google, set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET on the server, then restart it. In Google Cloud, register this authorized redirect URI:",
+  "google.linked": "Google is linked to your owner account.",
+  "google.link": "Link Google",
+  "google.unlink": "Unlink Google",
+  "google.signin": "Continue with Google",
+  "google.error": "Google sign-in could not finish. Only the Google account linked in your settings can sign in. Try again or use your password.",
+  "google.reauthenticate": "Sign out and sign back in with your password, then try again. Password access must remain available."
+}

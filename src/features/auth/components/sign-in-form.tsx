@@ -6,8 +6,9 @@ import { type FormEvent, useState } from 'react'
 import { Button } from '@/design-system/ui/button'
 import { Field } from '@/design-system/ui/field'
 import { useT } from '@/i18n/i18n-context'
-import { toOwnerIdentifier } from '@/models/models'
+import { OWNER_PASSWORD_MAX, toOwnerIdentifier } from '@/models/models'
 
+import { PasswordField } from '@/components/password-field'
 import { authClient } from '@/lib/auth-client'
 
 import { readField } from '../lib/read-field'
@@ -49,12 +50,12 @@ export const SignInForm = () => {
   return (
     <form onSubmit={(event) => void handleSubmit(event)} className="flex flex-col gap-4">
       <Field label={t('signin.identifier')} name="identifier" required autoComplete="username" />
-      <Field
+      <PasswordField
         label={t('signin.password')}
         name="password"
-        type="password"
         required
         autoComplete="current-password"
+        maxLength={OWNER_PASSWORD_MAX}
       />
       {error ? (
         <p role="alert" className="text-sm text-danger">

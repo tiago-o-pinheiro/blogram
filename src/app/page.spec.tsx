@@ -8,7 +8,12 @@ import { I18nProvider } from '@/i18n/i18n-context'
 import { installationService } from '@/server/modules/installation/services/installation.service'
 import { profileService } from '@/server/modules/profile/services/profile.service'
 
-import Page from './page'
+import Page, { generateMetadata } from './page'
+
+vi.mock('next/headers', () => ({
+  headers: async () => new Headers(),
+  cookies: async () => ({ get: () => undefined }),
+}))
 
 const renderPage = async () =>
   renderToStaticMarkup(
@@ -18,6 +23,14 @@ const renderPage = async () =>
   )
 
 describe('Home page', () => {
+  it('Given an unfinished profile, should keep public metadata neutral', async () => {
+    await profileService.saveProfile({ name: '::pending-name::', description: '::pending-about::' })
+
+    const metadata = await generateMetadata()
+
+    expect(metadata.title).toBe('Blogram')
+    expect(metadata.description).not.toContain('::pending-about::')
+  })
   it('Given a pending installation, should show the neutral pending message', async () => {
     vi.spyOn(installationService, 'getStatus').mockResolvedValue('pending')
 

@@ -1,10 +1,8 @@
 import { headers } from 'next/headers'
 import { notFound, redirect } from 'next/navigation'
 
-import { getServerTranslator } from '@/i18n/server'
-
-import { PageShell } from '@/components/page-shell'
 import { SetupWizard } from '@/features/setup/components/setup-wizard'
+import { env } from '@/server/config/env'
 import { setupService } from '@/server/modules/setup/services/setup.service'
 
 export const dynamic = 'force-dynamic'
@@ -20,15 +18,13 @@ const Page = async () => {
     redirect('/admin')
   }
 
-  const [state, t] = await Promise.all([
-    setupService.getState(requestHeaders),
-    getServerTranslator(),
-  ])
+  const state = await setupService.getState(requestHeaders)
 
   return (
-    <PageShell title={t('wizard.title')}>
-      <SetupWizard initialState={{ profile: state.profile }} />
-    </PageShell>
+    <SetupWizard
+      initialState={{ profile: state.profile }}
+      maxPhotoBytes={env.UPLOAD_MAX_IMAGE_BYTES}
+    />
   )
 }
 

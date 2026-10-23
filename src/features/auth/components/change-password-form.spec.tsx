@@ -10,13 +10,16 @@ import { ChangePasswordForm } from './change-password-form'
 const CURRENT = '::current::-12345'
 const NEXT = '::next-password::-12345'
 
-const fillAndSubmit = async (newPassword = NEXT, confirmation = NEXT) => {
-  const user = userEvent.setup()
+const renderForm = () =>
   render(
     <I18nProvider locale="en" messages={getMessages('en')}>
       <ChangePasswordForm />
     </I18nProvider>,
   )
+
+const fillAndSubmit = async (newPassword = NEXT, confirmation = NEXT) => {
+  const user = userEvent.setup()
+  renderForm()
   await user.type(screen.getByLabelText('Current password'), CURRENT)
   await user.type(screen.getByLabelText('New password'), newPassword)
   await user.type(screen.getByLabelText('Confirm new password'), confirmation)
@@ -56,13 +59,51 @@ describe('ChangePasswordForm', () => {
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
-  it('Given a short new password, should show the length alert', async () => {
+  it('Given a one-character new password, should send the change request', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json({}))
+
+    await fillAndSubmit('a', 'a')
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Your password was changed.')
+    const [, init] = fetchSpy.mock.calls[0] ?? []
+    expect(String(init?.body)).toContain('"newPassword":"a"')
+  })
+
+  it('Given an empty new password, should block the request', async () => {
+    const user = userEvent.setup()
     const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    renderForm()
 
-    await fillAndSubmit('short', 'short')
+    await user.type(screen.getByLabelText('Current password'), CURRENT)
+    await user.click(screen.getByRole('button', { name: 'Change password' }))
 
-    expect(screen.getByRole('alert')).toHaveTextContent('between 12 and 128 characters')
+    expect(screen.getByLabelText('New password')).toBeInvalid()
     expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('Given a new password longer than the limit, should cap the typing at 128 characters', async () => {
+    const user = userEvent.setup()
+    renderForm()
+
+    await user.type(screen.getByLabelText('New password'), 'a'.repeat(129))
+
+    expect(screen.getByLabelText('New password')).toHaveValue('a'.repeat(128))
+  })
+
+  it('Given the three password toggles, should reveal every field', async () => {
+    const user = userEvent.setup()
+    renderForm()
+    const toggles = screen.getAllByRole('button', { name: 'Show password' })
+
+    expect(toggles).toHaveLength(3)
+    for (const toggle of toggles) {
+      await user.click(toggle)
+    }
+
+    expect(screen.getAllByRole('button', { name: 'Hide password' })).toHaveLength(3)
+    expect(screen.getByLabelText('Current password')).toHaveAttribute('type', 'text')
+    expect(screen.getByLabelText('New password')).toHaveAttribute('type', 'text')
+    expect(screen.getByLabelText('Confirm new password')).toHaveAttribute('type', 'text')
   })
 
   it('Given a rejected request, should show the generic alert', async () => {

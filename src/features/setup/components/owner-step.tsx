@@ -1,5 +1,6 @@
 'use client'
 
+import { ArrowLeft, ArrowRight, KeyRound, ShieldCheck } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
 
 import { Button } from '@/design-system/ui/button'
@@ -8,6 +9,7 @@ import { type TranslationKey } from '@/i18n'
 import { useT } from '@/i18n/i18n-context'
 import * as Models from '@/models/models'
 
+import { PasswordField } from '@/components/password-field'
 import { readField } from '@/features/auth/lib/read-field'
 
 import { useSetupWizardActions, useSetupWizardState } from './setup-wizard-context'
@@ -16,16 +18,32 @@ const toOwnerErrorKey = (owner: Models.SetupOwner): TranslationKey | null => {
   if (!Models.toOwnerIdentifier(owner.identifier)) {
     return 'finalize.owner.errors.identifier'
   }
-  if (
-    owner.password.length < Models.OWNER_PASSWORD_MIN ||
-    owner.password.length > Models.OWNER_PASSWORD_MAX
-  ) {
-    return 'finalize.owner.errors.passwordLength'
-  }
   if (!Models.hasMatchingPasswords(owner)) {
     return 'finalize.owner.errors.passwordMismatch'
   }
   return null
+}
+
+const OwnerAside = () => {
+  const t = useT()
+
+  return (
+    <aside className="flex flex-col gap-6 rounded-xl border border-border/20 bg-surface/60 p-6 sm:p-8">
+      <div className="flex size-12 items-center justify-center rounded-lg bg-accent text-primary">
+        <KeyRound className="size-5" aria-hidden="true" />
+      </div>
+      <div className="flex flex-col gap-3">
+        <h2 className="text-xl font-semibold tracking-tight">{t('wizard.owner.asideTitle')}</h2>
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          {t('wizard.owner.asideDescription')}
+        </p>
+      </div>
+      <p className="flex items-start gap-3 border-t border-border/20 pt-5 text-xs leading-relaxed text-muted-foreground">
+        <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+        {t('wizard.owner.privateHint')}
+      </p>
+    </aside>
+  )
 }
 
 export const OwnerStep = () => {
@@ -52,48 +70,53 @@ export const OwnerStep = () => {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <h2 className="text-xl font-semibold">{t('finalize.owner.title')}</h2>
-      <Field
-        label={t('finalize.owner.identifier')}
-        name="identifier"
-        required
-        autoComplete="username"
-        defaultValue={owner.identifier}
-      />
-      <Field
-        label={t('finalize.owner.password')}
-        name="password"
-        type="password"
-        required
-        autoComplete="new-password"
-        defaultValue={owner.password}
-      />
-      <p className="text-sm text-muted-foreground">
-        {t('finalize.owner.passwordHint', {
-          min: Models.OWNER_PASSWORD_MIN,
-          max: Models.OWNER_PASSWORD_MAX,
-        })}
-      </p>
-      <Field
-        label={t('finalize.owner.passwordConfirmation')}
-        name="passwordConfirmation"
-        type="password"
-        required
-        autoComplete="new-password"
-        defaultValue={owner.passwordConfirmation}
-      />
-      {errorKey ? (
-        <p role="alert" className="text-sm text-danger">
-          {t(errorKey, { min: Models.OWNER_PASSWORD_MIN, max: Models.OWNER_PASSWORD_MAX })}
-        </p>
-      ) : null}
-      <div className="flex justify-between gap-4">
-        <Button variant="secondary" onClick={() => goTo(1)}>
-          {t('finalize.owner.back')}
-        </Button>
-        <Button type="submit">{t('finalize.owner.continue')}</Button>
-      </div>
-    </form>
+    <div className="grid items-start gap-8 lg:grid-cols-2 lg:gap-12">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <Field
+          label={t('finalize.owner.identifier')}
+          name="identifier"
+          required
+          autoComplete="username"
+          defaultValue={owner.identifier}
+          className="min-h-12 rounded-lg"
+          placeholder={t('wizard.owner.identifierPlaceholder')}
+        />
+        <PasswordField
+          label={t('finalize.owner.password')}
+          name="password"
+          required
+          autoComplete="new-password"
+          defaultValue={owner.password}
+          maxLength={Models.OWNER_PASSWORD_MAX}
+          className="min-h-12 rounded-lg"
+          hint={t('finalize.owner.passwordHint', { max: Models.OWNER_PASSWORD_MAX })}
+        />
+        <PasswordField
+          label={t('finalize.owner.passwordConfirmation')}
+          name="passwordConfirmation"
+          required
+          autoComplete="new-password"
+          defaultValue={owner.passwordConfirmation}
+          maxLength={Models.OWNER_PASSWORD_MAX}
+          className="min-h-12 rounded-lg"
+        />
+        {errorKey ? (
+          <p role="alert" className="text-sm text-danger">
+            {t(errorKey)}
+          </p>
+        ) : null}
+        <div className="mt-3 flex flex-col-reverse gap-3 border-t border-border/20 pt-6 sm:flex-row sm:justify-between">
+          <Button variant="ghost" className="rounded-full" onClick={() => goTo(1)}>
+            <ArrowLeft className="size-4" aria-hidden="true" />
+            {t('finalize.owner.back')}
+          </Button>
+          <Button type="submit" className="min-h-12 w-full rounded-full px-6 sm:w-auto">
+            {t('finalize.owner.continue')}
+            <ArrowRight className="size-4" aria-hidden="true" />
+          </Button>
+        </div>
+      </form>
+      <OwnerAside />
+    </div>
   )
 }

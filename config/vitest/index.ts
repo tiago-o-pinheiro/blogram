@@ -25,7 +25,7 @@ export const createVitestConfig = ({
     test: {
       environment,
       setupFiles: [...setupFiles],
-      include: ['src/**/*.spec.{ts,tsx}'],
+      include: ['src/**/*.spec.{ts,tsx}', 'scripts/**/*.spec.mjs'],
       restoreMocks: true,
       ...(inlineDeps.length > 0 ? { server: { deps: { inline: [...inlineDeps] } } } : {}),
       coverage: {

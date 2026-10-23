@@ -9,10 +9,16 @@ export const profile = pgTable(
     description: text('description').notNull().default(''),
     photoKey: text('photo_key'),
     photoContentType: text('photo_content_type'),
+    defaultLocale: text('default_locale', { enum: ['en', 'es'] })
+      .notNull()
+      .default('en'),
     updatedAt: timestamp('updated_at', { withTimezone: true })
       .notNull()
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  (table) => [check('profile_singleton_check', sql`${table.id} = 'singleton'`)],
+  (table) => [
+    check('profile_singleton_check', sql`${table.id} = 'singleton'`),
+    check('profile_default_locale_check', sql`${table.defaultLocale} in ('en', 'es')`),
+  ],
 )

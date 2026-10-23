@@ -9,6 +9,7 @@ import {
   installationService,
   type InstallationService,
 } from '@/server/modules/installation/services/installation.service'
+import { mediaService, type MediaService } from '@/server/modules/media/services/media.service'
 import { profile } from '@/server/modules/profile/schemas/profile.table'
 
 const SINGLETON_ID = 'singleton'
@@ -16,15 +17,44 @@ const SINGLETON_ID = 'singleton'
 type ProfileServiceDependencies = {
   storage: StorageDriver
   installation?: InstallationService
+  media?: Pick<MediaService, 'processProfilePhoto' | 'deleteObject'>
 }
 
 export class ProfileService {
   private readonly storage: StorageDriver
   private readonly installation: InstallationService
+  private readonly media: Pick<MediaService, 'processProfilePhoto' | 'deleteObject'>
 
   constructor(dependencies: ProfileServiceDependencies) {
     this.storage = dependencies.storage
     this.installation = dependencies.installation ?? installationService
+    this.media = dependencies.media ?? mediaService
+  }
+
+  getSettings = async (): Promise<Models.SiteSettings> => {
+    const [row] = await db
+      .select({ defaultLocale: profile.defaultLocale })
+      .from(profile)
+      .where(eq(profile.id, SINGLETON_ID))
+    return { defaultLocale: row?.defaultLocale ?? 'en' }
+  }
+
+  saveSettings = async (settings: Models.SiteSettings): Promise<Models.SiteSettings> => {
+    const { defaultLocale } = settings
+    await db
+      .insert(profile)
+      .values({ id: SINGLETON_ID, name: '', defaultLocale })
+      .onConflictDoUpdate({ target: profile.id, set: { defaultLocale } })
+    return this.getSettings()
+  }
+
+  replacePhoto = async (file: File): Promise<Models.Profile> => {
+    const photo = await this.media.processProfilePhoto(file)
+    const previousKey = await this.setPhoto(photo.key, photo.contentType)
+    if (previousKey) {
+      await this.media.deleteObject(previousKey).catch(() => undefined)
+    }
+    return this.requireProfile()
   }
 
   getProfile = async (): Promise<Models.Profile | null> => {

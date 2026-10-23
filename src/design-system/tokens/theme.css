@@ -23,6 +23,8 @@
   --corner-sm: 0.25rem;
   --corner-md: 0.5rem;
   --corner-lg: 0.75rem;
+  --corner-xl: 1.25rem;
+  --corner-2xl: 1.75rem;
   --corner-full: 9999px;
 
   --typeface-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;

@@ -7,7 +7,6 @@
   "account.submitting": "Changing password",
   "account.success": "Your password was changed.",
   "account.errors.wrongCurrent": "The current password is wrong.",
-  "account.errors.length": "The new password must have between {{min}} and {{max}} characters.",
   "account.errors.mismatch": "The passwords do not match.",
   "account.errors.generic": "We could not change your password. Try again.",
   "admin.title": "Dashboard",

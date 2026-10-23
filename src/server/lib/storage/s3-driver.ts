@@ -18,6 +18,18 @@ type FetchLike = (request: Request) => Promise<Response>
 
 const FALLBACK_CONTENT_TYPE = 'application/octet-stream'
 
+const CONTENT_RANGE_PATTERN = /^bytes (\d+)-(\d+)\/(\d+)$/
+
+const parseContentRange = (
+  header: string | null,
+): { start: number; end: number; total: number } | null => {
+  const match = header ? CONTENT_RANGE_PATTERN.exec(header) : null
+  if (!match) {
+    return null
+  }
+  return { start: Number(match[1]), end: Number(match[2]), total: Number(match[3]) }
+}
+
 export const createS3Driver = (
   config: S3Config,
   sendRequest: FetchLike = (request) => fetch(request),
@@ -57,8 +69,12 @@ export const createS3Driver = (
         throw toFailure('put', response)
       }
     },
-    get: async (key) => {
-      const response = await send(toUrl(key), { method: 'GET' })
+    get: async (key, options) => {
+      const range = options?.range
+      const response = await send(toUrl(key), {
+        method: 'GET',
+        headers: range ? { range: `bytes=${range.start}-${range.end ?? ''}` } : {},
+      })
       if (response.status === StatusCodes.NOT_FOUND) {
         return null
       }
@@ -66,10 +82,16 @@ export const createS3Driver = (
         throw toFailure('get', response)
       }
       const body = new Uint8Array(await response.arrayBuffer())
+      const contentType = response.headers.get('content-type') ?? FALLBACK_CONTENT_TYPE
+      const contentRange = parseContentRange(response.headers.get('content-range'))
+      if (!range || !contentRange) {
+        return { body, contentType, size: body.byteLength }
+      }
       return {
         body,
-        contentType: response.headers.get('content-type') ?? FALLBACK_CONTENT_TYPE,
-        size: body.byteLength,
+        contentType,
+        size: contentRange.total,
+        range: { start: contentRange.start, end: contentRange.end },
       }
     },
     delete: async (key) => {

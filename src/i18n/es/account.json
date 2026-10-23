@@ -7,7 +7,6 @@
   "account.submitting": "Cambiando contraseña",
   "account.success": "Tu contraseña fue cambiada.",
   "account.errors.wrongCurrent": "La contraseña actual es incorrecta.",
-  "account.errors.length": "La nueva contraseña debe tener entre {{min}} y {{max}} caracteres.",
   "account.errors.mismatch": "Las contraseñas no coinciden.",
   "account.errors.generic": "No pudimos cambiar tu contraseña. Inténtalo de nuevo.",
   "admin.title": "Panel",

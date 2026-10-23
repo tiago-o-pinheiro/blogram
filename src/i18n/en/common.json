@@ -1,6 +1,8 @@
 {
   "common.retry": "Retry",
   "common.loading": "Loading...",
+  "common.showPassword": "Show password",
+  "common.hidePassword": "Hide password",
   "errors.generic": "Something went wrong. Please try again.",
   "errors.setup.unauthorized": "Your setup session is missing or expired. Unlock the installer again.",
   "errors.setup.forbidden": "Setup is already complete.",

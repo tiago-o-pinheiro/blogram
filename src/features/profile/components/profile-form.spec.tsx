@@ -1,0 +1,173 @@
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { getMessages } from '@/i18n'
+import { I18nProvider } from '@/i18n/i18n-context'
+
+import { ProfileForm } from './profile-form'
+
+const refresh = vi.fn()
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ refresh }),
+}))
+
+const PROFILE = { name: 'Ada', description: 'Writer', hasPhoto: false }
+
+const renderForm = (profile = PROFILE) =>
+  render(
+    <I18nProvider locale="en" messages={getMessages('en')}>
+      <ProfileForm profile={profile} />
+    </I18nProvider>,
+  )
+
+const createObjectURL = vi.fn()
+const revokeObjectURL = vi.fn()
+
+beforeEach(() => {
+  refresh.mockReset()
+  createObjectURL.mockReset().mockReturnValue('blob:one')
+  revokeObjectURL.mockReset()
+  Object.assign(URL, { createObjectURL, revokeObjectURL })
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
+
+describe('ProfileForm', () => {
+  it('Given a profile, should prefill the fields and the preview', () => {
+    renderForm()
+
+    expect(screen.getByLabelText('Name')).toHaveValue('Ada')
+    expect(screen.getByLabelText('Description')).toHaveValue('Writer')
+    expect(screen.getByRole('heading', { level: 2, name: 'Ada' })).toBeVisible()
+  })
+
+  it('Given typing, should update the live preview', async () => {
+    const user = userEvent.setup()
+    renderForm()
+
+    await user.clear(screen.getByLabelText('Name'))
+    await user.type(screen.getByLabelText('Name'), 'Grace')
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Grace' })).toBeVisible()
+  })
+
+  it('Given a saved photo, should preview it from the profile photo path', () => {
+    renderForm({ ...PROFILE, hasPhoto: true })
+
+    expect(screen.getByRole('img', { name: 'Profile photo of Ada' })).toHaveAttribute(
+      'src',
+      '/api/profile/photo?v=0',
+    )
+  })
+
+  it('Given a file that is not an accepted image, should show an alert and no preview', async () => {
+    const user = userEvent.setup({ applyAccept: false })
+    renderForm()
+
+    await user.upload(
+      screen.getByLabelText('Profile photo'),
+      new File(['t'], 't.txt', { type: 'text/plain' }),
+    )
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Choose a JPEG, PNG or WebP image.')
+    expect(createObjectURL).not.toHaveBeenCalled()
+  })
+
+  it('Given an oversize image, should show a size alert and no preview', async () => {
+    const user = userEvent.setup()
+    renderForm()
+    const file = new File(['a'], 'big.png', { type: 'image/png' })
+    Object.defineProperty(file, 'size', { value: 10 * 1024 * 1024 + 1 })
+
+    await user.upload(screen.getByLabelText('Profile photo'), file)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('10 MB or less')
+    expect(createObjectURL).not.toHaveBeenCalled()
+  })
+
+  it('Given a chosen photo, should preview it through an object URL', async () => {
+    const user = userEvent.setup()
+    renderForm()
+
+    await user.upload(
+      screen.getByLabelText('Profile photo'),
+      new File(['a'], 'a.png', { type: 'image/png' }),
+    )
+
+    expect(screen.getByRole('img', { name: 'Profile photo of Ada' })).toHaveAttribute(
+      'src',
+      'blob:one',
+    )
+  })
+
+  it('Given Save with a photo, should save the profile then upload the photo and refresh', async () => {
+    const user = userEvent.setup()
+    const saved = { name: 'Ada', description: 'Writer', hasPhoto: true }
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(Response.json(saved))
+      .mockResolvedValueOnce(Response.json(saved))
+    renderForm()
+
+    await user.upload(
+      screen.getByLabelText('Profile photo'),
+      new File(['a'], 'a.png', { type: 'image/png' }),
+    )
+    await user.click(screen.getByRole('button', { name: 'Save profile' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Profile saved.')
+    expect(fetchSpy.mock.calls.map(([url]) => url)).toEqual([
+      '/api/admin/profile',
+      '/api/admin/profile/photo',
+    ])
+    expect(refresh).toHaveBeenCalledTimes(1)
+  })
+
+  it('Given Save without a photo, should call only the profile endpoint', async () => {
+    const user = userEvent.setup()
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json(PROFILE))
+    renderForm()
+
+    await user.click(screen.getByRole('button', { name: 'Save profile' }))
+
+    expect(await screen.findByRole('status')).toBeVisible()
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('Given an empty name, should disable Save', async () => {
+    const user = userEvent.setup()
+    renderForm()
+
+    await user.clear(screen.getByLabelText('Name'))
+
+    expect(screen.getByRole('button', { name: 'Save profile' })).toBeDisabled()
+  })
+
+  it('Given a failed save, should show the translated error and not refresh', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 422 }))
+    renderForm()
+
+    await user.click(screen.getByRole('button', { name: 'Save profile' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Some of the information is not valid.',
+    )
+    expect(refresh).not.toHaveBeenCalled()
+  })
+
+  it('Given a pending save, should disable the fields and the button', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(globalThis, 'fetch').mockReturnValue(new Promise(() => undefined))
+    renderForm()
+
+    await user.click(screen.getByRole('button', { name: 'Save profile' }))
+
+    expect(await screen.findByRole('button', { name: /Saving|Save profile/ })).toBeDisabled()
+    expect(screen.getByLabelText('Name')).toBeDisabled()
+  })
+})

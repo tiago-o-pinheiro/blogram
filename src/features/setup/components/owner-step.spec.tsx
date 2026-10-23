@@ -56,12 +56,33 @@ describe('OwnerStep', () => {
     expect(screen.getByTestId('probe')).toHaveTextContent('1|')
   })
 
-  it('Given a short password, should show the length alert', async () => {
+  it('Given a one-character password, should store the owner and go to the review step', async () => {
     renderStep()
 
-    await fill('owner', 'short', 'short')
+    await fill('owner', 'a', 'a')
 
-    expect(screen.getByRole('alert')).toHaveTextContent('between 12 and 128 characters')
+    expect(screen.getByTestId('probe')).toHaveTextContent('3|owner')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('Given an empty password, should block the step', async () => {
+    const user = userEvent.setup()
+    renderStep()
+
+    await user.type(screen.getByLabelText('Email or username'), 'owner')
+    await user.click(screen.getByRole('button', { name: 'Continue' }))
+
+    expect(screen.getByLabelText('Password')).toBeInvalid()
+    expect(screen.getByTestId('probe')).toHaveTextContent('1|')
+  })
+
+  it('Given a password longer than the limit, should cap the typing at 128 characters', async () => {
+    const user = userEvent.setup()
+    renderStep()
+
+    await user.type(screen.getByLabelText('Password'), 'a'.repeat(129))
+
+    expect(screen.getByLabelText('Password')).toHaveValue('a'.repeat(128))
   })
 
   it('Given a mismatching confirmation, should show the mismatch alert', async () => {
@@ -70,6 +91,25 @@ describe('OwnerStep', () => {
     await fill('owner', PASSWORD, `${PASSWORD}x`)
 
     expect(screen.getByRole('alert')).toHaveTextContent('The passwords do not match.')
+  })
+
+  it('Given the password toggles, should reveal each field independently and keep the values', async () => {
+    const user = userEvent.setup()
+    renderStep()
+    await user.type(screen.getByLabelText('Password'), PASSWORD)
+    await user.tab()
+    await user.keyboard('{Enter}')
+
+    expect(screen.getByLabelText('Password')).toHaveAttribute('type', 'text')
+    expect(screen.getByLabelText('Confirm password')).toHaveAttribute('type', 'password')
+    expect(screen.getByRole('button', { name: 'Hide password' })).toBeInTheDocument()
+
+    await user.type(screen.getByLabelText('Confirm password'), PASSWORD)
+    await user.click(screen.getByRole('button', { name: 'Show password' }))
+
+    expect(screen.getByLabelText('Password')).toHaveValue(PASSWORD)
+    expect(screen.getByLabelText('Confirm password')).toHaveAttribute('type', 'text')
+    expect(screen.getByLabelText('Confirm password')).toHaveValue(PASSWORD)
   })
 
   it('Given the back button, should return to the profile step', async () => {

@@ -8,7 +8,7 @@ import { createLocalDriver } from './local-driver'
 import { createS3Driver } from './s3-driver'
 
 export { createStorageKey } from './driver'
-export type { StorageDriver, StorageObject } from './driver'
+export type { ByteRange, StorageDriver, StorageObject, StorageReadOptions } from './driver'
 
 export const createStorage = (config: Env): StorageDriver => {
   if (config.STORAGE_DRIVER === 'local') {
@@ -35,7 +35,7 @@ let instance: StorageDriver | null = null
 
 export const storage: StorageDriver = {
   put: (key, body, contentType) => getStorage().put(key, body, contentType),
-  get: (key) => getStorage().get(key),
+  get: (key, options) => getStorage().get(key, options),
   delete: (key) => getStorage().delete(key),
 }
 

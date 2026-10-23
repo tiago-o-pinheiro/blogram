@@ -30,6 +30,23 @@ describe('resolveLocale', () => {
     expect(resolveLocale({})).toBe('en')
   })
 
+  it('Given a cookie and a site default, should prefer the cookie', () => {
+    expect(resolveLocale({ cookie: 'en', siteDefault: 'es' })).toBe('en')
+  })
+
+  it('Given a supported Accept-Language and a site default, should prefer the header', () => {
+    expect(resolveLocale({ acceptLanguage: 'en-US', siteDefault: 'es' })).toBe('en')
+  })
+
+  it('Given no cookie and no supported Accept-Language, should use the site default', () => {
+    expect(resolveLocale({ acceptLanguage: 'fr,de;q=0.8', siteDefault: 'es' })).toBe('es')
+    expect(resolveLocale({ siteDefault: 'es' })).toBe('es')
+  })
+
+  it('Given an unsupported site default, should default to en', () => {
+    expect(resolveLocale({ siteDefault: 'fr' })).toBe('en')
+  })
+
   it('Given a malformed header, should default to en', () => {
     expect(resolveLocale({ acceptLanguage: ';q=abc,,' })).toBe('en')
   })

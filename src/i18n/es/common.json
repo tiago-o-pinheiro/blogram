@@ -1,6 +1,8 @@
 {
   "common.retry": "Reintentar",
   "common.loading": "Cargando...",
+  "common.showPassword": "Mostrar contraseña",
+  "common.hidePassword": "Ocultar contraseña",
   "errors.generic": "Algo salió mal. Inténtalo de nuevo.",
   "errors.setup.unauthorized": "Tu sesión de configuración falta o ha caducado. Desbloquea el instalador de nuevo.",
   "errors.setup.forbidden": "La configuración ya está completa.",

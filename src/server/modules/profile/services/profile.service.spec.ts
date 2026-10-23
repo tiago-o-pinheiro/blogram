@@ -5,14 +5,17 @@ import { join } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { NotFoundError } from '@/server/errors/http-errors'
+import { NotFoundError, ValidationError } from '@/server/errors/http-errors'
 import { db } from '@/server/lib/db'
 import { createStorageKey } from '@/server/lib/storage'
 import { createLocalDriver } from '@/server/lib/storage/local-driver'
 import { authService } from '@/server/modules/auth/services/auth.service'
 import { installationService } from '@/server/modules/installation/services/installation.service'
+import { MediaService } from '@/server/modules/media/services/media.service'
 import { ProfileService } from '@/server/modules/profile/services/profile.service'
+import { createJpegWithGps } from '@/test/image-fixtures'
 
+const MAX_BYTES = 5_000_000
 const BYTES = new Uint8Array([1, 2, 3])
 
 describe('ProfileService', () => {
@@ -45,6 +48,49 @@ describe('ProfileService', () => {
     await service.setPhoto(key, 'image/webp')
     return key
   }
+
+  const createPhotoFile = async () =>
+    new File([new Uint8Array(await createJpegWithGps())], 'photo.jpg', { type: 'image/jpeg' })
+
+  const createMediaService = () =>
+    new MediaService({ storage: driver, getMaxBytes: () => MAX_BYTES })
+
+  it('Given no row, should default the site language to en', async () => {
+    expect(await service.getSettings()).toEqual({ defaultLocale: 'en' })
+  })
+
+  it('Given saved settings, should upsert without a profile row and update on re-save', async () => {
+    await service.saveSettings({ defaultLocale: 'es' })
+    expect(await service.getSettings()).toEqual({ defaultLocale: 'es' })
+
+    await service.saveSettings({ defaultLocale: 'en' })
+
+    expect(await service.getSettings()).toEqual({ defaultLocale: 'en' })
+  })
+
+  it('Given a new photo over an old one, should store it and delete the previous object', async () => {
+    const replacing = new ProfileService({ storage: driver, media: createMediaService() })
+    await replacing.saveProfile({ name: 'Ada', description: '' })
+    const previousKey = await storePhoto()
+
+    const saved = await replacing.replacePhoto(await createPhotoFile())
+
+    expect(saved.hasPhoto).toBe(true)
+    expect(await driver.get(previousKey)).toBeNull()
+    expect((await replacing.readPhoto({ hasSetupSession: true })).contentType).toBe('image/webp')
+  })
+
+  it('Given an invalid image, should reject and keep the previous photo', async () => {
+    const replacing = new ProfileService({ storage: driver, media: createMediaService() })
+    await replacing.saveProfile({ name: 'Ada', description: '' })
+    const previousKey = await storePhoto()
+
+    await expect(
+      replacing.replacePhoto(new File([BYTES], 'bad.jpg', { type: 'image/jpeg' })),
+    ).rejects.toBeInstanceOf(ValidationError)
+
+    expect(await driver.get(previousKey)).not.toBeNull()
+  })
 
   it('Given no row, should return a null profile', async () => {
     expect(await service.getProfile()).toBeNull()

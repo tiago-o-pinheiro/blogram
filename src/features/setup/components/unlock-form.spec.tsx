@@ -5,6 +5,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { getMessages } from '@/i18n'
 import { I18nProvider } from '@/i18n/i18n-context'
 
+import { PageShell } from '@/components/page-shell'
+
 import { UnlockForm } from './unlock-form'
 
 const router = vi.hoisted(() => ({ replace: vi.fn() }))
@@ -25,6 +27,22 @@ const submit = async () => {
 }
 
 describe('UnlockForm', () => {
+  it('Given the setup page shell, should show a single heading', () => {
+    const messages = getMessages('en')
+    render(
+      <I18nProvider locale="en" messages={messages}>
+        <PageShell title={messages['unlock.title']} description={messages['unlock.description']}>
+          <UnlockForm />
+        </PageShell>
+      </I18nProvider>,
+    )
+
+    expect(
+      screen.getAllByRole('heading', { level: 1, name: messages['unlock.title'] }),
+    ).toHaveLength(1)
+    expect(screen.getAllByText(messages['unlock.description'])).toHaveLength(1)
+  })
+
   it('Given the correct password, should send it and go to the wizard', async () => {
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
@@ -49,6 +67,22 @@ describe('UnlockForm', () => {
     const input = screen.getByLabelText('Setup password')
     expect(input).toHaveAttribute('type', 'password')
     expect(input).toHaveAttribute('autocomplete', 'off')
+  })
+
+  it('Given a typed password, should reveal it with the toggle without losing it', async () => {
+    const user = userEvent.setup()
+    render(
+      <I18nProvider locale="en" messages={getMessages('en')}>
+        <UnlockForm />
+      </I18nProvider>,
+    )
+    await user.type(screen.getByLabelText('Setup password'), PASSWORD)
+
+    await user.click(screen.getByRole('button', { name: 'Show password' }))
+
+    expect(screen.getByLabelText('Setup password')).toHaveAttribute('type', 'text')
+    expect(screen.getByLabelText('Setup password')).toHaveValue(PASSWORD)
+    expect(screen.getByRole('button', { name: 'Hide password' })).toBeInTheDocument()
   })
 
   it('Given a wrong password, should show an alert without echoing it', async () => {

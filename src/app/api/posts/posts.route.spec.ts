@@ -1,0 +1,139 @@
+import { eq } from 'drizzle-orm'
+import sharp from 'sharp'
+import { describe, expect, it } from 'vitest'
+
+import { Models } from '@/models'
+
+import { db } from '@/server/lib/db'
+import { post } from '@/server/modules/posts/schemas/post.table'
+import { postService } from '@/server/modules/posts/services/post.service'
+import { profileService } from '@/server/modules/profile/services/profile.service'
+import { createPng } from '@/test/image-fixtures'
+
+import { GET as getCard } from './[id]/card/route'
+import { POST as like } from './[id]/like/route'
+import { GET as get } from './[id]/route'
+import { GET as list } from './route'
+
+const context = (id: string) => ({ params: Promise.resolve({ id }) })
+const request = (path = '', init?: RequestInit) =>
+  new Request(`http://localhost:3000/api/posts${path}`, init)
+const seedPost = async (overrides: Partial<typeof post.$inferInsert> = {}) => {
+  const [row] = await db
+    .insert(post)
+    .values({
+      publicId: 'Abcde12345',
+      type: 'photo',
+      status: 'published',
+      text: '::caption::',
+      publishedAt: new Date('2026-10-20T12:00:00Z'),
+      ...overrides,
+    })
+    .returning()
+  return row
+}
+
+describe('Public posts HTTP', () => {
+  it('Given drafts and publications, should expose only published content', async () => {
+    await seedPost()
+    await seedPost({ publicId: 'Draft12345', status: 'draft', text: '::private-caption::' })
+
+    const response = await list(request())
+    const body: unknown = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(Models.isPostPage(body)).toBe(true)
+    expect(body).toMatchObject({ data: [{ id: 'Abcde12345' }], meta: { total: 1 } })
+    expect(JSON.stringify(body)).not.toContain('::private-caption::')
+  })
+
+  it('Given video and YouTube posts, should include both in videos', async () => {
+    await seedPost({ type: 'video' })
+    await seedPost({
+      publicId: 'Youtube123',
+      type: 'youtube',
+      publishedAt: new Date('2026-10-21T12:00:00Z'),
+    })
+    await seedPost({ publicId: 'Photo12345', type: 'photo' })
+
+    const response = await list(request('?type=video&pageSize=1&page=2'))
+
+    expect(await response.json()).toMatchObject({
+      data: [{ id: 'Abcde12345', type: 'video' }],
+      meta: { total: 2, page: 2, pageSize: 1 },
+    })
+  })
+
+  it.each(['?type=invalid', '?page=0', '?pageSize=101', '?page=2x'])(
+    'Given invalid query %s, should reject it',
+    async (query) => {
+      expect((await list(request(query))).status).toBe(422)
+    },
+  )
+
+  it('Given a draft or missing post, should hide pages and likes', async () => {
+    await seedPost({ status: 'draft' })
+
+    expect((await get(request('/Abcde12345'), context('Abcde12345'))).status).toBe(404)
+    expect(
+      (await like(request('/Abcde12345/like', { method: 'POST' }), context('Abcde12345'))).status,
+    ).toBe(404)
+    expect((await get(request('/Missing123'), context('Missing123'))).status).toBe(404)
+    expect((await getCard(request('/Abcde12345/card'), context('Abcde12345'))).status).toBe(404)
+  })
+
+  it('Given an invalid permanent id, should reject it', async () => {
+    expect((await get(request('/bad'), context('bad'))).status).toBe(422)
+  })
+
+  it('Given concurrent anonymous likes, should increment every vote atomically', async () => {
+    await seedPost()
+
+    const responses = await Promise.all(
+      Array.from({ length: 20 }, async () =>
+        like(
+          request('/Abcde12345/like', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ likes: 90000 }),
+          }),
+          context('Abcde12345'),
+        ),
+      ),
+    )
+    const [row] = await db
+      .select({ likes: post.likes })
+      .from(post)
+      .where(eq(post.publicId, 'Abcde12345'))
+
+    expect(responses.every((response) => response.status === 200)).toBe(true)
+    expect(row?.likes).toBe(20)
+  })
+
+  it('Given a published photo, should generate story and Open Graph images', async () => {
+    await profileService.saveProfile({ name: '::owner::', description: '::about::' })
+    const draft = await postService.createPhotoDraft({
+      file: new File([new Uint8Array(await createPng())], 'photo.png', { type: 'image/png' }),
+      text: '::caption::',
+      altText: '::alt::',
+    })
+    await postService.setStatus(draft.id, 'published')
+
+    const story = await getCard(request(`/${draft.id}/card`), context(draft.id))
+    const og = await getCard(request(`/${draft.id}/card?format=og`), context(draft.id))
+
+    expect(story.status).toBe(200)
+    expect(story.headers.get('Content-Disposition')).toContain('attachment')
+    expect(await sharp(Buffer.from(await story.arrayBuffer())).metadata()).toMatchObject({
+      width: 1080,
+      height: 1920,
+      format: 'png',
+    })
+    expect(await sharp(Buffer.from(await og.arrayBuffer())).metadata()).toMatchObject({
+      width: 1200,
+      height: 630,
+    })
+    await postService.setStatus(draft.id, 'draft')
+    expect((await getCard(request(`/${draft.id}/card`), context(draft.id))).status).toBe(404)
+  })
+})

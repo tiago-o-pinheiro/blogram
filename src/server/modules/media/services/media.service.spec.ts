@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, readdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -13,8 +13,11 @@ import {
   createJpegWithGps,
   createOversizeBuffer,
   createPng,
+  createRotatedJpeg,
   createTextAsJpg,
+  createWideJpegWithGps,
 } from '@/test/image-fixtures'
+import { createWebm } from '@/test/video-fixtures'
 
 const MAX_BYTES = 1_000_000
 
@@ -82,6 +85,152 @@ describe('MediaService', () => {
     const file = toFile(createOversizeBuffer(MAX_BYTES), 'big.jpg', 'image/jpeg')
 
     await expect(service.processProfilePhoto(file)).rejects.toBeInstanceOf(PayloadTooLargeError)
+  })
+
+  it('Given a valid vertical video, should preserve its bytes and dimensions', async () => {
+    const bytes = await createWebm()
+
+    const video = await service.processPostVideo(toFile(bytes, 'clip.webm', 'video/webm'))
+
+    expect(video).toMatchObject({
+      width: 64,
+      height: 96,
+      contentType: 'video/webm',
+      size: bytes.byteLength,
+    })
+    expect((await driver.get(video.key))?.body).toEqual(bytes)
+  })
+
+  it('Given video bytes above the configured limit, should reject before storing them', async () => {
+    const limited = new MediaService({
+      storage: driver,
+      getMaxBytes: () => MAX_BYTES,
+      getMaxVideoBytes: () => 10,
+    })
+
+    await expect(
+      limited.processPostVideo(toFile(new Uint8Array(11), 'clip.webm', 'video/webm')),
+    ).rejects.toBeInstanceOf(PayloadTooLargeError)
+  })
+
+  describe('processPostImage', () => {
+    const listStoredFiles = async () =>
+      (await readdir(directory, { recursive: true, withFileTypes: true })).filter((entry) =>
+        entry.isFile(),
+      )
+
+    it('Given a wide jpeg with GPS, should store full and variants as webp without metadata', async () => {
+      const file = toFile(await createWideJpegWithGps(2000, 1000), 'wide.jpg', 'image/jpeg')
+
+      const result = await service.processPostImage(file)
+
+      expect(result.key).toMatch(/^posts\/[0-9a-f-]{36}\.webp$/)
+      expect(result.contentType).toBe('image/webp')
+      expect(result.width).toBe(2000)
+      expect(result.height).toBe(1000)
+      expect(result.variants.map((variant) => variant.name)).toEqual(['w480', 'w960', 'w1600'])
+      const keys = [result.key, ...result.variants.map((variant) => variant.key)]
+      for (const key of keys) {
+        const metadata = await sharp((await driver.get(key))?.body).metadata()
+        expect(metadata.format).toBe('webp')
+        expect(metadata.exif).toBeUndefined()
+      }
+      expect(result.variants.map((variant) => variant.width)).toEqual([480, 960, 1600])
+      expect(result.variants.map((variant) => variant.height)).toEqual([240, 480, 800])
+      expect(result.size).toBe((await driver.get(result.key))?.size)
+    })
+
+    it('Given a small image, should never upscale and create no variants', async () => {
+      const result = await service.processPostImage(
+        toFile(await createPng(), 'small.png', 'image/png'),
+      )
+
+      expect(result.width).toBe(64)
+      expect(result.height).toBe(64)
+      expect(result.variants).toEqual([])
+    })
+
+    it('Given an image of 1000 pixels wide, should only create the variants it can fill', async () => {
+      const file = toFile(await createWideJpegWithGps(1000, 500), 'mid.jpg', 'image/jpeg')
+
+      const result = await service.processPostImage(file)
+
+      expect(result.variants.map((variant) => variant.name)).toEqual(['w480', 'w960'])
+    })
+
+    it('Given an image larger than 2560 pixels, should cap the long edge', async () => {
+      const file = toFile(await createWideJpegWithGps(3000, 1500), 'huge.jpg', 'image/jpeg')
+
+      const result = await service.processPostImage(file)
+
+      expect(result.width).toBe(2560)
+      expect(result.height).toBe(1280)
+    })
+
+    it('Given an EXIF orientation, should store the image upright with swapped dimensions', async () => {
+      const file = toFile(await createRotatedJpeg(160, 80), 'turned.jpg', 'image/jpeg')
+
+      const result = await service.processPostImage(file)
+
+      expect(result.width).toBe(80)
+      expect(result.height).toBe(160)
+    })
+
+    it('Given text named as jpg, should reject with ValidationError and store nothing', async () => {
+      const file = toFile(createTextAsJpg(), 'fake.jpg', 'image/jpeg')
+
+      await expect(service.processPostImage(file)).rejects.toBeInstanceOf(ValidationError)
+      expect(await listStoredFiles()).toEqual([])
+    })
+
+    it('Given an oversize file, should reject with PayloadTooLargeError and store nothing', async () => {
+      const file = toFile(createOversizeBuffer(MAX_BYTES), 'big.jpg', 'image/jpeg')
+
+      await expect(service.processPostImage(file)).rejects.toBeInstanceOf(PayloadTooLargeError)
+      expect(await listStoredFiles()).toEqual([])
+    })
+
+    it('Given an image above the pixel limit, should reject with ValidationError and store nothing', async () => {
+      const limited = new MediaService({
+        storage: driver,
+        getMaxBytes: () => MAX_BYTES,
+        getMaxPixels: () => 1000,
+      })
+      const file = toFile(await createPng(), 'pixels.png', 'image/png')
+
+      await expect(limited.processPostImage(file)).rejects.toBeInstanceOf(ValidationError)
+      expect(await listStoredFiles()).toEqual([])
+    })
+
+    it('Given a storage failure midway, should delete the objects already written', async () => {
+      let writes = 0
+      const failing = {
+        ...driver,
+        put: async (key: string, body: Uint8Array, contentType: string) => {
+          writes += 1
+          if (writes === 3) {
+            throw new Error('disk full')
+          }
+          await driver.put(key, body, contentType)
+        },
+      }
+      const flaky = new MediaService({ storage: failing, getMaxBytes: () => MAX_BYTES })
+      const file = toFile(await createWideJpegWithGps(2000, 1000), 'wide.jpg', 'image/jpeg')
+
+      await expect(flaky.processPostImage(file)).rejects.toThrow('disk full')
+      expect(await listStoredFiles()).toEqual([])
+    })
+
+    it('Given stored keys, should delete them all and ignore failures', async () => {
+      const result = await service.processPostImage(
+        toFile(await createWideJpegWithGps(2000, 1000), 'wide.jpg', 'image/jpeg'),
+      )
+      const keys = [result.key, ...result.variants.map((variant) => variant.key)]
+
+      await service.deleteObjects([...keys, 'posts/missing.webp'])
+
+      expect(await listStoredFiles()).toEqual([])
+    })
   })
 
   it('Given a stored object, should delete it', async () => {

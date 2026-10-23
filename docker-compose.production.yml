@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: blogram
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: blogram
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U blogram -d blogram']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  migrate:
+    build: .
+    image: blogram:local
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://blogram:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/blogram
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ['pnpm', 'db:migrate']
+    restart: 'no'
+
+  web:
+    build: .
+    image: blogram:local
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://blogram:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/blogram
+      STORAGE_LOCAL_DIR: /app/.data/uploads
+    ports:
+      - '127.0.0.1:3000:3000'
+    volumes:
+      - uploads:/app/.data/uploads
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  uploads:

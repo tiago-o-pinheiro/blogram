@@ -62,6 +62,43 @@ describe('createS3Driver', () => {
     expect(object).toEqual({ body: new Uint8Array([7, 8, 9]), contentType: 'image/webp', size: 3 })
   })
 
+  it('Given a byte range, should send a Range header and read Content-Range', async () => {
+    const { requests, sendRequest } = createRecorder(
+      new Response(new Uint8Array([8, 9]), {
+        status: 206,
+        headers: { 'content-type': 'image/webp', 'content-range': 'bytes 1-2/5' },
+      }),
+    )
+
+    const object = await createS3Driver(CONFIG, sendRequest).get(
+      createStorageKey('profile', 'webp'),
+      { range: { start: 1, end: 2 } },
+    )
+
+    expect(requests[0]?.headers.get('range')).toBe('bytes=1-2')
+    expect(object).toEqual({
+      body: new Uint8Array([8, 9]),
+      contentType: 'image/webp',
+      size: 5,
+      range: { start: 1, end: 2 },
+    })
+  })
+
+  it('Given an open-ended range, should send an open Range header', async () => {
+    const { requests, sendRequest } = createRecorder(
+      new Response(new Uint8Array([9]), {
+        status: 206,
+        headers: { 'content-range': 'bytes 2-2/3' },
+      }),
+    )
+
+    await createS3Driver(CONFIG, sendRequest).get(createStorageKey('profile', 'webp'), {
+      range: { start: 2 },
+    })
+
+    expect(requests[0]?.headers.get('range')).toBe('bytes=2-')
+  })
+
   it('Given a missing object, should get null', async () => {
     const { sendRequest } = createRecorder(new Response(null, { status: 404 }))
 

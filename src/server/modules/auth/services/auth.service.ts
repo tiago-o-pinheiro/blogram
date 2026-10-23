@@ -1,10 +1,13 @@
 import { randomUUID } from 'node:crypto'
 
+import { and, eq } from 'drizzle-orm'
+
 import { Models } from '@/models'
 
+import { env } from '@/server/config/env'
 import { ConflictError, ValidationError } from '@/server/errors/http-errors'
 import { auth } from '@/server/lib/auth'
-import { type DbTransaction } from '@/server/lib/db'
+import { db, type DbTransaction } from '@/server/lib/db'
 import { account, user } from '@/server/modules/auth/schemas/auth.table'
 
 const UNIQUE_VIOLATION_CODE = '23505'
@@ -23,6 +26,35 @@ const isUniqueViolation = (error: unknown): boolean => {
 
 export class AuthService {
   handle = (request: Request): Promise<Response> => auth.handler(request)
+
+  isGoogleSignInEnabled = async (): Promise<boolean> => {
+    if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+      return false
+    }
+    const [linkedAccount] = await db
+      .select({ id: account.id })
+      .from(account)
+      .where(eq(account.providerId, 'google'))
+      .limit(1)
+    return Boolean(linkedAccount)
+  }
+
+  getGoogleAccount = async (headers: Headers) => {
+    const owner = await this.findUser(headers)
+    if (!owner) {
+      return null
+    }
+    const [linkedAccount] = await db
+      .select({ id: account.id })
+      .from(account)
+      .where(and(eq(account.userId, owner.id), eq(account.providerId, 'google')))
+      .limit(1)
+    return {
+      isConfigured: Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET),
+      accountId: linkedAccount?.id ?? null,
+      callbackURL: new URL('/api/auth/callback/google', env.BETTER_AUTH_URL).toString(),
+    }
+  }
 
   findUser = async (headers: Headers): Promise<Models.User | null> => {
     const session = await auth.api.getSession({ headers })

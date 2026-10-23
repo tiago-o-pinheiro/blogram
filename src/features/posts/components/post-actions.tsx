@@ -1,0 +1,57 @@
+'use client'
+
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+
+import { Button } from '@/design-system/ui/button'
+import { type TranslationKey } from '@/i18n'
+import { useT } from '@/i18n/i18n-context'
+import type * as Models from '@/models/models'
+
+import { PostsApiError, setPostStatus } from '../api/posts-api'
+import { toPostsMessageKey } from '../lib/to-posts-message'
+
+type PostActionsProps = {
+  post: Models.Post
+}
+
+export const PostActions = ({ post }: PostActionsProps) => {
+  const t = useT()
+  const router = useRouter()
+  const [isPending, setIsPending] = useState(false)
+  const [errorKey, setErrorKey] = useState<TranslationKey | null>(null)
+  const isDraft = post.status === 'draft'
+
+  const handleToggle = async () => {
+    setErrorKey(null)
+    setIsPending(true)
+    try {
+      await setPostStatus(post.id, isDraft ? 'published' : 'draft')
+    } catch (error) {
+      setErrorKey(
+        error instanceof PostsApiError ? toPostsMessageKey(error.status) : 'posts.error.generic',
+      )
+      setIsPending(false)
+      return
+    }
+    setIsPending(false)
+    router.refresh()
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {errorKey ? (
+        <p role="alert" className="text-sm text-danger">
+          {t(errorKey)}
+        </p>
+      ) : null}
+      <Button
+        isLoading={isPending}
+        loadingLabel={t('postPreview.working')}
+        onClick={() => void handleToggle()}
+      >
+        {isDraft ? t('postPreview.publish') : t('postPreview.unpublish')}
+      </Button>
+    </div>
+  )
+}

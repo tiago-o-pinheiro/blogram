@@ -1,0 +1,11 @@
+{
+  "google.title": "Acceso con Google",
+  "google.description": "Vincula Google como otra forma de entrar. Tu contraseña seguirá disponible. Para vincular o desvincular debes haber iniciado sesión en los últimos cinco minutos.",
+  "google.configure": "Para activar Google, configura GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en el servidor y reinícialo. En Google Cloud, registra esta URI de redirección autorizada:",
+  "google.linked": "Google está vinculado a tu cuenta de propietario.",
+  "google.link": "Vincular Google",
+  "google.unlink": "Desvincular Google",
+  "google.signin": "Continuar con Google",
+  "google.error": "No se pudo completar el acceso con Google. Solo puede entrar la cuenta de Google vinculada en tus ajustes. Inténtalo de nuevo o usa tu contraseña.",
+  "google.reauthenticate": "Cierra sesión y vuelve a entrar con tu contraseña antes de intentarlo de nuevo. El acceso con contraseña debe seguir disponible."
+}

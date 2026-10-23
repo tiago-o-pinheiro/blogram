@@ -89,6 +89,32 @@ describe('SignInForm', () => {
     expect(await screen.findByRole('button', { name: /Sign in/ })).toBeDisabled()
   })
 
+  it('Given a typed password, should reveal it with the toggle without losing it', async () => {
+    const user = userEvent.setup()
+    render(
+      <I18nProvider locale="en" messages={getMessages('en')}>
+        <SignInForm />
+      </I18nProvider>,
+    )
+    await user.type(screen.getByLabelText('Password'), '::password::')
+
+    await user.click(screen.getByRole('button', { name: 'Show password' }))
+
+    expect(screen.getByLabelText('Password')).toHaveAttribute('type', 'text')
+    expect(screen.getByLabelText('Password')).toHaveValue('::password::')
+    expect(screen.getByRole('button', { name: 'Hide password' })).toBeInTheDocument()
+  })
+
+  it('Given the password field, should cap the typed length', () => {
+    render(
+      <I18nProvider locale="en" messages={getMessages('en')}>
+        <SignInForm />
+      </I18nProvider>,
+    )
+
+    expect(screen.getByLabelText('Password')).toHaveAttribute('maxlength', '128')
+  })
+
   it('Given the form, should not link to a sign up page', async () => {
     render(
       <I18nProvider locale="en" messages={getMessages('en')}>
