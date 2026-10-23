@@ -127,6 +127,22 @@ describe('createS3Driver', () => {
     ).rejects.toThrow('Storage put failed')
   })
 
+  it('Given a rejected put, should expose the provider error code', async () => {
+    const { sendRequest } = createRecorder(
+      new Response('<Error><Code>SignatureDoesNotMatch</Code><Message>::m::</Message></Error>', {
+        status: 403,
+      }),
+    )
+
+    await expect(
+      createS3Driver(CONFIG, sendRequest).put(
+        createStorageKey('profile', 'webp'),
+        new Uint8Array([1]),
+        'image/webp',
+      ),
+    ).rejects.toMatchObject({ details: { status: 403, code: 'SignatureDoesNotMatch' } })
+  })
+
   it('Given a key that is not server-shaped, should reject it before any request', async () => {
     const { sendRequest } = createRecorder(new Response(null, { status: 200 }))
 

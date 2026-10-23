@@ -20,6 +20,13 @@ const FALLBACK_CONTENT_TYPE = 'application/octet-stream'
 
 const CONTENT_RANGE_PATTERN = /^bytes (\d+)-(\d+)\/(\d+)$/
 
+const ERROR_CODE_PATTERN = /<Code>([^<]+)<\/Code>/
+
+const readErrorCode = async (response: Response): Promise<string | null> => {
+  const text = await response.text().catch(() => '')
+  return ERROR_CODE_PATTERN.exec(text)?.[1] ?? null
+}
+
 const parseContentRange = (
   header: string | null,
 ): { start: number; end: number; total: number } | null => {
@@ -53,9 +60,10 @@ export const createS3Driver = (
   const send = async (url: string, init: RequestInit): Promise<Response> =>
     sendRequest(await client.sign(url, init))
 
-  const toFailure = (action: string, response: Response): GlobalError =>
+  const toFailure = async (action: string, response: Response): Promise<GlobalError> =>
     new GlobalError(`Storage ${action} failed`, StatusCodes.BAD_GATEWAY, {
       status: response.status,
+      code: await readErrorCode(response),
     })
 
   return {
@@ -66,7 +74,7 @@ export const createS3Driver = (
         body: new Uint8Array(body),
       })
       if (!response.ok) {
-        throw toFailure('put', response)
+        throw await toFailure('put', response)
       }
     },
     get: async (key, options) => {
@@ -79,7 +87,7 @@ export const createS3Driver = (
         return null
       }
       if (!response.ok) {
-        throw toFailure('get', response)
+        throw await toFailure('get', response)
       }
       const body = new Uint8Array(await response.arrayBuffer())
       const contentType = response.headers.get('content-type') ?? FALLBACK_CONTENT_TYPE
@@ -97,7 +105,7 @@ export const createS3Driver = (
     delete: async (key) => {
       const response = await send(toUrl(key), { method: 'DELETE' })
       if (!response.ok && response.status !== StatusCodes.NOT_FOUND) {
-        throw toFailure('delete', response)
+        throw await toFailure('delete', response)
       }
     },
   }
