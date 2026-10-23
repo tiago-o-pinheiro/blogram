@@ -67,7 +67,15 @@ const Page = async ({ searchParams }: HomePageProps = {}) => {
         messages={messages}
       />
       <footer className="mx-auto mt-16 flex max-w-2xl flex-wrap items-center justify-between gap-3 border-t border-border/20 py-6 text-xs text-muted-foreground">
-        <p>{messages['feed.builtWith']}</p>
+        <p>
+          {messages['feed.builtWith']}{' '}
+          <a
+            href="https://github.com/tiago-o-pinheiro/blogram"
+            className="inline-flex min-h-11 items-center underline underline-offset-4 hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            Blogram
+          </a>
+        </p>
         <Link
           href="/admin"
           className="inline-flex min-h-11 items-center hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"

@@ -6,6 +6,7 @@ next-env.d.ts
 .turbo
 coverage
 .data/
+backups/
 .env
 .env.*
 !.env.example
