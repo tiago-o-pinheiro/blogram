@@ -1,0 +1,18 @@
+{
+  "common.retry": "Retry",
+  "common.loading": "Loading...",
+  "errors.generic": "Something went wrong. Please try again.",
+  "errors.setup.unauthorized": "Your setup session is missing or expired. Unlock the installer again.",
+  "errors.setup.forbidden": "Setup is already complete.",
+  "errors.setup.tooLarge": "That file is too large.",
+  "errors.setup.invalid": "Some of the information is not valid. Check it and try again.",
+  "errors.setup.tooMany": "Too many attempts. Wait a few minutes and try again.",
+  "errors.setup.unavailable": "Setup is not available. The server administrator must configure it first.",
+  "errors.setup.generic": "Setup failed. Please try again.",
+  "health.ok": "All systems operational",
+  "home.pending.title": "This site is not set up yet",
+  "home.pending.description": "Please check back soon.",
+  "home.profile.photoAlt": "Profile photo of {{name}}",
+  "menu.signedInAs": "Signed in as {{name}}",
+  "menu.signOut": "Sign out"
+}

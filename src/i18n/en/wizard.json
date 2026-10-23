@@ -1,0 +1,14 @@
+{
+  "wizard.title": "Set up your site",
+  "wizard.steps.profile": "Profile",
+  "wizard.steps.owner": "Owner account",
+  "wizard.steps.review": "Review",
+  "wizard.profile.name": "Name",
+  "wizard.profile.description": "Description",
+  "wizard.profile.photo": "Profile photo",
+  "wizard.profile.previewLabel": "Public profile preview",
+  "wizard.profile.namePlaceholder": "Your name",
+  "wizard.profile.continue": "Continue",
+  "wizard.profile.saving": "Saving",
+  "wizard.profile.error.photoType": "Choose a JPEG, PNG or WebP image."
+}

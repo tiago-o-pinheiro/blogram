@@ -1,41 +1,32 @@
 'use client'
 
-import Link from 'next/link'
-
 import { Button } from '@/design-system/ui/button'
 import { Skeleton } from '@/design-system/ui/skeleton'
+import { useT } from '@/i18n/i18n-context'
 
 import { authClient } from '@/lib/auth-client'
 
 export const UserMenu = () => {
+  const t = useT()
   const { data, isPending } = authClient.useSession()
 
   if (isPending) {
     return (
-      <div role="status" aria-label="Checking your session">
+      <div role="status" aria-label={t('common.loading')}>
         <Skeleton className="h-11 w-48" />
       </div>
     )
   }
 
   if (!data) {
-    return (
-      <nav aria-label="Account" className="flex items-center gap-4">
-        <Link href="/sign-in" className="underline">
-          Sign in
-        </Link>
-        <Link href="/sign-up" className="underline">
-          Sign up
-        </Link>
-      </nav>
-    )
+    return null
   }
 
   return (
     <div className="flex items-center gap-4">
-      <p>Signed in as {data.user.name}</p>
+      <p>{t('menu.signedInAs', { name: data.user.name })}</p>
       <Button variant="secondary" onClick={() => void authClient.signOut()}>
-        Sign out
+        {t('menu.signOut')}
       </Button>
     </div>
   )

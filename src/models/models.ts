@@ -1,4 +1,6 @@
 export * from './health.model'
-export * from './note.model'
+export * from './installation.model'
 export * from './pagination.model'
+export * from './profile.model'
+export * from './setup.model'
 export * from './user.model'

@@ -1,0 +1,8 @@
+{
+  "signin.identifier": "Correo o nombre de usuario",
+  "signin.password": "Contraseña",
+  "signin.submit": "Iniciar sesión",
+  "signin.submitting": "Iniciando sesión",
+  "signin.errors.invalid": "Correo, usuario o contraseña incorrectos.",
+  "signin.errors.generic": "No pudimos iniciar tu sesión. Inténtalo de nuevo."
+}

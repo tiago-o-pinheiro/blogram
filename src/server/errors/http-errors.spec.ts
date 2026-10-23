@@ -6,6 +6,9 @@ import {
   ConflictError,
   ForbiddenError,
   NotFoundError,
+  PayloadTooLargeError,
+  ServiceUnavailableError,
+  TooManyRequestsError,
   UnauthorizedError,
   ValidationError,
 } from './http-errors'
@@ -17,6 +20,9 @@ describe('http errors', () => {
     ['ValidationError', new ValidationError(), StatusCodes.UNPROCESSABLE_ENTITY],
     ['ForbiddenError', new ForbiddenError(), StatusCodes.FORBIDDEN],
     ['UnauthorizedError', new UnauthorizedError(), StatusCodes.UNAUTHORIZED],
+    ['TooManyRequestsError', new TooManyRequestsError(), StatusCodes.TOO_MANY_REQUESTS],
+    ['ServiceUnavailableError', new ServiceUnavailableError(), StatusCodes.SERVICE_UNAVAILABLE],
+    ['PayloadTooLargeError', new PayloadTooLargeError(), StatusCodes.REQUEST_TOO_LONG],
   ])('Given a %s, should carry its http status code', (_name, error, statusCode) => {
     expect(error.statusCode).toBe(statusCode)
   })

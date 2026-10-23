@@ -1,0 +1,82 @@
+import { AwsClient } from 'aws4fetch'
+import { StatusCodes } from 'http-status-codes'
+
+import { GlobalError } from '@/server/errors/global-error'
+
+import { assertStorageKey, type StorageDriver } from './driver'
+
+export type S3Config = {
+  endpoint: string
+  region: string
+  bucket: string
+  accessKeyId: string
+  secretAccessKey: string
+  forcePathStyle: boolean
+}
+
+type FetchLike = (request: Request) => Promise<Response>
+
+const FALLBACK_CONTENT_TYPE = 'application/octet-stream'
+
+export const createS3Driver = (
+  config: S3Config,
+  sendRequest: FetchLike = (request) => fetch(request),
+): StorageDriver => {
+  const client = new AwsClient({
+    accessKeyId: config.accessKeyId,
+    secretAccessKey: config.secretAccessKey,
+    region: config.region,
+    service: 's3',
+  })
+
+  const toUrl = (key: string): string => {
+    assertStorageKey(key)
+    const endpoint = new URL(config.endpoint)
+    if (config.forcePathStyle) {
+      return `${endpoint.origin}/${config.bucket}/${key}`
+    }
+    return `${endpoint.protocol}//${config.bucket}.${endpoint.host}/${key}`
+  }
+
+  const send = async (url: string, init: RequestInit): Promise<Response> =>
+    sendRequest(await client.sign(url, init))
+
+  const toFailure = (action: string, response: Response): GlobalError =>
+    new GlobalError(`Storage ${action} failed`, StatusCodes.BAD_GATEWAY, {
+      status: response.status,
+    })
+
+  return {
+    put: async (key, body, contentType) => {
+      const response = await send(toUrl(key), {
+        method: 'PUT',
+        headers: { 'content-type': contentType },
+        body: new Uint8Array(body),
+      })
+      if (!response.ok) {
+        throw toFailure('put', response)
+      }
+    },
+    get: async (key) => {
+      const response = await send(toUrl(key), { method: 'GET' })
+      if (response.status === StatusCodes.NOT_FOUND) {
+        return null
+      }
+      if (!response.ok) {
+        throw toFailure('get', response)
+      }
+      const body = new Uint8Array(await response.arrayBuffer())
+      return {
+        body,
+        contentType: response.headers.get('content-type') ?? FALLBACK_CONTENT_TYPE,
+        size: body.byteLength,
+      }
+    },
+    delete: async (key) => {
+      const response = await send(toUrl(key), { method: 'DELETE' })
+      if (!response.ok && response.status !== StatusCodes.NOT_FOUND) {
+        throw toFailure('delete', response)
+      }
+    },
+  }
+}

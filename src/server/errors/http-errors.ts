@@ -31,3 +31,21 @@ export class UnauthorizedError extends GlobalError {
     super(message, StatusCodes.UNAUTHORIZED, details)
   }
 }
+
+export class TooManyRequestsError extends GlobalError {
+  constructor(message = 'Too many requests', details?: { retryAfterSeconds: number }) {
+    super(message, StatusCodes.TOO_MANY_REQUESTS, details)
+  }
+}
+
+export class ServiceUnavailableError extends GlobalError {
+  constructor(message = 'Service unavailable', details?: unknown) {
+    super(message, StatusCodes.SERVICE_UNAVAILABLE, details)
+  }
+}
+
+export class PayloadTooLargeError extends GlobalError {
+  constructor(message = 'Payload too large', details?: unknown) {
+    super(message, StatusCodes.REQUEST_TOO_LONG, details)
+  }
+}

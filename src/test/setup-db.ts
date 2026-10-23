@@ -1,4 +1,5 @@
-import { readdirSync, readFileSync } from 'node:fs'
+import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { PGlite } from '@electric-sql/pglite'
@@ -22,6 +23,11 @@ const server = new PGLiteSocketServer({
 await server.start()
 vi.stubEnv('DATABASE_URL', `postgresql://postgres:postgres@${server.getServerConn()}/postgres`)
 
+const uploadsDir = mkdtempSync(join(tmpdir(), 'blogram-uploads-'))
+vi.stubEnv('SETUP_PASSWORD', 'test-setup-password-123')
+vi.stubEnv('STORAGE_DRIVER', 'local')
+vi.stubEnv('STORAGE_LOCAL_DIR', uploadsDir)
+
 beforeEach(async () => {
   const { rows } = await pglite.query<{ name: string }>(
     `SELECT quote_ident(tablename) AS name FROM pg_tables WHERE schemaname = 'public' AND tablename NOT LIKE '\\_%'`,
@@ -36,4 +42,5 @@ afterAll(async () => {
   await db.$client.end()
   await server.stop()
   await pglite.close()
+  rmSync(uploadsDir, { recursive: true, force: true })
 })

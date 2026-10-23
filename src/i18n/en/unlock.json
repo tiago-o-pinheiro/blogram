@@ -1,0 +1,14 @@
+{
+  "unlock.title": "Unlock the installer",
+  "unlock.description": "Enter the setup password configured on the server to continue.",
+  "unlock.password": "Setup password",
+  "unlock.submit": "Unlock",
+  "unlock.submitting": "Unlocking",
+  "unlock.error.wrong": "That setup password is not correct.",
+  "unlock.installer.title": "Setup is not configured",
+  "unlock.installer.description": "The server has no valid setup password, so the installer cannot start.",
+  "unlock.installer.step1": "Set the SETUP_PASSWORD environment variable to a value of at least 12 characters.",
+  "unlock.installer.step2": "Restart the server.",
+  "unlock.installer.step3": "Reload this page.",
+  "unlock.installer.hint": "The password is never shown here. You can remove it after the installation is complete."
+}

@@ -1,0 +1,18 @@
+{
+  "common.retry": "Reintentar",
+  "common.loading": "Cargando...",
+  "errors.generic": "Algo salió mal. Inténtalo de nuevo.",
+  "errors.setup.unauthorized": "Tu sesión de configuración falta o ha caducado. Desbloquea el instalador de nuevo.",
+  "errors.setup.forbidden": "La configuración ya está completa.",
+  "errors.setup.tooLarge": "Ese archivo es demasiado grande.",
+  "errors.setup.invalid": "Alguna información no es válida. Revísala e inténtalo de nuevo.",
+  "errors.setup.tooMany": "Demasiados intentos. Espera unos minutos e inténtalo de nuevo.",
+  "errors.setup.unavailable": "La configuración no está disponible. El administrador del servidor debe configurarla primero.",
+  "errors.setup.generic": "La configuración falló. Inténtalo de nuevo.",
+  "health.ok": "Todos los sistemas funcionan",
+  "home.pending.title": "Este sitio aún no está configurado",
+  "home.pending.description": "Vuelve a pasar pronto.",
+  "home.profile.photoAlt": "Foto de perfil de {{name}}",
+  "menu.signedInAs": "Sesión iniciada como {{name}}",
+  "menu.signOut": "Cerrar sesión"
+}

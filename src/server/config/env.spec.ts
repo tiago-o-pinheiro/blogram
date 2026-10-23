@@ -41,6 +41,35 @@ describe('parseEnv', () => {
     expect(parse).toThrow(/BETTER_AUTH_SECRET/)
   })
 
+  it('Given no setup or storage variables, should leave the setup password unset and use local storage', () => {
+    const env = parseEnv({})
+
+    expect(env.SETUP_PASSWORD).toBeUndefined()
+    expect(env.STORAGE_DRIVER).toBe('local')
+    expect(env.STORAGE_LOCAL_DIR).toBe('.data/uploads')
+    expect(env.S3_REGION).toBe('auto')
+    expect(env.S3_FORCE_PATH_STYLE).toBe(true)
+    expect(env.UPLOAD_MAX_IMAGE_BYTES).toBe(10485760)
+  })
+
+  it('Given s3 variables as strings, should convert the flag and the upload limit', () => {
+    const env = parseEnv({
+      STORAGE_DRIVER: 's3',
+      S3_FORCE_PATH_STYLE: 'false',
+      UPLOAD_MAX_IMAGE_BYTES: '2048',
+    })
+
+    expect(env.STORAGE_DRIVER).toBe('s3')
+    expect(env.S3_FORCE_PATH_STYLE).toBe(false)
+    expect(env.UPLOAD_MAX_IMAGE_BYTES).toBe(2048)
+  })
+
+  it('Given an unknown storage driver, should throw naming STORAGE_DRIVER', () => {
+    const parse = () => parseEnv({ STORAGE_DRIVER: '::driver::' })
+
+    expect(parse).toThrow(/STORAGE_DRIVER/)
+  })
+
   it('Given invalid variables, should name each of them in the error', () => {
     const parse = () => parseEnv({ PORT: '::port::', NODE_ENV: '::env::' })
 

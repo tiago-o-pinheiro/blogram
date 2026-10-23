@@ -20,6 +20,16 @@ export const Env = Type.Object({
     minLength: 1,
     default: 'postgresql://postgres:postgres@localhost:5432/app',
   }),
+  SETUP_PASSWORD: Type.Optional(Type.String()),
+  STORAGE_DRIVER: Type.Union([Type.Literal('local'), Type.Literal('s3')], { default: 'local' }),
+  STORAGE_LOCAL_DIR: Type.String({ minLength: 1, default: '.data/uploads' }),
+  S3_ENDPOINT: Type.Optional(Type.String({ minLength: 1 })),
+  S3_REGION: Type.String({ minLength: 1, default: 'auto' }),
+  S3_BUCKET: Type.Optional(Type.String({ minLength: 1 })),
+  S3_ACCESS_KEY_ID: Type.Optional(Type.String({ minLength: 1 })),
+  S3_SECRET_ACCESS_KEY: Type.Optional(Type.String({ minLength: 1 })),
+  S3_FORCE_PATH_STYLE: Type.Boolean({ default: true }),
+  UPLOAD_MAX_IMAGE_BYTES: Type.Integer({ minimum: 1, default: 10485760 }),
 })
 export type Env = Static<typeof Env>
 

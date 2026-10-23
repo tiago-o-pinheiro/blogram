@@ -1,0 +1,16 @@
+{
+  "account.title": "Cambiar contraseña",
+  "account.currentPassword": "Contraseña actual",
+  "account.newPassword": "Nueva contraseña",
+  "account.confirmPassword": "Confirmar nueva contraseña",
+  "account.submit": "Cambiar contraseña",
+  "account.submitting": "Cambiando contraseña",
+  "account.success": "Tu contraseña fue cambiada.",
+  "account.errors.wrongCurrent": "La contraseña actual es incorrecta.",
+  "account.errors.length": "La nueva contraseña debe tener entre {{min}} y {{max}} caracteres.",
+  "account.errors.mismatch": "Las contraseñas no coinciden.",
+  "account.errors.generic": "No pudimos cambiar tu contraseña. Inténtalo de nuevo.",
+  "admin.title": "Panel",
+  "admin.welcome": "Bienvenido, {{name}}",
+  "admin.accountLink": "Ajustes de la cuenta"
+}

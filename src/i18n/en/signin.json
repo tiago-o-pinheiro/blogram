@@ -1,0 +1,8 @@
+{
+  "signin.identifier": "Email or username",
+  "signin.password": "Password",
+  "signin.submit": "Sign in",
+  "signin.submitting": "Signing in",
+  "signin.errors.invalid": "Wrong email, username or password.",
+  "signin.errors.generic": "We could not sign you in. Try again."
+}

@@ -1,0 +1,14 @@
+{
+  "unlock.title": "Desbloquear el instalador",
+  "unlock.description": "Introduce la contraseña de configuración definida en el servidor para continuar.",
+  "unlock.password": "Contraseña de configuración",
+  "unlock.submit": "Desbloquear",
+  "unlock.submitting": "Desbloqueando",
+  "unlock.error.wrong": "Esa contraseña de configuración no es correcta.",
+  "unlock.installer.title": "La configuración no está preparada",
+  "unlock.installer.description": "El servidor no tiene una contraseña de configuración válida, así que el instalador no puede iniciarse.",
+  "unlock.installer.step1": "Define la variable de entorno SETUP_PASSWORD con un valor de al menos 12 caracteres.",
+  "unlock.installer.step2": "Reinicia el servidor.",
+  "unlock.installer.step3": "Recarga esta página.",
+  "unlock.installer.hint": "La contraseña nunca se muestra aquí. Puedes eliminarla cuando termine la instalación."
+}

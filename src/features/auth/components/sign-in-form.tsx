@@ -1,18 +1,22 @@
 'use client'
 
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { type FormEvent, useState } from 'react'
 
 import { Button } from '@/design-system/ui/button'
 import { Field } from '@/design-system/ui/field'
+import { useT } from '@/i18n/i18n-context'
+import { toOwnerIdentifier } from '@/models/models'
 
 import { authClient } from '@/lib/auth-client'
 
 import { readField } from '../lib/read-field'
-import { toSignInMessage } from '../lib/to-auth-message'
+import { toSignInMessageKey } from '../lib/to-auth-message'
+
+const OFFLINE_RESULT = { error: { status: 0 } }
 
 export const SignInForm = () => {
+  const t = useT()
   const router = useRouter()
   const [error, setError] = useState('')
   const [isPending, setIsPending] = useState(false)
@@ -20,25 +24,33 @@ export const SignInForm = () => {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const data = new FormData(event.currentTarget)
-    setError('')
-    setIsPending(true)
-    const result = await authClient.signIn
-      .email({ email: readField(data, 'email'), password: readField(data, 'password') })
-      .catch(() => ({ error: { status: 0 } }))
-    setIsPending(false)
-    if (result.error) {
-      setError(toSignInMessage(result.error.status))
+    const identifier = toOwnerIdentifier(readField(data, 'identifier'))
+    const password = readField(data, 'password')
+    if (!identifier) {
+      setError(t(toSignInMessageKey(401)))
       return
     }
-    router.push('/')
+    setError('')
+    setIsPending(true)
+    const result = await (
+      identifier.kind === 'email'
+        ? authClient.signIn.email({ email: identifier.value, password })
+        : authClient.signIn.username({ username: identifier.value, password })
+    ).catch(() => OFFLINE_RESULT)
+    setIsPending(false)
+    if (result.error) {
+      setError(t(toSignInMessageKey(result.error.status)))
+      return
+    }
+    router.push('/admin')
     router.refresh()
   }
 
   return (
     <form onSubmit={(event) => void handleSubmit(event)} className="flex flex-col gap-4">
-      <Field label="Email" name="email" type="email" required autoComplete="email" />
+      <Field label={t('signin.identifier')} name="identifier" required autoComplete="username" />
       <Field
-        label="Password"
+        label={t('signin.password')}
         name="password"
         type="password"
         required
@@ -49,15 +61,9 @@ export const SignInForm = () => {
           {error}
         </p>
       ) : null}
-      <Button type="submit" isLoading={isPending} loadingLabel="Signing in">
-        Sign in
+      <Button type="submit" isLoading={isPending} loadingLabel={t('signin.submitting')}>
+        {t('signin.submit')}
       </Button>
-      <p className="text-sm text-muted-foreground">
-        No account yet?{' '}
-        <Link href="/sign-up" className="underline">
-          Sign up
-        </Link>
-      </p>
     </form>
   )
 }

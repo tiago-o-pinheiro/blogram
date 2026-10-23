@@ -1,7 +1,4 @@
-export const toSignInMessage = (status: number) =>
-  status === 401 ? 'Wrong email or password.' : 'We could not sign you in. Try again.'
+import { type TranslationKey } from '@/i18n'
 
-export const toSignUpMessage = (status: number) =>
-  status === 422
-    ? 'An account with this email already exists.'
-    : 'We could not create your account. Try again.'
+export const toSignInMessageKey = (status: number): TranslationKey =>
+  status === 401 ? 'signin.errors.invalid' : 'signin.errors.generic'

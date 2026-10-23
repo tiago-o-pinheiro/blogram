@@ -1,0 +1,14 @@
+{
+  "wizard.title": "Configura tu sitio",
+  "wizard.steps.profile": "Perfil",
+  "wizard.steps.owner": "Cuenta del propietario",
+  "wizard.steps.review": "Revisión",
+  "wizard.profile.name": "Nombre",
+  "wizard.profile.description": "Descripción",
+  "wizard.profile.photo": "Foto de perfil",
+  "wizard.profile.previewLabel": "Vista previa del perfil público",
+  "wizard.profile.namePlaceholder": "Tu nombre",
+  "wizard.profile.continue": "Continuar",
+  "wizard.profile.saving": "Guardando",
+  "wizard.profile.error.photoType": "Elige una imagen JPEG, PNG o WebP."
+}
