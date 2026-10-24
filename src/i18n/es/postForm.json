@@ -19,8 +19,8 @@
   "postForm.metadataError": "No se pudo obtener la vista previa. Puedes completar los campos y publicar igualmente.",
   "postForm.text": "Pie de foto",
   "postForm.previewAlt": "Vista previa de la foto seleccionada",
-  "postForm.create": "Crear borrador",
-  "postForm.creating": "Creando",
+  "postForm.create": "Guardar borrador",
+  "postForm.creating": "Guardando borrador",
   "postForm.save": "Guardar cambios",
   "postForm.saving": "Guardando",
   "postForm.saved": "Cambios guardados.",
@@ -32,5 +32,12 @@
   "postForm.placeHint": "Añade una ciudad o un sitio. Para una ubicación exacta, búscala en OpenStreetMap y pega su enlace para compartir. El lugar será visible al publicar.",
   "postForm.findPlace": "Buscar en OpenStreetMap",
   "postForm.placeMapUrl": "Enlace de OpenStreetMap (opcional)",
-  "postForm.removePlace": "Quitar lugar"
+  "postForm.removePlace": "Quitar lugar",
+  "postForm.publish": "Publicar",
+  "postForm.publishing": "Publicando",
+  "postForm.published": "Publicado.",
+  "postForm.unpublish": "Despublicar",
+  "postForm.unpublishing": "Despublicando",
+  "postForm.unpublished": "La publicación volvió a borradores.",
+  "postForm.placeSummary": "Una ciudad, un lugar o un punto en el mapa"
 }

@@ -1,5 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getMessages } from '@/i18n'
 import { I18nProvider } from '@/i18n/i18n-context'
@@ -7,7 +8,9 @@ import type * as Models from '@/models/models'
 
 import { PostList } from './post-list'
 
-vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }))
+const refresh = vi.fn()
+
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh }) }))
 
 const IMAGE: Models.PostImage = {
   id: '3f0c6f0e-6f7e-4e0b-8f3e-0a1b2c3d4e5f',
@@ -45,8 +48,16 @@ const renderList = (page: Models.PostPage, locale: 'en' | 'es' = 'en') =>
     </I18nProvider>,
   )
 
+beforeEach(() => {
+  refresh.mockReset()
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
+
 describe('PostList', () => {
-  it('Given posts, should show type, status, date, likes and links per row', () => {
+  it('Given posts, should show type, status, date, likes and actions per row', () => {
     renderList({ data: [POST, DRAFT], meta: { total: 2, page: 1, pageSize: 20 } })
 
     const [publishedRow, draftRow] = screen.getAllByRole('listitem')
@@ -62,19 +73,50 @@ describe('PostList', () => {
       'href',
       '/admin/posts/AbCdEfGhIj',
     )
-    expect(published.getByRole('link', { name: 'Preview' })).toHaveAttribute(
+    expect(published.getByRole('link', { name: 'View' })).toHaveAttribute(
       'href',
-      '/admin/posts/AbCdEfGhIj/preview',
+      '/posts/AbCdEfGhIj',
     )
+    expect(published.queryByRole('button', { name: 'Publish' })).not.toBeInTheDocument()
     expect(within(draftRow).getByText('Draft')).toBeVisible()
+    expect(within(draftRow).getByRole('button', { name: 'Publish' })).toBeEnabled()
+    expect(within(draftRow).getByRole('button', { name: 'Delete' })).toBeEnabled()
   })
 
-  it('Given a post with an image, should use the w480 variant in a fixed aspect box', () => {
+  it('Given a post with an image, should use the w480 variant as its thumbnail', () => {
     renderList({ data: [POST], meta: { total: 1, page: 1, pageSize: 20 } })
 
-    const thumbnail = screen.getByRole('img')
-    expect(thumbnail).toHaveAttribute('src', `/api/media/${IMAGE.id}?variant=w480`)
-    expect(thumbnail.parentElement).toHaveStyle({ aspectRatio: '1600 / 1200' })
+    expect(screen.getByRole('img')).toHaveAttribute('src', `/api/media/${IMAGE.id}?variant=w480`)
+  })
+
+  it('Given a draft, should publish it from the list and refresh', async () => {
+    const user = userEvent.setup()
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(Response.json({ ...DRAFT, status: 'published' }))
+    renderList({ data: [DRAFT], meta: { total: 1, page: 1, pageSize: 20 } })
+
+    await user.click(screen.getByRole('button', { name: 'Publish' }))
+
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(1))
+    const [url, init] = fetchSpy.mock.calls[0] ?? []
+    expect(url).toBe('/api/admin/posts/ZyXwVuTsRq/status')
+    expect(JSON.parse(String(init?.body))).toEqual({ status: 'published' })
+  })
+
+  it('Given a status filter, should mark it as the current filter', () => {
+    render(
+      <I18nProvider locale="en" messages={getMessages('en')}>
+        <PostList
+          page={{ data: [DRAFT], meta: { total: 1, page: 1, pageSize: 20 } }}
+          status="draft"
+        />
+      </I18nProvider>,
+    )
+
+    const filters = within(screen.getByRole('navigation', { name: 'Filter posts' }))
+    expect(filters.getByRole('link', { name: 'Drafts' })).toHaveAttribute('aria-current', 'page')
+    expect(filters.getByRole('link', { name: 'All' })).not.toHaveAttribute('aria-current')
   })
 
   it('Given no posts, should show the empty state with a create link', () => {

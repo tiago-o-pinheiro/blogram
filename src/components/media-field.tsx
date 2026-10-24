@@ -98,6 +98,7 @@ export const MediaField = ({
           undo: t('mediaField.undo'),
           current: t(`mediaField.current.${kind}`),
           formats: t('mediaField.formats'),
+          accepted: formats,
           maxSize: t('mediaField.maxSize', { max }),
           note: kind === 'video' ? t('mediaField.videoNote') : undefined,
           formatSelected: (fileName) => t('mediaField.selected', { name: fileName }),

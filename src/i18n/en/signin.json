@@ -4,5 +4,7 @@
   "signin.submit": "Sign in",
   "signin.submitting": "Signing in",
   "signin.errors.invalid": "Wrong email, username or password.",
-  "signin.errors.generic": "We could not sign you in. Try again."
+  "signin.errors.generic": "We could not sign you in. Try again.",
+  "signin.subtitle": "Owner access to {{name}}'s journal",
+  "signin.or": "or"
 }

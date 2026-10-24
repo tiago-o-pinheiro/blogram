@@ -14,6 +14,7 @@ import * as Models from '@/models/models'
 
 import { LinkFields, type LinkFieldsValue } from './link-fields'
 import { PlaceFields } from './place-fields'
+import { PostDeleteAction } from './post-delete-action'
 import { PostMediaFields } from './post-media-fields'
 import { PostTypePicker } from './post-type-picker'
 import {
@@ -22,6 +23,7 @@ import {
   PostsApiError,
   replacePostImage,
   replacePostVideo,
+  setPostStatus,
   updatePost,
 } from '../api/posts-api'
 import { toPostsMessageKey } from '../lib/to-posts-message'
@@ -37,6 +39,8 @@ type Replacement = {
   successKey: TranslationKey
   media: 'image' | 'video'
 }
+
+type Intent = 'save' | 'publish' | 'unpublish'
 
 type LinkDraft = {
   fields: LinkFieldsValue
@@ -83,6 +87,7 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
   const [errorKey, setErrorKey] = useState<TranslationKey | null>(null)
   const [statusKey, setStatusKey] = useState<TranslationKey | null>(null)
   const [isPending, setIsPending] = useState(false)
+  const [intent, setIntent] = useState<Intent>('save')
   const [savedImage, setSavedImage] = useState(post?.image ?? null)
   const [savedVideo, setSavedVideo] = useState(post?.video)
   const [previousImageId, setPreviousImageId] = useState(post?.image?.id)
@@ -200,10 +205,30 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
     }
   }
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
+  const handleUnpublish = async (id: string) => {
     setErrorKey(null)
     setStatusKey(null)
+    setIntent('unpublish')
+    setIsPending(true)
+    try {
+      await setPostStatus(id, 'draft')
+    } catch (error) {
+      setIsPending(false)
+      reportFailure(error)
+      return
+    }
+    setIsPending(false)
+    setStatusKey('postForm.unpublished')
+    router.refresh()
+  }
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const submitter = 'submitter' in event.nativeEvent ? event.nativeEvent.submitter : null
+    const shouldPublish = submitter instanceof HTMLButtonElement && submitter.value === 'publish'
+    setErrorKey(null)
+    setStatusKey(null)
+    setIntent(shouldPublish ? 'publish' : 'save')
     setIsPending(true)
     try {
       if (post) {
@@ -214,6 +239,9 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
           ...(isLink ? link : {}),
           ...(postType === 'youtube' ? { url: link.url } : {}),
         })
+        if (shouldPublish) {
+          await setPostStatus(post.id, 'published')
+        }
       } else {
         const draft = await createPost({
           type: postType,
@@ -225,7 +253,13 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
           ...(isLink ? link : {}),
           ...(postType === 'youtube' ? { url: link.url } : {}),
         })
-        router.push(`/admin/posts/${draft.id}`)
+        try {
+          if (shouldPublish) {
+            await setPostStatus(draft.id, 'published')
+          }
+        } finally {
+          router.push(`/admin/posts/${draft.id}`)
+        }
         return
       }
     } catch (error) {
@@ -234,7 +268,7 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
       return
     }
     setIsPending(false)
-    setStatusKey('postForm.saved')
+    setStatusKey(shouldPublish ? 'postForm.published' : 'postForm.saved')
     router.refresh()
   }
 
@@ -243,11 +277,13 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
     ((postType === 'photo' && file === null) ||
       (postType === 'video' && (file === null || poster === null)))
   const isUrlMissing = (isLink || postType === 'youtube') && !link.url.trim()
+  const isIncomplete =
+    isFileMissing || isUrlMissing || (isLink && !link.title.trim()) || isFetchingMetadata
 
   return (
     <form
       onSubmit={(event) => void handleSubmit(event)}
-      className="flex flex-col gap-6 rounded-2xl border border-border/20 bg-card p-4 sm:p-6"
+      className="flex flex-col gap-6 rounded-xl border border-border/20 bg-card p-4 sm:p-6"
     >
       {!isEdit ? (
         <PostTypePicker
@@ -318,7 +354,6 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
           {postType === 'photo' && altText.trim().length === 0 ? (
             <p className="text-sm text-muted-foreground">{t('postForm.altTextHint')}</p>
           ) : null}
-          <PlaceFields value={place} onChange={setPlace} isDisabled={isPending} />
           <Textarea
             label={t('postForm.text')}
             name="text"
@@ -331,29 +366,80 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
               setText(event.target.value)
             }}
           />
+          <PlaceFields value={place} onChange={setPlace} isDisabled={isPending} />
         </div>
       </div>
-      {errorKey ? (
-        <p role="alert" className="text-sm text-danger">
-          {t(errorKey)}
-        </p>
+      {post ? (
+        <div className="border-t border-border/20 pt-2">
+          <PostDeleteAction post={post} />
+        </div>
       ) : null}
-      {statusKey ? (
-        <p role="status" className="text-sm text-muted-foreground">
-          {t(statusKey)}
-        </p>
-      ) : null}
-      <div className="flex justify-end border-t border-border/20 pt-6">
-        <Button
-          type="submit"
-          disabled={
-            isFileMissing || isUrlMissing || (isLink && !link.title.trim()) || isFetchingMetadata
-          }
-          isLoading={isPending}
-          loadingLabel={isEdit ? t('postForm.saving') : t('postForm.creating')}
-        >
-          {isEdit ? t('postForm.save') : t('postForm.create')}
-        </Button>
+      <div className="pointer-events-none sticky bottom-admin-dock z-10 flex flex-col items-center gap-2 sm:items-end md:bottom-6">
+        {errorKey ? (
+          <p
+            role="alert"
+            className="rounded-full border border-border/20 glass px-4 py-2 text-sm text-danger shadow-sm"
+          >
+            {t(errorKey)}
+          </p>
+        ) : null}
+        {statusKey ? (
+          <p
+            role="status"
+            className="rounded-full border border-border/20 glass px-4 py-2 text-sm text-muted-foreground shadow-sm"
+          >
+            {t(statusKey)}
+          </p>
+        ) : null}
+        <div className="pointer-events-auto flex w-full gap-2 rounded-full border border-border/20 glass p-1.5 shadow-md sm:w-auto">
+          {post?.status === 'published' ? (
+            <>
+              <Button
+                variant="ghost"
+                className="flex-1 rounded-full sm:flex-none"
+                disabled={isPending}
+                isLoading={isPending && intent === 'unpublish'}
+                loadingLabel={t('postForm.unpublishing')}
+                onClick={() => void handleUnpublish(post.id)}
+              >
+                {t('postForm.unpublish')}
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1 rounded-full sm:flex-none"
+                disabled={isPending || isIncomplete}
+                isLoading={isPending && intent === 'save'}
+                loadingLabel={t('postForm.saving')}
+              >
+                {t('postForm.save')}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                type="submit"
+                value="save"
+                variant="secondary"
+                className="flex-1 rounded-full sm:flex-none"
+                disabled={isPending || isIncomplete}
+                isLoading={isPending && intent === 'save'}
+                loadingLabel={t('postForm.creating')}
+              >
+                {t('postForm.create')}
+              </Button>
+              <Button
+                type="submit"
+                value="publish"
+                className="flex-1 rounded-full sm:flex-none"
+                disabled={isPending || isIncomplete}
+                isLoading={isPending && intent === 'publish'}
+                loadingLabel={t('postForm.publishing')}
+              >
+                {t('postForm.publish')}
+              </Button>
+            </>
+          )}
+        </div>
       </div>
     </form>
   )

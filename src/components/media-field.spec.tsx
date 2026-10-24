@@ -82,7 +82,7 @@ describe('MediaField', () => {
 
     expect(screen.getByText('Suelta una foto aquí')).toBeVisible()
     expect(screen.getByRole('button', { name: 'Elegir foto' })).toBeVisible()
-    expect(screen.getByText('Hasta 5 MB')).toBeVisible()
+    expect(screen.getByText('hasta 5 MB')).toBeVisible()
   })
 
   it.each([
@@ -156,11 +156,7 @@ describe('MediaField legend', () => {
       'accept',
       Models.IMAGE_UPLOAD_TYPES.join(','),
     )
-    expect(screen.getAllByRole('listitem').map((chip) => chip.textContent)).toEqual([
-      'JPEG',
-      'PNG',
-      'WebP',
-    ])
+    expect(screen.getByText('JPEG, PNG or WebP')).toBeVisible()
   })
 
   it('Given a video kind, should accept exactly the video types of the models', () => {
@@ -170,22 +166,22 @@ describe('MediaField legend', () => {
       'accept',
       Models.VIDEO_UPLOAD_TYPES.join(','),
     )
-    expect(screen.getAllByRole('listitem').map((chip) => chip.textContent)).toEqual(['MP4', 'WebM'])
+    expect(screen.getByText('MP4 or WebM')).toBeVisible()
   })
 
   it('Given a limit, should show it in the legend that describes the input', () => {
     renderField({ maxBytes: Models.DEFAULT_UPLOAD_MAX_IMAGE_BYTES })
 
-    expect(screen.getByText('Up to 10 MB')).toBeVisible()
+    expect(screen.getByText('up to 10 MB')).toBeVisible()
     expect(screen.getByLabelText('Profile photo')).toHaveAccessibleDescription(
-      /JPEG\s+PNG\s+WebP\s+Up to 10 MB/,
+      /JPEG, PNG or WebP, up to 10 MB/,
     )
   })
 
   it('Given a video, should add the vertical video note to the legend', () => {
     renderField({ kind: 'video', maxBytes: Models.DEFAULT_UPLOAD_MAX_VIDEO_BYTES })
 
-    expect(screen.getByText('Up to 256 MB')).toBeVisible()
+    expect(screen.getByText('up to 256 MB')).toBeVisible()
     expect(screen.getByText('Vertical videos work too.')).toBeVisible()
   })
 

@@ -157,16 +157,14 @@ describe('ProfileStep', () => {
   it('Given the default size limit, should state it in the legend with the accepted formats', () => {
     renderStep()
 
-    expect(screen.getByText('Up to 10 MB')).toBeVisible()
-    expect(screen.getByText('JPEG')).toBeVisible()
-    expect(screen.getByText('PNG')).toBeVisible()
-    expect(screen.getByText('WebP')).toBeVisible()
+    expect(screen.getByText('up to 10 MB')).toBeVisible()
+    expect(screen.getByText('JPEG, PNG or WebP')).toBeVisible()
   })
 
   it('Given a size limit prop, should state that limit in the legend', () => {
     renderStep(null, TWO_MEGABYTES)
 
-    expect(screen.getByText('Up to 2 MB')).toBeVisible()
+    expect(screen.getByText('up to 2 MB')).toBeVisible()
   })
 
   it('Given a chosen photo, should offer Replace and Remove and show the file name and size', async () => {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { type ReactNode, useState } from 'react'
 
 import { Button } from '@/design-system/ui/button'
 import {
@@ -22,10 +22,11 @@ import { toPostsMessageKey } from '../lib/to-posts-message'
 
 type DeletePostDialogProps = {
   post: Models.Post
+  trigger?: ReactNode
   onDeleted: () => void
 }
 
-export const DeletePostDialog = ({ post, onDeleted }: DeletePostDialogProps) => {
+export const DeletePostDialog = ({ post, trigger, onDeleted }: DeletePostDialogProps) => {
   const t = useT()
   const [isOpen, setIsOpen] = useState(false)
   const [isPending, setIsPending] = useState(false)
@@ -59,9 +60,11 @@ export const DeletePostDialog = ({ post, onDeleted }: DeletePostDialogProps) => 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm">
-          {t('postList.delete')}
-        </Button>
+        {trigger ?? (
+          <Button variant="ghost" size="sm">
+            {t('postList.delete')}
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

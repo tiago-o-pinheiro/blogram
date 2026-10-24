@@ -1,3 +1,7 @@
+import { Plus } from 'lucide-react'
+import Link from 'next/link'
+
+import { buttonVariants } from '@/design-system/ui/button'
 import { getServerTranslator } from '@/i18n/server'
 import * as Models from '@/models/models'
 
@@ -31,7 +35,18 @@ const Page = async ({ searchParams }: PageProps) => {
   const page = await postService.listPosts(query)
 
   return (
-    <PageShell title={t('postList.title')}>
+    <PageShell
+      title={t('postList.title')}
+      aside={
+        <Link
+          href="/admin/posts/new"
+          className={buttonVariants({ size: 'sm', className: 'ml-auto' })}
+        >
+          <Plus aria-hidden="true" className="size-4" />
+          {t('postList.emptyAction')}
+        </Link>
+      }
+    >
       <PostList page={page} status={query.status} />
     </PageShell>
   )

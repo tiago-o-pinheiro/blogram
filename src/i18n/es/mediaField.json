@@ -13,7 +13,7 @@
   "mediaField.current.image": "Imagen actual",
   "mediaField.current.video": "Vídeo actual",
   "mediaField.formats": "Formatos admitidos",
-  "mediaField.maxSize": "Hasta {{max}}",
+  "mediaField.maxSize": "hasta {{max}}",
   "mediaField.videoNote": "Los vídeos verticales también valen.",
   "mediaField.or": "o",
   "mediaField.selected": "Seleccionado {{name}}",

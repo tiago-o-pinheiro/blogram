@@ -3,6 +3,7 @@
 @theme inline {
   --spacing-safe: var(--safe-bottom);
   --spacing-admin-nav: var(--admin-nav-space);
+  --spacing-admin-dock: var(--admin-dock-offset);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
@@ -39,4 +40,8 @@
 
   --default-transition-duration: var(--motion-base);
   --default-transition-timing-function: var(--motion-ease-out);
+}
+
+@utility glass {
+  @apply bg-card/70 backdrop-blur-xl backdrop-saturate-150;
 }

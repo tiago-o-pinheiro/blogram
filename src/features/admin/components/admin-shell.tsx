@@ -58,8 +58,8 @@ export const AdminShell = ({ children }: AdminShellProps) => {
       <div className="flex-1 pb-admin-nav md:pb-0">{children}</div>
       <div
         className={cn(
-          'fixed inset-x-0 bottom-0 z-10 flex items-center border-t border-border/20 bg-background pb-safe shadow-md',
-          'md:static md:border-t-0 md:border-b md:pb-0 md:shadow-none',
+          'fixed inset-x-0 bottom-0 z-20 flex items-center border-t border-border/20 glass pb-safe shadow-md',
+          'md:sticky md:top-0 md:border-t-0 md:border-b md:pb-0 md:shadow-none',
         )}
       >
         <nav aria-label={t('adminShell.navLabel')} className="flex flex-1 items-center">

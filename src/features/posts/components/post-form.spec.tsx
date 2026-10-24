@@ -48,6 +48,12 @@ const POST: Models.Post = {
 
 const VIDEO_POST: Models.Post = { ...POST, type: 'video', video: VIDEO }
 
+const PUBLISHED_POST: Models.Post = {
+  ...POST,
+  status: 'published',
+  publishedAt: '2026-10-02T10:00:00.000Z',
+}
+
 const REFRESHED_IMAGE_POST: Models.Post = { ...POST, image: { ...IMAGE, id: REFRESHED_IMAGE_ID } }
 
 const REFRESHED_VIDEO_POST: Models.Post = {
@@ -248,9 +254,9 @@ describe('PostForm create', () => {
     expect(getFileInput('Video file')).toHaveAttribute('name', 'file')
     expect(getFileInput('Video poster')).toHaveAttribute('name', 'poster')
     await user.upload(getFileInput('Video file'), mp4File('video.mp4'))
-    expect(screen.getByRole('button', { name: 'Create draft' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Save draft' })).toBeDisabled()
     await user.upload(getFileInput('Video poster'), pngFile())
-    await user.click(screen.getByRole('button', { name: 'Create draft' }))
+    await user.click(screen.getByRole('button', { name: 'Save draft' }))
 
     await vi.waitFor(() => expect(push).toHaveBeenCalled())
     expect(fetchSpy.mock.calls[0]?.[0]).toBe('/api/admin/posts')
@@ -272,7 +278,7 @@ describe('PostForm create', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'big.mp4 is 40 MB. The limit is 20 MB, so choose a smaller file.',
     )
-    expect(screen.getByRole('button', { name: 'Create draft' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Save draft' })).toBeDisabled()
   })
 
   it.each([
@@ -295,7 +301,7 @@ describe('PostForm create', () => {
     await user.type(screen.getByLabelText('Title'), '::title::')
     await user.type(screen.getByLabelText('Description'), '::description::')
     await user.type(screen.getByLabelText('Original source'), '::source::')
-    await user.click(screen.getByRole('button', { name: 'Create draft' }))
+    await user.click(screen.getByRole('button', { name: 'Save draft' }))
 
     await vi.waitFor(() => expect(push).toHaveBeenCalled())
     expect(readBody(fetchSpy, 1).get('type')).toBe(type)
@@ -313,7 +319,7 @@ describe('PostForm create', () => {
     await user.upload(getFileInput('Cover image (optional)'), pngFile())
     await user.type(screen.getByLabelText('Destination URL'), 'https://example.test/article')
     await user.type(screen.getByLabelText('Title'), '::title::')
-    await user.click(screen.getByRole('button', { name: 'Create draft' }))
+    await user.click(screen.getByRole('button', { name: 'Save draft' }))
 
     await vi.waitFor(() => expect(push).toHaveBeenCalled())
     expect(readBody(fetchSpy).get('file')).toBeInstanceOf(File)
@@ -358,19 +364,19 @@ describe('PostForm create', () => {
     const user = userEvent.setup()
     renderForm()
 
-    expect(screen.getByText('JPEG')).toBeVisible()
-    expect(screen.getByText('Up to 10 MB')).toBeVisible()
+    expect(screen.getByText('JPEG, PNG or WebP')).toBeVisible()
+    expect(screen.getByText('up to 10 MB')).toBeVisible()
     await user.click(screen.getByRole('radio', { name: 'Video' }))
 
-    expect(screen.getByText('MP4')).toBeVisible()
-    expect(screen.getByText('Up to 20 MB')).toBeVisible()
+    expect(screen.getByText('MP4 or WebM')).toBeVisible()
+    expect(screen.getByText('up to 20 MB')).toBeVisible()
     expect(screen.getByText('Vertical videos work too.')).toBeVisible()
   })
 
   it('Given no file, should disable creating and explain alt text', () => {
     renderForm()
 
-    expect(screen.getByRole('button', { name: 'Create draft' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Save draft' })).toBeDisabled()
     expect(screen.getByText(/Describe the image/)).toBeVisible()
   })
 
@@ -385,7 +391,7 @@ describe('PostForm create', () => {
       'blob:one',
     )
     expect(screen.getByText('a.png')).toBeVisible()
-    expect(screen.getByRole('button', { name: 'Create draft' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Save draft' })).toBeEnabled()
   })
 
   it('Given a file that is not an accepted image, should show an alert and no preview', async () => {
@@ -398,7 +404,7 @@ describe('PostForm create', () => {
       "t.txt can't be used. Accepted formats: JPEG, PNG or WebP.",
     )
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Create draft' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Save draft' })).toBeDisabled()
   })
 
   it('Given a rejected file, should clear the alert after switching type and back', async () => {
@@ -421,7 +427,7 @@ describe('PostForm create', () => {
     await user.click(screen.getByRole('radio', { name: 'Video' }))
 
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:one')
-    expect(screen.getByRole('button', { name: 'Create draft' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Save draft' })).toBeDisabled()
   })
 
   it('Given a chosen image, should revoke its preview when the form closes', async () => {
@@ -442,7 +448,7 @@ describe('PostForm create', () => {
     await user.upload(getFileInput('Photo'), pngFile())
     await user.type(screen.getByLabelText('Alt text'), 'A sunrise')
     await user.type(screen.getByLabelText('Caption'), 'Sunrise')
-    await user.click(screen.getByRole('button', { name: 'Create draft' }))
+    await user.click(screen.getByRole('button', { name: 'Save draft' }))
 
     await vi.waitFor(() => expect(push).toHaveBeenCalledWith('/admin/posts/AbCdEfGh12'))
     expect(fetchSpy.mock.calls[0]?.[0]).toBe('/api/admin/posts')
@@ -452,13 +458,29 @@ describe('PostForm create', () => {
     expect(readBody(fetchSpy).get('file')).toBeInstanceOf(File)
   })
 
+  it('Given Publish on a new photo, should create it, publish it and open it', async () => {
+    const user = userEvent.setup()
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(() => Promise.resolve(Response.json(PUBLISHED_POST)))
+    renderForm()
+
+    await user.upload(getFileInput('Photo'), pngFile())
+    await user.click(screen.getByRole('button', { name: 'Publish' }))
+
+    await vi.waitFor(() => expect(push).toHaveBeenCalledWith('/admin/posts/AbCdEfGh12'))
+    const [url, init] = fetchSpy.mock.calls[1] ?? []
+    expect(url).toBe('/api/admin/posts/AbCdEfGh12/status')
+    expect(JSON.parse(String(init?.body))).toEqual({ status: 'published' })
+  })
+
   it('Given a rejected upload, should show the translated error and not navigate', async () => {
     const user = userEvent.setup()
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 413 }))
     renderForm()
 
     await user.upload(getFileInput('Photo'), pngFile())
-    await user.click(screen.getByRole('button', { name: 'Create draft' }))
+    await user.click(screen.getByRole('button', { name: 'Save draft' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('That file is too large.')
     expect(push).not.toHaveBeenCalled()
@@ -470,9 +492,9 @@ describe('PostForm create', () => {
     renderForm()
 
     await user.upload(getFileInput('Photo'), pngFile())
-    await user.click(screen.getByRole('button', { name: 'Create draft' }))
+    await user.click(screen.getByRole('button', { name: 'Save draft' }))
 
-    expect(await screen.findByRole('button', { name: /Create draft/ })).toBeDisabled()
+    expect(await screen.findByRole('button', { name: /Save draft/ })).toBeDisabled()
     expect(screen.getByLabelText('Alt text')).toBeDisabled()
     expect(getFileInput('Photo')).toBeDisabled()
     expect(screen.getByRole('radio', { name: 'Video' })).toBeDisabled()
@@ -565,14 +587,14 @@ describe('PostForm edit', () => {
     expect(screen.queryByRole('radio')).not.toBeInTheDocument()
   })
 
-  it('Given Save changes, should persist text and alt text then refresh', async () => {
+  it('Given Save draft, should persist text and alt text then refresh', async () => {
     const user = userEvent.setup()
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json(POST))
     renderForm({ post: POST })
 
     await user.clear(screen.getByLabelText('Alt text'))
     await user.type(screen.getByLabelText('Alt text'), 'Dawn')
-    await user.click(screen.getByRole('button', { name: 'Save changes' }))
+    await user.click(screen.getByRole('button', { name: 'Save draft' }))
 
     expect(await screen.findByRole('status')).toHaveTextContent('Changes saved.')
     const [url, init] = fetchSpy.mock.calls[0] ?? []
@@ -648,12 +670,52 @@ describe('PostForm edit', () => {
     expect(refresh).not.toHaveBeenCalled()
   })
 
+  it('Given Publish on a draft, should save the edits before publishing', async () => {
+    const user = userEvent.setup()
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(() => Promise.resolve(Response.json(PUBLISHED_POST)))
+    renderForm({ post: POST })
+
+    await user.click(screen.getByRole('button', { name: 'Publish' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Post published.')
+    expect(fetchSpy.mock.calls.map(([url, init]) => `${init?.method} ${String(url)}`)).toEqual([
+      'PATCH /api/admin/posts/AbCdEfGh12',
+      'PUT /api/admin/posts/AbCdEfGh12/status',
+    ])
+    expect(JSON.parse(String(fetchSpy.mock.calls[1]?.[1]?.body))).toEqual({ status: 'published' })
+    expect(refresh).toHaveBeenCalledTimes(1)
+  })
+
+  it('Given a published post, should offer saving and unpublishing', () => {
+    renderForm({ post: PUBLISHED_POST })
+
+    expect(screen.getByRole('button', { name: 'Save changes' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Unpublish' })).toBeEnabled()
+    expect(screen.queryByRole('button', { name: 'Publish' })).not.toBeInTheDocument()
+  })
+
+  it('Given Unpublish, should move the post back to drafts', async () => {
+    const user = userEvent.setup()
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json(POST))
+    renderForm({ post: PUBLISHED_POST })
+
+    await user.click(screen.getByRole('button', { name: 'Unpublish' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Post moved back to drafts.')
+    const [url, init] = fetchSpy.mock.calls[0] ?? []
+    expect(url).toBe('/api/admin/posts/AbCdEfGh12/status')
+    expect(JSON.parse(String(init?.body))).toEqual({ status: 'draft' })
+    expect(refresh).toHaveBeenCalledTimes(1)
+  })
+
   it('Given a failed save, should show the translated error', async () => {
     const user = userEvent.setup()
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 401 }))
     renderForm({ post: POST })
 
-    await user.click(screen.getByRole('button', { name: 'Save changes' }))
+    await user.click(screen.getByRole('button', { name: 'Save draft' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Your session expired.')
     expect(refresh).not.toHaveBeenCalled()

@@ -59,7 +59,7 @@ export const LikeButton = ({ id, likes }: { id: string; likes: number }) => {
     <div>
       <Button
         variant="ghost"
-        className={cn('min-h-11 gap-2 rounded-full', isLiked && 'text-primary')}
+        className={cn('min-h-11 gap-2 rounded-full px-3', isLiked && 'text-primary')}
         aria-label={t(isLiked ? 'feed.liked' : 'feed.like')}
         aria-pressed={isLiked}
         aria-busy={isSaving}

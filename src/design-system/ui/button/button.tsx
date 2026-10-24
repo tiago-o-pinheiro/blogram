@@ -14,6 +14,7 @@ export const buttonVariants = cva(
       variant: {
         primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
         secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+        accent: 'bg-accent text-accent-foreground hover:bg-accent/80',
         ghost: 'bg-transparent text-foreground hover:bg-muted',
         destructive: 'bg-danger text-danger-foreground hover:bg-danger/90',
       },
@@ -21,6 +22,7 @@ export const buttonVariants = cva(
         sm: 'min-h-11 px-3 text-sm',
         md: 'min-h-11 px-4 text-base',
         lg: 'min-h-12 px-6 text-lg',
+        icon: 'size-11 p-0',
       },
     },
     defaultVariants: { variant: 'primary', size: 'md' },

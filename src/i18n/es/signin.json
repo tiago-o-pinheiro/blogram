@@ -4,5 +4,7 @@
   "signin.submit": "Iniciar sesión",
   "signin.submitting": "Iniciando sesión",
   "signin.errors.invalid": "Correo, usuario o contraseña incorrectos.",
-  "signin.errors.generic": "No pudimos iniciar tu sesión. Inténtalo de nuevo."
+  "signin.errors.generic": "No pudimos iniciar tu sesión. Inténtalo de nuevo.",
+  "signin.subtitle": "Acceso del propietario al diario de {{name}}",
+  "signin.or": "o"
 }

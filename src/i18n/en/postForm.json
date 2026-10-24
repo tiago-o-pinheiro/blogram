@@ -19,8 +19,8 @@
   "postForm.metadataError": "Could not get a preview. You can fill in the fields and publish anyway.",
   "postForm.text": "Caption",
   "postForm.previewAlt": "Preview of the selected photo",
-  "postForm.create": "Create draft",
-  "postForm.creating": "Creating",
+  "postForm.create": "Save draft",
+  "postForm.creating": "Saving draft",
   "postForm.save": "Save changes",
   "postForm.saving": "Saving",
   "postForm.saved": "Changes saved.",
@@ -32,5 +32,12 @@
   "postForm.placeHint": "Add a city or venue. For an exact pin, find it on OpenStreetMap and paste its share link below. Your place is visible when you publish.",
   "postForm.findPlace": "Find on OpenStreetMap",
   "postForm.placeMapUrl": "OpenStreetMap link (optional)",
-  "postForm.removePlace": "Remove place"
+  "postForm.removePlace": "Remove place",
+  "postForm.publish": "Publish",
+  "postForm.publishing": "Publishing",
+  "postForm.published": "Post published.",
+  "postForm.unpublish": "Unpublish",
+  "postForm.unpublishing": "Unpublishing",
+  "postForm.unpublished": "Post moved back to drafts.",
+  "postForm.placeSummary": "A city, venue or map pin"
 }

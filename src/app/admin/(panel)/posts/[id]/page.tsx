@@ -1,12 +1,14 @@
+import { Eye } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 import { buttonVariants } from '@/design-system/ui/button'
+import { cn } from '@/design-system/ui/lib/cn'
 import { getServerTranslator } from '@/i18n/server'
 
 import { PageShell } from '@/components/page-shell'
-import { PostDeleteAction } from '@/features/posts/components/post-delete-action'
 import { PostForm } from '@/features/posts/components/post-form'
+import { PostStatusBadge } from '@/features/posts/components/post-status-badge'
 import { env } from '@/server/config/env'
 import { NotFoundError } from '@/server/errors/http-errors'
 import { requireOwnerPage } from '@/server/modules/auth/guards/admin-page.guard'
@@ -30,19 +32,31 @@ const Page = async ({ params }: PageProps) => {
   })
 
   return (
-    <PageShell isWide title={t('postForm.editTitle')}>
-      <Link
-        href={`/admin/posts/${post.id}/preview`}
-        className={buttonVariants({ variant: 'secondary', className: 'w-fit' })}
-      >
-        {t('postList.preview')}
-      </Link>
+    <PageShell
+      isWide
+      title={t('postForm.editTitle')}
+      aside={
+        <>
+          <PostStatusBadge status={post.status} label={t(`posts.status.${post.status}`)} />
+          <Link
+            href={`/admin/posts/${post.id}/preview`}
+            aria-label={t('postList.preview')}
+            title={t('postList.preview')}
+            className={cn(
+              buttonVariants({ variant: 'secondary', size: 'icon' }),
+              'ml-auto rounded-full',
+            )}
+          >
+            <Eye aria-hidden="true" className="size-5" />
+          </Link>
+        </>
+      }
+    >
       <PostForm
         post={post}
         maxImageBytes={env.UPLOAD_MAX_IMAGE_BYTES}
         maxVideoBytes={env.UPLOAD_MAX_VIDEO_BYTES}
       />
-      <PostDeleteAction post={post} />
     </PageShell>
   )
 }

@@ -71,8 +71,8 @@ describe('ProfileForm', () => {
   it('Given a photo limit, should show it in the legend of the photo input', () => {
     renderForm(PROFILE, FIVE_MEGABYTES)
 
-    expect(screen.getByText('Up to 5 MB')).toBeVisible()
-    expect(screen.getByLabelText('Profile photo')).toHaveAccessibleDescription(/Up to 5 MB/)
+    expect(screen.getByText('up to 5 MB')).toBeVisible()
+    expect(screen.getByLabelText('Profile photo')).toHaveAccessibleDescription(/up to 5 MB/)
   })
 
   it('Given a file that is not an accepted image, should alert with its name and no preview', async () => {

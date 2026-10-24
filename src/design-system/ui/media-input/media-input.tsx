@@ -1,10 +1,10 @@
 'use client'
 
-import { CircleAlert, Upload, User } from 'lucide-react'
+import { CircleAlert, ImageUp, Undo2, Upload, User, X } from 'lucide-react'
 import { type ChangeEvent, type DragEvent, useEffect, useRef, useState } from 'react'
 
 import { Button } from '../button'
-import { formatFileSize, toFormatLabel } from './media-format'
+import { formatFileSize } from './media-format'
 import { cn } from '../lib/cn'
 
 export type MediaSelection = { file: File; previewUrl: string }
@@ -18,6 +18,7 @@ export type MediaInputLabels = {
   undo: string
   current: string
   formats: string
+  accepted: string
   maxSize: string
   note?: string
   formatSelected: (name: string) => string
@@ -87,23 +88,17 @@ const FileSummary = ({ file }: { file: File }) => (
   </p>
 )
 
-type MediaLegendProps = { id: string; accept: readonly string[]; labels: MediaInputLabels }
+type MediaLegendProps = { id: string; labels: MediaInputLabels }
 
-const MediaLegend = ({ id, accept, labels }: MediaLegendProps) => (
-  <div id={id} className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs">
-    <p className="sr-only">{labels.formats}</p>
-    <ul className="flex flex-wrap gap-1.5">
-      {accept.map((mimeType) => (
-        <li
-          key={mimeType}
-          className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground"
-        >
-          {toFormatLabel(mimeType)}
-        </li>
-      ))}
-    </ul>
-    <p className="text-muted-foreground">{labels.maxSize}</p>
-    {labels.note ? <p className="text-muted-foreground">{labels.note}</p> : null}
+const MediaLegend = ({ id, labels }: MediaLegendProps) => (
+  <div id={id} className="flex flex-col gap-1 text-xs text-muted-foreground">
+    <p className="sr-only">{`${labels.formats}: ${labels.accepted}, ${labels.maxSize}`}</p>
+    <p aria-hidden="true" className="flex flex-wrap gap-x-1.5">
+      <span>{labels.accepted}</span>
+      <span>·</span>
+      <span>{labels.maxSize}</span>
+    </p>
+    {labels.note ? <p>{labels.note}</p> : null}
   </div>
 )
 
@@ -221,7 +216,7 @@ export const MediaInput = ({
 
   const details = (
     <>
-      <MediaLegend id={legendId} accept={accept} labels={labels} />
+      <MediaLegend id={legendId} labels={labels} />
       {error ? (
         <p role="alert" className="flex items-start gap-2 text-sm text-danger">
           <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
@@ -318,37 +313,35 @@ export const MediaInput = ({
         {src ? (
           <>
             <MediaPreview kind={kind} src={src} alt={alt} />
-            <div
-              className={cn(
-                'absolute inset-x-3 flex items-center justify-end gap-2 rounded-full border border-border/20 bg-card/70 p-1.5 pl-4 shadow-md backdrop-blur-md',
-                kind === 'video' ? 'top-3' : 'bottom-3',
-              )}
-            >
-              {value ? (
-                <div className="mr-auto flex min-w-0 flex-1">
-                  <FileSummary file={value.file} />
-                </div>
-              ) : null}
+            <div className="absolute top-3 right-3 flex gap-2">
               <Button
                 ref={chooseRef}
                 variant="secondary"
-                size="sm"
-                className="rounded-full"
+                size="icon"
+                className="rounded-full bg-card/90 shadow-md"
                 disabled={isDisabled}
+                aria-label={chooseLabel}
                 aria-describedby={legendId}
+                title={chooseLabel}
                 onClick={handleChoose}
               >
-                {chooseLabel}
+                <ImageUp aria-hidden="true" className="size-5" />
               </Button>
               {value ? (
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="rounded-full"
+                  variant="secondary"
+                  size="icon"
+                  className="rounded-full bg-card/90 shadow-md"
                   disabled={isDisabled}
+                  aria-label={removeLabel}
+                  title={removeLabel}
                   onClick={handleRemove}
                 >
-                  {removeLabel}
+                  {savedSrc ? (
+                    <Undo2 aria-hidden="true" className="size-5" />
+                  ) : (
+                    <X aria-hidden="true" className="size-5" />
+                  )}
                 </Button>
               ) : null}
             </div>
@@ -378,6 +371,7 @@ export const MediaInput = ({
           </div>
         )}
       </div>
+      {value ? <FileSummary file={value.file} /> : null}
       {details}
     </div>
   )

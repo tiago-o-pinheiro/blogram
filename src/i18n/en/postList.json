@@ -27,5 +27,12 @@
   "postList.deleteDescription": "The post and its images will be removed permanently. This cannot be undone.",
   "postList.deleteConfirm": "Delete post",
   "postList.deleting": "Deleting",
-  "postList.deleteCancel": "Cancel"
+  "postList.deleteCancel": "Cancel",
+  "postList.filterLabel": "Filter posts",
+  "postList.filterAll": "All",
+  "postList.filterDrafts": "Drafts",
+  "postList.filterPublished": "Published",
+  "postList.view": "View",
+  "postList.publish": "Publish",
+  "postList.publishing": "Publishing"
 }

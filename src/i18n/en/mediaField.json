@@ -13,7 +13,7 @@
   "mediaField.current.image": "Current image",
   "mediaField.current.video": "Current video",
   "mediaField.formats": "Accepted formats",
-  "mediaField.maxSize": "Up to {{max}}",
+  "mediaField.maxSize": "up to {{max}}",
   "mediaField.videoNote": "Vertical videos work too.",
   "mediaField.or": "or",
   "mediaField.selected": "Selected {{name}}",

@@ -27,5 +27,12 @@
   "postList.deleteDescription": "La publicación y sus imágenes se eliminarán de forma permanente. No se puede deshacer.",
   "postList.deleteConfirm": "Eliminar publicación",
   "postList.deleting": "Eliminando",
-  "postList.deleteCancel": "Cancelar"
+  "postList.deleteCancel": "Cancelar",
+  "postList.filterLabel": "Filtrar publicaciones",
+  "postList.filterAll": "Todas",
+  "postList.filterDrafts": "Borradores",
+  "postList.filterPublished": "Publicadas",
+  "postList.view": "Ver",
+  "postList.publish": "Publicar",
+  "postList.publishing": "Publicando"
 }

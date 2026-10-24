@@ -1,6 +1,6 @@
 'use client'
 
-import { MapPin, ExternalLink } from 'lucide-react'
+import { MapPin, ExternalLink, X } from 'lucide-react'
 
 import { Button } from '@/design-system/ui/button'
 import { Field } from '@/design-system/ui/field'
@@ -16,20 +16,42 @@ type PlaceFieldsProps = {
 export const PlaceFields = ({ value, onChange, isDisabled }: PlaceFieldsProps) => {
   const t = useT()
   return (
-    <fieldset disabled={isDisabled} className="min-w-0 rounded-xl border border-border/20 p-4">
-      <legend className="px-2 text-sm font-medium">{t('postForm.place')}</legend>
-      {value === null ? (
-        <Button
-          variant="ghost"
-          type="button"
-          disabled={isDisabled}
-          onClick={() => onChange({ name: '' })}
-        >
-          <MapPin aria-hidden="true" className="size-4" />
-          {t('postForm.addPlace')}
-        </Button>
-      ) : (
-        <div className="flex flex-col gap-3">
+    <fieldset
+      disabled={isDisabled}
+      className="flex min-w-0 flex-col gap-3 border-t border-border/20 pt-4"
+    >
+      <legend className="sr-only">{t('postForm.place')}</legend>
+      <div className="flex items-center justify-between gap-3">
+        <div aria-hidden="true" className="flex min-w-0 flex-col gap-0.5">
+          <span className="text-sm font-medium">{t('postForm.place')}</span>
+          <span className="text-xs text-muted-foreground">{t('postForm.placeSummary')}</span>
+        </div>
+        {value === null ? (
+          <Button
+            variant="secondary"
+            size="sm"
+            className="shrink-0"
+            disabled={isDisabled}
+            onClick={() => onChange({ name: '' })}
+          >
+            <MapPin aria-hidden="true" className="size-4" />
+            {t('postForm.addPlace')}
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="shrink-0"
+            disabled={isDisabled}
+            onClick={() => onChange(null)}
+          >
+            <X aria-hidden="true" className="size-4" />
+            {t('postForm.removePlace')}
+          </Button>
+        )}
+      </div>
+      {value === null ? null : (
+        <>
           <Field
             label={t('postForm.placeName')}
             name="placeName"
@@ -44,7 +66,7 @@ export const PlaceFields = ({ value, onChange, isDisabled }: PlaceFieldsProps) =
             href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(value.name)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-11 items-center gap-2 text-sm text-primary underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-ring"
+            className="inline-flex min-h-11 w-fit items-center gap-2 text-sm text-primary underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-ring"
           >
             {t('postForm.findPlace')}
             <ExternalLink aria-hidden="true" className="size-4" />
@@ -63,15 +85,7 @@ export const PlaceFields = ({ value, onChange, isDisabled }: PlaceFieldsProps) =
               })
             }
           />
-          <Button
-            variant="ghost"
-            type="button"
-            disabled={isDisabled}
-            onClick={() => onChange(null)}
-          >
-            {t('postForm.removePlace')}
-          </Button>
-        </div>
+        </>
       )}
     </fieldset>
   )

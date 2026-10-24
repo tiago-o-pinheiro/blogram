@@ -22,13 +22,12 @@ export const PostCard = ({ post, owner, origin, locale, messages }: PostCardProp
   const title = post.link?.title || post.text || owner
   const date = post.publishedAt ?? post.createdAt
   return (
-    <article className="overflow-hidden rounded-lg border border-border/30 bg-card shadow-sm">
-      <header className="flex items-center justify-between gap-4 px-5 py-4">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold">{owner}</p>
+    <article className="overflow-hidden rounded-xl border border-border/20 bg-card shadow-sm">
+      <header className="flex items-center justify-between gap-3 px-5 py-1">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-3">
           <Link
             href={`/posts/${post.id}`}
-            className="inline-flex min-h-11 items-center gap-2 text-xs text-muted-foreground underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+            className="inline-flex min-h-11 items-center text-sm font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
             aria-label={t('feed.permalink')}
           >
             <time dateTime={date}>
@@ -37,15 +36,13 @@ export const PostCard = ({ post, owner, origin, locale, messages }: PostCardProp
               )}
             </time>
           </Link>
+          <PostPlace place={post.place} />
         </div>
-        <span className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">
-          {t(`feed.${post.type}`)}
+        <span className="shrink-0 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+          {t(`posts.type.${post.type}`)}
         </span>
       </header>
       <PostMedia post={post} />
-      <div className="px-5">
-        <PostPlace place={post.place} />
-      </div>
       {post.link ? (
         <a
           href={post.link.url}
@@ -69,11 +66,11 @@ export const PostCard = ({ post, owner, origin, locale, messages }: PostCardProp
         </a>
       ) : null}
       {post.text ? (
-        <p className="px-5 pt-5 text-sm leading-relaxed break-words whitespace-pre-wrap">
+        <p className="px-5 pt-4 text-sm leading-relaxed break-words whitespace-pre-wrap">
           {post.text}
         </p>
       ) : null}
-      <footer className="flex flex-wrap items-start justify-between gap-2 px-3 py-3">
+      <footer className="flex flex-wrap items-start justify-between gap-2 px-2 py-2">
         <LikeButton id={post.id} likes={post.likes} />
         <ShareActions id={post.id} title={title} url={`${origin}/posts/${post.id}`} />
       </footer>

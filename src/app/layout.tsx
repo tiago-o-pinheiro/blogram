@@ -10,6 +10,7 @@ import './globals.css'
 export const metadata: Metadata = {
   title: { default: 'Blogram', template: '%s | Blogram' },
   description: 'A personal multimedia journal',
+  icons: { icon: '/brand/blogram-mark.svg' },
 }
 
 type RootLayoutProps = {

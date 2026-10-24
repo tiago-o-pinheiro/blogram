@@ -21,6 +21,7 @@ const LABELS: MediaInputLabels = {
   undo: 'Undo',
   current: 'Current photo',
   formats: 'Accepted formats',
+  accepted: 'JPEG, PNG or WebP',
   maxSize: 'Up to 10 MB',
   formatSelected: (name) => `Selected ${name}`,
   formatTypeError: (name) => `${name} can't be used. Accepted formats: JPEG, PNG or WebP.`,
@@ -92,21 +93,23 @@ beforeEach(() => {
 })
 
 describe('MediaInput legend', () => {
-  it('Given an empty image input, should list one chip per accepted format and the maximum size', () => {
+  it('Given an empty image input, should state the accepted formats and the maximum size', () => {
     render(<Harness />)
 
-    expect(screen.getAllByRole('listitem').map((chip) => chip.textContent)).toEqual([
-      'JPEG',
-      'PNG',
-      'WebP',
-    ])
+    expect(screen.getByText('JPEG, PNG or WebP')).toBeVisible()
     expect(screen.getByText('Up to 10 MB')).toBeVisible()
   })
 
   it('Given a video input with a note, should list the video formats and the note', () => {
-    render(<Harness kind="video" accept={VIDEO_TYPES} labels={{ ...LABELS, note: '::note::' }} />)
+    render(
+      <Harness
+        kind="video"
+        accept={VIDEO_TYPES}
+        labels={{ ...LABELS, accepted: 'MP4 or WebM', note: '::note::' }}
+      />,
+    )
 
-    expect(screen.getAllByRole('listitem').map((chip) => chip.textContent)).toEqual(['MP4', 'WebM'])
+    expect(screen.getByText('MP4 or WebM')).toBeVisible()
     expect(screen.getByText('::note::')).toBeVisible()
   })
 
@@ -116,7 +119,7 @@ describe('MediaInput legend', () => {
 
     await user.upload(screen.getByLabelText('Photo'), toFile(PHOTO_NAME))
 
-    expect(screen.getAllByRole('listitem')).toHaveLength(3)
+    expect(screen.getByText('JPEG, PNG or WebP')).toBeVisible()
     expect(screen.getByText('Up to 10 MB')).toBeVisible()
   })
 
@@ -124,10 +127,10 @@ describe('MediaInput legend', () => {
     render(<Harness />)
 
     expect(screen.getByRole('button', { name: 'Choose photo' })).toHaveAccessibleDescription(
-      /JPEG\s+PNG\s+WebP\s+Up to 10 MB/,
+      /JPEG, PNG or WebP, Up to 10 MB/,
     )
     expect(screen.getByLabelText('Photo')).toHaveAccessibleDescription(
-      /JPEG\s+PNG\s+WebP\s+Up to 10 MB/,
+      /JPEG, PNG or WebP, Up to 10 MB/,
     )
   })
 })
@@ -589,7 +592,7 @@ describe('MediaInput avatar layout', () => {
     render(<Harness layout="avatar" alt="::alt::" />)
 
     expect(screen.getByRole('button', { name: 'Choose photo' })).toHaveAttribute('type', 'button')
-    expect(screen.getAllByRole('listitem')).toHaveLength(3)
+    expect(screen.getByText('JPEG, PNG or WebP')).toBeVisible()
     expect(screen.queryByRole('img', { name: '::alt::' })).not.toBeInTheDocument()
   })
 
