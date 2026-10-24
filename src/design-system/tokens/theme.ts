@@ -25,8 +25,8 @@ const LIGHT = {
   'elevation-md': '0 4px 12px -2px rgb(15 23 42 / 0.12)',
   'elevation-glass':
     '0 12px 32px -12px rgb(15 23 42 / 0.28), inset 0 1px 0 0 rgb(255 255 255 / 0.55)',
-  'glass-tint': '55%',
-  'glass-edge-tint': '35%',
+  'glass-tint': '25%',
+  'glass-highlight': 'rgb(255 255 255 / 0.5)',
 } as const
 
 type Palette = Record<keyof typeof LIGHT, string>
@@ -57,8 +57,8 @@ const DARK: Palette = {
   'elevation-sm': '0 1px 2px 0 rgb(0 0 0 / 0.4)',
   'elevation-md': '0 4px 12px -2px rgb(0 0 0 / 0.5)',
   'elevation-glass': '0 12px 32px -12px rgb(0 0 0 / 0.6), inset 0 1px 0 0 rgb(255 255 255 / 0.08)',
-  'glass-tint': '50%',
-  'glass-edge-tint': '45%',
+  'glass-tint': '30%',
+  'glass-highlight': 'rgb(255 255 255 / 0.14)',
 }
 
 export const THEMES = { light: LIGHT, dark: DARK } as const
@@ -77,7 +77,6 @@ const DERIVED = {
   'surface-soft': 'color-mix(in oklab, var(--surface) 60%, transparent)',
   scrim: 'color-mix(in oklab, var(--foreground) 40%, transparent)',
   glass: 'color-mix(in oklab, var(--card) var(--glass-tint), transparent)',
-  'glass-edge': 'color-mix(in oklab, var(--border) var(--glass-edge-tint), transparent)',
 } as const
 
 export const MOTION = {
@@ -111,8 +110,8 @@ const SHARED = {
   'motion-scale': '0.96',
   'motion-press': '0.96',
   'motion-pop': '1.3',
-  'glass-blur': '1.25rem',
-  'glass-saturate': '1.8',
+  'glass-blur': '1rem',
+  'glass-saturate': '1.9',
   'glass-edge-width': '1px',
   'scrim-blur': '0.25rem',
   'backdrop-blur': '2.5rem',
@@ -123,6 +122,8 @@ const SHARED = {
   'admin-nav-space': 'calc(6.5rem + var(--safe-bottom))',
   'admin-dock-offset': 'calc(5.5rem + var(--safe-bottom))',
   'sheet-padding-bottom': 'calc(1.5rem + var(--safe-bottom))',
+  'keyboard-inset': '0px',
+  'visible-height': '100dvh',
   'map-height': '16rem',
   'map-pin-size': '1.75rem',
 } as const

@@ -321,9 +321,9 @@ export const MediaInput = ({
             <div className="absolute top-3 right-3 flex gap-2">
               <Button
                 ref={chooseRef}
-                variant="secondary"
+                variant="glass"
                 size="icon"
-                className="rounded-full glass"
+                className="rounded-full"
                 disabled={isDisabled}
                 aria-label={chooseLabel}
                 aria-describedby={legendId}
@@ -334,9 +334,9 @@ export const MediaInput = ({
               </Button>
               {value ? (
                 <Button
-                  variant="secondary"
+                  variant="glass"
                   size="icon"
-                  className="rounded-full glass"
+                  className="rounded-full"
                   disabled={isDisabled}
                   aria-label={removeLabel}
                   title={removeLabel}

@@ -1,6 +1,8 @@
+'use client'
+
 import { X } from 'lucide-react'
 import { Dialog as DialogPrimitive } from 'radix-ui'
-import { type ComponentProps } from 'react'
+import { type ComponentProps, useEffect } from 'react'
 
 import { cn } from '../lib/cn'
 
@@ -14,19 +16,47 @@ export const Dialog = DialogPrimitive.Root
 export const DialogTrigger = DialogPrimitive.Trigger
 export const DialogClose = DialogPrimitive.Close
 
+const trackVisibleViewport = () => {
+  const viewport = window.visualViewport
+  if (!viewport) {
+    return undefined
+  }
+  const root = document.documentElement
+  const update = () => {
+    const keyboardInset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
+    root.style.setProperty('--keyboard-inset', `${Math.round(keyboardInset)}px`)
+    root.style.setProperty('--visible-height', `${Math.round(viewport.height)}px`)
+  }
+  update()
+  viewport.addEventListener('resize', update)
+  viewport.addEventListener('scroll', update)
+  return () => {
+    viewport.removeEventListener('resize', update)
+    viewport.removeEventListener('scroll', update)
+    root.style.removeProperty('--keyboard-inset')
+    root.style.removeProperty('--visible-height')
+  }
+}
+
+const VisibleViewportTracker = () => {
+  useEffect(trackVisibleViewport, [])
+  return null
+}
+
 export const DialogContent = ({ className, children, ...props }: DialogContentProps) => (
   <DialogPrimitive.Portal>
     <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-scrim backdrop-blur-scrim state-open:animate-fade-in state-closed:animate-fade-out" />
     <DialogPrimitive.Content
       className={cn(
-        'fixed inset-x-0 bottom-0 z-50 flex max-h-dvh w-full flex-col gap-4 overflow-y-auto rounded-t-2xl border border-line bg-popover p-6 pb-sheet text-popover-foreground shadow-md',
+        'fixed inset-x-0 bottom-keyboard z-50 flex max-h-visible w-full flex-col gap-4 overflow-y-auto overscroll-contain rounded-t-2xl border border-line bg-popover p-6 pb-sheet text-popover-foreground shadow-md outline-none',
         'state-open:animate-sheet-in state-closed:animate-sheet-out',
-        'sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:pb-6',
+        'sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:max-h-dvh sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:pb-6',
         'sm:state-open:animate-scale-in sm:state-closed:animate-scale-out',
         className,
       )}
       {...props}
     >
+      <VisibleViewportTracker />
       <span
         aria-hidden="true"
         className="mx-auto -mt-2 h-1 w-10 shrink-0 rounded-full bg-line-strong sm:hidden"

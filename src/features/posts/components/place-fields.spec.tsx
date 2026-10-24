@@ -80,7 +80,7 @@ describe('PlaceFields', () => {
     expect(screen.getByRole('button', { name: 'Change place' })).toBeEnabled()
   })
 
-  it('Given the arrow keys and Enter, should pick the highlighted city', async () => {
+  it('Given the arrow keys and Enter, should pick the highlighted city and close the keyboard', async () => {
     const user = userEvent.setup()
     respondWithPlaces([CITY, TOWN])
     render(<PlaceEditor />)
@@ -92,6 +92,7 @@ describe('PlaceFields', () => {
     expect(screen.getByRole('combobox', { name: 'Search a city' })).toHaveValue(
       '::town::, ::country::',
     )
+    expect(screen.getByRole('combobox', { name: 'Search a city' })).not.toHaveFocus()
     expect(screen.queryByRole('option')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Save place' })).toBeEnabled()
   })

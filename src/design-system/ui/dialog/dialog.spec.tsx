@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { act } from 'react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   Dialog,
@@ -26,6 +27,23 @@ const renderDialog = () =>
       </DialogContent>
     </Dialog>,
   )
+
+const KEYBOARD_HEIGHT = 300
+
+const stubKeyboard = () => {
+  const viewport = Object.assign(new EventTarget(), {
+    height: window.innerHeight - KEYBOARD_HEIGHT,
+    offsetTop: 0,
+  })
+  vi.stubGlobal('visualViewport', viewport)
+  return viewport
+}
+
+const readRootVariable = (name: string) => document.documentElement.style.getPropertyValue(name)
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
 describe('Dialog', () => {
   it('Given a closed dialog, should render no dialog', () => {
@@ -63,5 +81,33 @@ describe('Dialog', () => {
     await user.keyboard('{Escape}')
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('Given an on-screen keyboard, should keep the open sheet above it', async () => {
+    const user = userEvent.setup()
+    const viewport = stubKeyboard()
+    renderDialog()
+
+    await user.click(screen.getByRole('button', { name: 'Open' }))
+
+    expect(readRootVariable('--keyboard-inset')).toBe(`${KEYBOARD_HEIGHT}px`)
+    expect(readRootVariable('--visible-height')).toBe(`${window.innerHeight - KEYBOARD_HEIGHT}px`)
+    act(() => {
+      viewport.height = window.innerHeight
+      viewport.dispatchEvent(new Event('resize'))
+    })
+    expect(readRootVariable('--keyboard-inset')).toBe('0px')
+  })
+
+  it('Given a closed sheet, should stop following the keyboard', async () => {
+    const user = userEvent.setup()
+    stubKeyboard()
+    renderDialog()
+    await user.click(screen.getByRole('button', { name: 'Open' }))
+
+    await user.keyboard('{Escape}')
+
+    expect(readRootVariable('--keyboard-inset')).toBe('')
+    expect(readRootVariable('--visible-height')).toBe('')
   })
 })

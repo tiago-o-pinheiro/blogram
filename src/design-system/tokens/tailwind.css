@@ -8,6 +8,8 @@
   --spacing-admin-nav: var(--admin-nav-space);
   --spacing-admin-dock: var(--admin-dock-offset);
   --spacing-map: var(--map-height);
+  --spacing-keyboard: var(--keyboard-inset);
+  --spacing-visible: var(--visible-height);
   --spacing-sheet: var(--sheet-padding-bottom);
   --spacing-map-pin: var(--map-pin-size);
 
@@ -138,7 +140,7 @@
 
 @utility glass {
   background-color: var(--glass);
-  border: var(--glass-edge-width) solid var(--glass-edge);
+  border: var(--glass-edge-width) solid var(--glass-highlight);
   box-shadow: var(--elevation-glass);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));

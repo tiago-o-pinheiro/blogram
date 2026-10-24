@@ -78,6 +78,7 @@ export const PlacePicker = ({ value, onSave }: PlacePickerProps) => {
   )
   const timerRef = useRef<number | undefined>(undefined)
   const controllerRef = useRef<AbortController | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const activeSuggestion = suggestions[activeIndex]
   const isListOpen = selection === null && (searchState !== 'idle' || suggestions.length > 0)
 
@@ -124,6 +125,7 @@ export const PlacePicker = ({ value, onSave }: PlacePickerProps) => {
     setSelection({ name, coordinates: { lat: place.lat, lon: place.lon } })
     setSuggestions([])
     setSearchState('idle')
+    inputRef.current?.blur()
   }
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -163,6 +165,7 @@ export const PlacePicker = ({ value, onSave }: PlacePickerProps) => {
           className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
         />
         <input
+          ref={inputRef}
           type="search"
           role="combobox"
           aria-label={t('postForm.placeSearch')}
