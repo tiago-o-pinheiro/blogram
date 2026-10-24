@@ -75,4 +75,10 @@ export const parseEnv = (source: Record<string, string | undefined>): Env => {
   return parsed
 }
 
+export const toTrustedOrigins = (value: string): string[] =>
+  value
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+
 export const env = parseEnv(process.env)

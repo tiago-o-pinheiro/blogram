@@ -6,7 +6,7 @@ import { and, eq } from 'drizzle-orm'
 
 import { OWNER_PASSWORD_MAX, OWNER_PASSWORD_MIN } from '@/models/models'
 
-import { env } from '@/server/config/env'
+import { env, toTrustedOrigins } from '@/server/config/env'
 import { db } from '@/server/lib/db'
 import * as schema from '@/server/modules/auth/schemas/auth.table'
 
@@ -15,7 +15,7 @@ const FRESH_SESSION_SECONDS = 300
 export const auth = betterAuth({
   baseURL: env.BETTER_AUTH_URL,
   secret: env.BETTER_AUTH_SECRET,
-  trustedOrigins: [env.CORS_ORIGIN],
+  trustedOrigins: toTrustedOrigins(env.CORS_ORIGIN),
   database: drizzleAdapter(db, { provider: 'pg', schema }),
   socialProviders:
     env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET

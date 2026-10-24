@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 
 import { Models } from '@/models'
 
-import { parseEnv } from './env'
+import { parseEnv, toTrustedOrigins } from './env'
 
 describe('parseEnv', () => {
   it('Given the documented example environment, should accept local storage without S3 credentials', () => {
@@ -105,5 +105,14 @@ describe('parseEnv', () => {
 
     expect(parse).toThrow(/PORT/)
     expect(parse).toThrow(/NODE_ENV/)
+  })
+})
+
+describe('toTrustedOrigins', () => {
+  it('Given comma separated domains, should trust each origin without blanks', () => {
+    expect(toTrustedOrigins(' https://a.example , https://b.example,')).toEqual([
+      'https://a.example',
+      'https://b.example',
+    ])
   })
 })

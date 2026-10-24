@@ -210,7 +210,7 @@ Configuration is parsed in `src/server/config/env.ts`. Keep secrets on the serve
 | `DATABASE_URL`            | Local PostgreSQL sample URL | Database; production Compose overrides it inside containers                 |
 | `BETTER_AUTH_SECRET`      | Development sample          | Unique stable secret, at least 32 characters; sample rejected in production |
 | `BETTER_AUTH_URL`         | `http://localhost:3000`     | Public application/auth origin; HTTPS in production                         |
-| `CORS_ORIGIN`             | `http://localhost:3000`     | Trusted auth origin; match canonical origin                                 |
+| `CORS_ORIGIN`             | `http://localhost:3000`     | Trusted auth origins, comma-separated; include every public domain          |
 | `SETUP_PASSWORD`          | Unset                       | At least 12 characters until setup; remove afterward                        |
 | `STORAGE_DRIVER`          | `local`                     | `local` or `s3`                                                             |
 | `STORAGE_LOCAL_DIR`       | `.data/uploads`             | Persistent media directory; absolute path recommended for a service         |
