@@ -118,12 +118,12 @@ export const ProfileForm = ({ profile, maxPhotoBytes }: ProfileFormProps) => {
           onChange={handlePhotoChange}
         />
         {errorKey ? (
-          <p role="alert" className="text-sm text-danger">
+          <p role="alert" className="animate-rise-in text-sm text-danger">
             {t(errorKey)}
           </p>
         ) : null}
         {isSaved ? (
-          <p role="status" className="text-sm text-muted-foreground">
+          <p role="status" className="animate-rise-in text-sm text-muted-foreground">
             {t('profileAdmin.saved')}
           </p>
         ) : null}

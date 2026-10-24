@@ -296,27 +296,33 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
       ) : null}
       <div className={cn('grid gap-6 lg:items-start', hasMedia && 'lg:grid-cols-2')}>
         {hasMedia ? (
-          <PostMediaFields
-            key={postType}
-            postType={postType}
-            post={mediaPost}
-            file={file}
-            poster={poster}
-            altText={altText}
-            isDisabled={isPending}
-            maxImageBytes={maxImageBytes}
-            maxVideoBytes={maxVideoBytes}
-            onFileChange={(selection) =>
-              handleSelection(
-                selection,
-                setFile,
-                postType === 'video' ? VIDEO_REPLACEMENT : IMAGE_REPLACEMENT,
-              )
-            }
-            onPosterChange={(selection) => handleSelection(selection, setPoster, IMAGE_REPLACEMENT)}
-          />
+          <div key={`media-${postType}`} className="min-w-0 animate-rise-in">
+            <PostMediaFields
+              postType={postType}
+              post={mediaPost}
+              file={file}
+              poster={poster}
+              altText={altText}
+              isDisabled={isPending}
+              maxImageBytes={maxImageBytes}
+              maxVideoBytes={maxVideoBytes}
+              onFileChange={(selection) =>
+                handleSelection(
+                  selection,
+                  setFile,
+                  postType === 'video' ? VIDEO_REPLACEMENT : IMAGE_REPLACEMENT,
+                )
+              }
+              onPosterChange={(selection) =>
+                handleSelection(selection, setPoster, IMAGE_REPLACEMENT)
+              }
+            />
+          </div>
         ) : null}
-        <div className={cn('flex flex-col gap-4', !hasMedia && 'max-w-2xl')}>
+        <div
+          key={`fields-${postType}`}
+          className={cn('flex flex-col gap-4 stagger *:animate-rise-in', !hasMedia && 'max-w-2xl')}
+        >
           {postType === 'youtube' ? (
             <Field
               label={t('postForm.youtubeUrl')}

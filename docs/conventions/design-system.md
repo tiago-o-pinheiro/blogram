@@ -97,7 +97,7 @@ Order in the app global CSS is fixed:
 2. Add the mapping to `tailwind.css` (`--color-*`, `--radius-*`, `--shadow-*`, `--animate-*`, ...). `tailwind.css` maps and composes variables only; it holds no raw values.
 3. Never define a value inside a component. No opacity modifiers on colors (`bg-primary/90`): add a named role instead.
 
-Motion: use the `animate-*` utilities (`page-in`, `rise-in`, `fade-in`, `scale-in`, `sheet-in`, `pop`, `pin-drop`), `stagger` on list parents and `press` on tappable elements. Reduced motion is handled globally.
+Motion: use the `animate-*` utilities (`page-in`, `rise-in`, `fade-in`, `scale-in`, `sheet-in`, `pop`, `pin-drop`), `stagger` on list parents and `press` on tappable elements. Reduced motion is handled by the `REDUCED_MOTION` tokens.
 
 ## Visual rules
 
@@ -111,9 +111,17 @@ Motion: use the `animate-*` utilities (`page-in`, `rise-in`, `fade-in`, `scale-i
 
 ## Motion and feedback
 
+Every component animates. A screen without motion is unfinished. [review]
+
 - Durations and easing come from tokens, never literals.
 - Ease-out (deceleration) for entrances; shorter exits.
-- Respect `prefers-reduced-motion`: drop transforms, keep opacity.
+- Entrances: anything that mounts gets an `animate-*` entrance (`rise-in` for blocks and messages, `scale-in` for chips, badges and icons, `fade-in` for overlays and swapped labels). List and page parents add `stagger` (or `stagger *:animate-rise-in`).
+- State changes: interactive elements `press`; inputs, cards and anything that changes color, border or shadow get `transition`.
+- Swapped content: key the element by the value that changes (`key={status}`, `key={src}`) so its entrance replays.
+- Selection: segmented controls, filters and navigation slide a `SlidingPill` from `ui/sliding-pill`. The container is `relative` and renders the pill first; items are `relative`, carry `data-active` on the selected one, and keep their own selected background with `pill-ready:bg-transparent` so the first paint is right before the pill measures.
+- Overlays: dialogs and sheets animate in and out (`state-open:` / `state-closed:` variants); their header and footer rise in.
+- Sheets follow the visual viewport (`top-visible-bottom`, `max-h-visible`, `follow-viewport`), so the on-screen keyboard never covers them and never leaves a gap.
+- Respect `prefers-reduced-motion` through tokens: `REDUCED_MOTION` in `theme.ts` zeroes distances and scales, so animations keep their fades and drop movement. Never disable animations wholesale.
 - Every interaction gives feedback within about 100ms (pressed state, optimistic update, or progress).
 
 ## States

@@ -64,20 +64,21 @@ const WizardStepper = ({ step }: StepProps) => {
           aria-label={t(item.labelKey)}
           aria-current={item.step === step ? 'step' : undefined}
           className={cn(
-            'flex min-w-0 flex-col items-center gap-2 text-center text-xs sm:flex-row sm:text-left sm:text-sm',
+            'flex min-w-0 flex-col items-center gap-2 text-center text-xs transition-colors sm:flex-row sm:text-left sm:text-sm',
             item.step === step ? 'font-semibold' : 'text-muted-foreground',
           )}
         >
           <span
             aria-hidden="true"
             className={cn(
-              'flex size-8 shrink-0 items-center justify-center rounded-full border text-xs',
-              item.step === step && 'border-primary bg-primary text-primary-foreground shadow-sm',
+              'flex size-8 shrink-0 items-center justify-center rounded-full border text-xs transition',
+              item.step === step &&
+                'animate-pop border-primary bg-primary text-primary-foreground shadow-sm',
               item.step < step && 'border-accent bg-accent text-accent-foreground',
               item.step > step && 'border-line-strong bg-background text-muted-foreground',
             )}
           >
-            {item.step < step ? <Check className="size-4" /> : `0${item.step}`}
+            {item.step < step ? <Check className="size-4 animate-scale-in" /> : `0${item.step}`}
           </span>
           <span>{t(item.labelKey)}</span>
         </li>

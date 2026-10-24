@@ -8,6 +8,7 @@ import { useState } from 'react'
 
 import { Button, buttonVariants } from '@/design-system/ui/button'
 import { cn } from '@/design-system/ui/lib/cn'
+import { SlidingPill } from '@/design-system/ui/sliding-pill'
 import { type TranslationKey } from '@/i18n'
 import { useT } from '@/i18n/i18n-context'
 import * as Models from '@/models/models'
@@ -40,7 +41,7 @@ const STATUS_FILTERS: readonly StatusFilter[] = [
 ]
 
 const LINK_CLASS =
-  'inline-flex min-h-11 min-w-11 items-center justify-center px-3 text-sm underline focus-visible:outline-2 focus-visible:outline-ring'
+  'inline-flex min-h-11 min-w-11 press items-center justify-center rounded-full px-3 text-sm underline hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring'
 
 const PostThumbnail = ({ post }: { post: Models.Post }) => {
   const t = useT()
@@ -108,7 +109,11 @@ const PostRow = ({ post }: { post: Models.Post }) => {
               post.image?.altText ||
               t(`posts.type.${post.type}`)}
           </p>
-          <PostStatusBadge status={post.status} label={t(`posts.status.${post.status}`)} />
+          <PostStatusBadge
+            key={post.status}
+            status={post.status}
+            label={t(`posts.status.${post.status}`)}
+          />
         </div>
         <p className="flex flex-wrap gap-x-1.5 text-xs text-muted-foreground">
           <span>{t(`posts.type.${post.type}`)}</span>
@@ -118,7 +123,7 @@ const PostRow = ({ post }: { post: Models.Post }) => {
           <span>{t('postList.likes', { count: post.likes })}</span>
         </p>
         {errorKey ? (
-          <p role="alert" className="text-sm text-danger">
+          <p role="alert" className="animate-rise-in text-sm text-danger">
             {t(errorKey)}
           </p>
         ) : null}
@@ -192,17 +197,19 @@ export const PostList = ({ page, status }: PostListProps) => {
     <div className="flex flex-col gap-6">
       <nav
         aria-label={t('postList.filterLabel')}
-        className="flex gap-1 rounded-full glass p-1 sm:w-fit"
+        className="relative flex gap-1 rounded-full glass p-1 sm:w-fit"
       >
+        <SlidingPill activeKey={status ?? 'all'} className="rounded-full bg-foreground shadow-sm" />
         {STATUS_FILTERS.map((filter) => (
           <Link
             key={filter.href}
             href={filter.href}
             aria-current={filter.status === status ? 'page' : undefined}
+            data-active={filter.status === status || undefined}
             className={cn(
-              'inline-flex min-h-11 flex-1 items-center justify-center rounded-full px-4 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-ring motion-reduce:transition-none',
+              'relative inline-flex min-h-11 flex-1 press items-center justify-center rounded-full px-4 text-sm font-medium focus-visible:outline-2 focus-visible:outline-ring',
               filter.status === status
-                ? 'bg-foreground text-background'
+                ? 'bg-foreground text-background pill-ready:bg-transparent'
                 : 'text-muted-foreground hover:bg-muted',
             )}
           >
@@ -211,7 +218,7 @@ export const PostList = ({ page, status }: PostListProps) => {
         ))}
       </nav>
       {total === 0 ? (
-        <div className="flex flex-col items-start gap-4">
+        <div className="flex animate-rise-in flex-col items-start gap-4">
           <p className="text-muted-foreground">{t('postList.empty')}</p>
           <Link href="/admin/posts/new" className={buttonVariants()}>
             {t('postList.emptyAction')}

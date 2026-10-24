@@ -45,7 +45,7 @@ export const ReviewStep = () => {
             photoSrc={photoPreviewUrl ?? (profile.hasPhoto ? PROFILE_PHOTO_PATH : null)}
           />
         ) : (
-          <p role="alert" className="text-sm text-danger">
+          <p role="alert" className="animate-rise-in text-sm text-danger">
             {t('finalize.review.missingProfile')}
           </p>
         )}
@@ -87,7 +87,7 @@ export const ReviewStep = () => {
           {t('wizard.review.readyHint')}
         </p>
         {errorMessage ? (
-          <p role="alert" className="text-sm text-danger">
+          <p role="alert" className="animate-rise-in text-sm text-danger">
             {errorMessage}
           </p>
         ) : null}

@@ -52,7 +52,7 @@ export const PostMedia = ({ post }: { post: Models.Post }) => {
   if (post.type === 'youtube' && post.youtube) {
     return isPlaying ? (
       <iframe
-        className="aspect-video w-full"
+        className="aspect-video w-full animate-fade-in"
         src={`https://www.youtube-nocookie.com/embed/${post.youtube.videoId}?autoplay=1&rel=0`}
         title={post.text || t('feed.youtube')}
         allow="autoplay; encrypted-media; picture-in-picture; fullscreen"

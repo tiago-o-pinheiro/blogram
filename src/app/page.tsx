@@ -50,7 +50,7 @@ const Page = async ({ searchParams }: HomePageProps = {}) => {
   })
 
   return (
-    <main className="mx-auto min-h-dvh max-w-5xl animate-page-in px-4 py-8 sm:px-8 sm:py-12">
+    <main className="mx-auto min-h-dvh max-w-5xl animate-fade-in px-4 py-8 sm:px-8 sm:py-12">
       <div className="mb-10 sm:mb-14">
         <ProfileHeader
           name={profile.name}
@@ -71,14 +71,14 @@ const Page = async ({ searchParams }: HomePageProps = {}) => {
           {messages['feed.builtWith']}{' '}
           <a
             href="https://github.com/tiago-o-pinheiro/blogram"
-            className="inline-flex min-h-11 items-center underline underline-offset-4 hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+            className="inline-flex min-h-11 items-center underline underline-offset-4 transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
           >
             Blogram
           </a>
         </p>
         <Link
           href="/admin"
-          className="inline-flex min-h-11 items-center hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+          className="inline-flex min-h-11 items-center transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
         >
           {messages['feed.owner']}
         </Link>

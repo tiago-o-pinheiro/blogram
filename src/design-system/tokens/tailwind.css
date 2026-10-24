@@ -1,6 +1,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 @custom-variant state-open (&[data-state='open']);
 @custom-variant state-closed (&[data-state='closed']);
+@custom-variant pill-ready (:where([data-pill-ready]) &);
 
 @theme inline {
   --spacing-safe: var(--safe-bottom);
@@ -8,7 +9,7 @@
   --spacing-admin-nav: var(--admin-nav-space);
   --spacing-admin-dock: var(--admin-dock-offset);
   --spacing-map: var(--map-height);
-  --spacing-keyboard: var(--keyboard-inset);
+  --spacing-visible-bottom: var(--visible-bottom);
   --spacing-visible: var(--visible-height);
   --spacing-sheet: var(--sheet-padding-bottom);
   --spacing-map-pin: var(--map-pin-size);
@@ -114,13 +115,15 @@
 
   @keyframes sheet-in {
     from {
-      transform: translateY(100%);
+      opacity: var(--motion-sheet-fade);
+      transform: translateY(var(--motion-sheet));
     }
   }
 
   @keyframes sheet-out {
     to {
-      transform: translateY(100%);
+      opacity: var(--motion-sheet-fade);
+      transform: translateY(var(--motion-sheet));
     }
   }
 
@@ -165,6 +168,26 @@
   }
 }
 
+@utility glide {
+  transition-property: translate, width, height, opacity, background-color;
+  transition-duration: var(--motion-slow);
+  transition-timing-function: var(--motion-ease-out);
+
+  @media (prefers-reduced-motion: reduce) {
+    transition-property: opacity, background-color;
+  }
+}
+
+@utility follow-viewport {
+  transition-property: top, max-height;
+  transition-duration: var(--motion-base);
+  transition-timing-function: var(--motion-ease-out);
+
+  @media (prefers-reduced-motion: reduce) {
+    transition-property: none;
+  }
+}
+
 @utility stagger {
   & > :nth-child(2) {
     animation-delay: var(--motion-stagger);
@@ -188,13 +211,8 @@
 
 @layer base {
   @media (prefers-reduced-motion: reduce) {
-    *,
-    ::before,
-    ::after {
-      animation-duration: 0.01ms !important;
-      animation-delay: 0ms !important;
-      transition-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
+    html {
+      scroll-behavior: auto;
     }
   }
 }

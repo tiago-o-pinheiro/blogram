@@ -23,8 +23,10 @@ const trackVisibleViewport = () => {
   }
   const root = document.documentElement
   const update = () => {
-    const keyboardInset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
-    root.style.setProperty('--keyboard-inset', `${Math.round(keyboardInset)}px`)
+    root.style.setProperty(
+      '--visible-bottom',
+      `${Math.round(viewport.offsetTop + viewport.height)}px`,
+    )
     root.style.setProperty('--visible-height', `${Math.round(viewport.height)}px`)
   }
   update()
@@ -33,7 +35,7 @@ const trackVisibleViewport = () => {
   return () => {
     viewport.removeEventListener('resize', update)
     viewport.removeEventListener('scroll', update)
-    root.style.removeProperty('--keyboard-inset')
+    root.style.removeProperty('--visible-bottom')
     root.style.removeProperty('--visible-height')
   }
 }
@@ -48,9 +50,9 @@ export const DialogContent = ({ className, children, ...props }: DialogContentPr
     <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-scrim backdrop-blur-scrim state-open:animate-fade-in state-closed:animate-fade-out" />
     <DialogPrimitive.Content
       className={cn(
-        'fixed inset-x-0 bottom-keyboard z-50 flex max-h-visible w-full flex-col gap-4 overflow-y-auto overscroll-contain rounded-t-2xl border border-line bg-popover p-6 pb-sheet text-popover-foreground shadow-md outline-none',
+        'fixed inset-x-0 top-visible-bottom z-50 flex max-h-visible w-full -translate-y-full flex-col gap-4 overflow-y-auto overscroll-contain rounded-t-2xl border border-line bg-popover p-6 pb-sheet text-popover-foreground shadow-md follow-viewport stagger outline-none',
         'state-open:animate-sheet-in state-closed:animate-sheet-out',
-        'sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:max-h-dvh sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:pb-6',
+        'sm:inset-x-auto sm:top-1/2 sm:left-1/2 sm:max-h-dvh sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:pb-6',
         'sm:state-open:animate-scale-in sm:state-closed:animate-scale-out',
         className,
       )}
@@ -71,12 +73,15 @@ export const DialogContent = ({ className, children, ...props }: DialogContentPr
 )
 
 export const DialogHeader = ({ className, ...props }: DialogHeaderProps) => (
-  <div className={cn('flex flex-col gap-1.5', className)} {...props} />
+  <div className={cn('flex animate-rise-in flex-col gap-1.5', className)} {...props} />
 )
 
 export const DialogFooter = ({ className, ...props }: DialogFooterProps) => (
   <div
-    className={cn('flex flex-col-reverse gap-2 sm:flex-row sm:justify-end', className)}
+    className={cn(
+      'flex animate-rise-in flex-col-reverse gap-2 sm:flex-row sm:justify-end',
+      className,
+    )}
     {...props}
   />
 )

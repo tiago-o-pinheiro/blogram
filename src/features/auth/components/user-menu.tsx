@@ -23,7 +23,7 @@ export const UserMenu = () => {
   }
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex animate-fade-in items-center gap-4">
       <p>{t('menu.signedInAs', { name: data.user.name })}</p>
       <Button variant="secondary" onClick={() => void authClient.signOut()}>
         {t('menu.signOut')}

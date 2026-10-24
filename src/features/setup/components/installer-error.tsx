@@ -6,7 +6,7 @@ export const InstallerError = () => {
   const t = useT()
 
   return (
-    <section role="alert" className="flex flex-col gap-3 p-6">
+    <section role="alert" className="flex animate-rise-in flex-col gap-3 p-6">
       <h1 className="text-2xl font-semibold">{t('unlock.installer.title')}</h1>
       <p className="text-muted-foreground">{t('unlock.installer.description')}</p>
       <ol className="list-decimal pl-6">

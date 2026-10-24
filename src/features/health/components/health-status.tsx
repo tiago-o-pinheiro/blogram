@@ -42,7 +42,11 @@ const useHealth = () => {
 }
 
 const HealthStatusSkeleton = () => (
-  <div role="status" aria-label="Checking API status" className="flex flex-col gap-2">
+  <div
+    role="status"
+    aria-label="Checking API status"
+    className="flex animate-rise-in flex-col gap-2"
+  >
     <Skeleton className="h-5 w-32" />
     <Skeleton className="h-4 w-48" />
   </div>
@@ -62,7 +66,7 @@ export const HealthStatus = () => {
       {phase === 'loading' ? <HealthStatusSkeleton /> : null}
       {phase === 'ok' ? <p className="text-foreground">The API is online.</p> : null}
       {phase === 'error' ? (
-        <div role="alert" className="flex flex-col items-start gap-3">
+        <div role="alert" className="flex animate-rise-in flex-col items-start gap-3">
           <p className="text-danger">We could not reach the API.</p>
           <Button variant="secondary" onClick={refetch}>
             Retry

@@ -58,7 +58,7 @@ export const SignInForm = () => {
         maxLength={OWNER_PASSWORD_MAX}
       />
       {error ? (
-        <p role="alert" className="text-sm text-danger">
+        <p role="alert" className="animate-rise-in text-sm text-danger">
           {error}
         </p>
       ) : null}

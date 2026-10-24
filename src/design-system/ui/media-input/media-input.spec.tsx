@@ -4,6 +4,9 @@ import { useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { MediaInput, type MediaInputLabels, type MediaInputProps, type MediaSelection } from '.'
+import { shrinkImage } from './shrink-image'
+
+vi.mock('./shrink-image', () => ({ shrinkImage: vi.fn() }))
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const VIDEO_TYPES = ['video/mp4', 'video/webm']
@@ -640,5 +643,45 @@ describe('MediaInput avatar layout', () => {
     dispatchDrag(screen.getByText('Release to add'), 'drop', { files: [file] })
 
     expect(handleChange).toHaveBeenCalledExactlyOnceWith({ file, previewUrl: 'blob:one' })
+  })
+})
+
+describe('MediaInput shrinking', () => {
+  it('Given a heavy photo and a maximum edge, should hand over the reduced photo', async () => {
+    const user = userEvent.setup()
+    const handleChange = vi.fn()
+    const reduced = toFile('::reduced::.webp', 'image/webp')
+    vi.mocked(shrinkImage).mockResolvedValueOnce(reduced)
+    render(<Harness maxEdge={2560} onChange={handleChange} />)
+
+    await user.upload(screen.getByLabelText('Photo'), toOversizeFile(PHOTO_NAME))
+
+    expect(await screen.findByText('::reduced::.webp')).toBeVisible()
+    expect(handleChange).toHaveBeenCalledExactlyOnceWith({ file: reduced, previewUrl: 'blob:one' })
+    expect(vi.mocked(shrinkImage)).toHaveBeenCalledWith(expect.any(File), 2560)
+  })
+
+  it('Given a photo that is still too heavy after shrinking, should explain the limit', async () => {
+    const user = userEvent.setup()
+    const handleChange = vi.fn()
+    vi.mocked(shrinkImage).mockImplementationOnce((file) => Promise.resolve(file))
+    render(<Harness maxEdge={2560} onChange={handleChange} />)
+
+    await user.upload(screen.getByLabelText('Photo'), toOversizeFile(PHOTO_NAME))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(`${PHOTO_NAME} is 20 MB`)
+    expect(handleChange).not.toHaveBeenCalled()
+  })
+
+  it('Given a video and a maximum edge, should keep the video untouched', async () => {
+    const user = userEvent.setup()
+    const handleChange = vi.fn()
+    const clip = toFile('::clip::.mp4', 'video/mp4')
+    render(<Harness kind="video" accept={VIDEO_TYPES} maxEdge={2560} onChange={handleChange} />)
+
+    await user.upload(screen.getByLabelText('Photo'), clip)
+
+    expect(handleChange).toHaveBeenCalledExactlyOnceWith({ file: clip, previewUrl: 'blob:one' })
+    expect(vi.mocked(shrinkImage)).not.toHaveBeenCalled()
   })
 })

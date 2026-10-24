@@ -95,7 +95,7 @@ export const GoogleAccountControls = ({
         </Button>
       ) : null}
       {error || searchParams.get('google') === 'error' ? (
-        <p role="alert" className="text-sm text-danger">
+        <p role="alert" className="animate-rise-in text-sm text-danger">
           {error || t('google.error')}
         </p>
       ) : null}

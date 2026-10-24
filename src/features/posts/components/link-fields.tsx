@@ -52,7 +52,7 @@ export const LinkFields = ({
         {t('postForm.metadata')}
       </Button>
       {hasMetadataError ? (
-        <p role="status" className="text-sm text-muted-foreground">
+        <p role="status" className="animate-rise-in text-sm text-muted-foreground">
           {t('postForm.metadataError')}
         </p>
       ) : null}

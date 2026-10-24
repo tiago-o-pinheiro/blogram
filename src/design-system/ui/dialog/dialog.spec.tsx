@@ -83,20 +83,45 @@ describe('Dialog', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('Given an on-screen keyboard, should keep the open sheet above it', async () => {
+  it('Given an on-screen keyboard, should end the open sheet where the keyboard starts', async () => {
     const user = userEvent.setup()
     const viewport = stubKeyboard()
     renderDialog()
 
     await user.click(screen.getByRole('button', { name: 'Open' }))
 
-    expect(readRootVariable('--keyboard-inset')).toBe(`${KEYBOARD_HEIGHT}px`)
+    expect(readRootVariable('--visible-bottom')).toBe(`${window.innerHeight - KEYBOARD_HEIGHT}px`)
     expect(readRootVariable('--visible-height')).toBe(`${window.innerHeight - KEYBOARD_HEIGHT}px`)
     act(() => {
       viewport.height = window.innerHeight
       viewport.dispatchEvent(new Event('resize'))
     })
-    expect(readRootVariable('--keyboard-inset')).toBe('0px')
+    expect(readRootVariable('--visible-bottom')).toBe(`${window.innerHeight}px`)
+  })
+
+  it('Given a browser that pans the visible area, should follow the panned bottom edge', async () => {
+    const user = userEvent.setup()
+    const viewport = stubKeyboard()
+    renderDialog()
+    await user.click(screen.getByRole('button', { name: 'Open' }))
+
+    act(() => {
+      viewport.offsetTop = KEYBOARD_HEIGHT
+      viewport.dispatchEvent(new Event('scroll'))
+    })
+
+    expect(readRootVariable('--visible-bottom')).toBe(`${window.innerHeight}px`)
+  })
+
+  it('Given a browser that shrinks the whole page for the keyboard, should not leave a gap above it', async () => {
+    const user = userEvent.setup()
+    const viewport = stubKeyboard()
+    vi.stubGlobal('innerHeight', viewport.height)
+    renderDialog()
+
+    await user.click(screen.getByRole('button', { name: 'Open' }))
+
+    expect(readRootVariable('--visible-bottom')).toBe(`${viewport.height}px`)
   })
 
   it('Given a closed sheet, should stop following the keyboard', async () => {
@@ -107,7 +132,7 @@ describe('Dialog', () => {
 
     await user.keyboard('{Escape}')
 
-    expect(readRootVariable('--keyboard-inset')).toBe('')
+    expect(readRootVariable('--visible-bottom')).toBe('')
     expect(readRootVariable('--visible-height')).toBe('')
   })
 })

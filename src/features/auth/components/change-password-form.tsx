@@ -75,12 +75,12 @@ export const ChangePasswordForm = () => {
         maxLength={OWNER_PASSWORD_MAX}
       />
       {errorKey ? (
-        <p role="alert" className="text-sm text-danger">
+        <p role="alert" className="animate-rise-in text-sm text-danger">
           {t(errorKey)}
         </p>
       ) : null}
       {isDone ? (
-        <p role="status" className="text-sm text-foreground">
+        <p role="status" className="animate-rise-in text-sm text-foreground">
           {t('account.success')}
         </p>
       ) : null}

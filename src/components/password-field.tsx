@@ -34,7 +34,9 @@ export const PasswordField = ({ label, hint, error, id, ...props }: PasswordFiel
         <p
           id={descriptionId}
           className={
-            error ? 'text-sm text-danger' : 'text-xs leading-relaxed text-muted-foreground'
+            error
+              ? 'animate-rise-in text-sm text-danger'
+              : 'text-xs leading-relaxed text-muted-foreground'
           }
         >
           {error || hint}

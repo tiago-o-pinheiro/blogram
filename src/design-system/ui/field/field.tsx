@@ -26,7 +26,7 @@ export const Field = ({ label, error, id, className, ...props }: FieldProps) => 
         {...props}
       />
       {error ? (
-        <p id={errorId} className="text-sm text-danger">
+        <p id={errorId} className="animate-rise-in text-sm text-danger">
           {error}
         </p>
       ) : null}

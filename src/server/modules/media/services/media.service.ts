@@ -14,7 +14,6 @@ const ALLOWED_FORMATS: readonly string[] = Models.IMAGE_UPLOAD_TYPES.map((type) 
   type.replace('image/', ''),
 )
 const DEFAULT_MAX_INPUT_PIXELS = 50_000_000
-const POST_IMAGE_MAX_EDGE = 2560
 const POST_IMAGE_QUALITY = 85
 const POST_IMAGE_PREFIX = 'posts'
 const POST_IMAGE_EXTENSION = 'webp'
@@ -185,8 +184,8 @@ export class MediaService {
         source
           .rotate()
           .resize({
-            width: POST_IMAGE_MAX_EDGE,
-            height: POST_IMAGE_MAX_EDGE,
+            width: Models.IMAGE_MAX_EDGE,
+            height: Models.IMAGE_MAX_EDGE,
             fit: 'inside',
             withoutEnlargement: true,
           })

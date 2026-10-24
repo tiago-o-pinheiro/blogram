@@ -110,6 +110,8 @@ const SHARED = {
   'motion-scale': '0.96',
   'motion-press': '0.96',
   'motion-pop': '1.3',
+  'motion-sheet': '100%',
+  'motion-sheet-fade': '1',
   'glass-blur': '1rem',
   'glass-saturate': '1.9',
   'glass-edge-width': '1px',
@@ -122,10 +124,20 @@ const SHARED = {
   'admin-nav-space': 'calc(6.5rem + var(--safe-bottom))',
   'admin-dock-offset': 'calc(5.5rem + var(--safe-bottom))',
   'sheet-padding-bottom': 'calc(1.5rem + var(--safe-bottom))',
-  'keyboard-inset': '0px',
+  'visible-bottom': '100%',
   'visible-height': '100dvh',
   'map-height': '16rem',
   'map-pin-size': '1.75rem',
+} as const
+
+const REDUCED_MOTION = {
+  'motion-rise': '0',
+  'motion-drop': '0',
+  'motion-scale': '1',
+  'motion-press': '1',
+  'motion-pop': '1',
+  'motion-sheet': '0%',
+  'motion-sheet-fade': '0',
 } as const
 
 export const SHARE_CARD_COLORS = {
@@ -140,4 +152,4 @@ const toVariables = (tokens: Readonly<Record<string, string>>): string =>
     .map(([name, value]) => `--${name}:${value};`)
     .join('')
 
-export const THEME_CSS = `:root{${toVariables({ ...SHARED, ...DERIVED, ...THEMES.light })}}.dark{${toVariables(THEMES.dark)}}`
+export const THEME_CSS = `:root{${toVariables({ ...SHARED, ...DERIVED, ...THEMES.light })}}.dark{${toVariables(THEMES.dark)}}@media (prefers-reduced-motion: reduce){:root{${toVariables(REDUCED_MOTION)}}}`

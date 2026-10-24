@@ -37,7 +37,7 @@ export const SignOutButton = () => {
     <div className="flex flex-col items-start gap-3">
       {' '}
       {hasSignOutError ? (
-        <p role="alert" className="px-2 text-sm text-danger">
+        <p role="alert" className="animate-rise-in px-2 text-sm text-danger">
           {t('adminShell.signOutError')}
         </p>
       ) : null}

@@ -45,7 +45,7 @@ export const UnlockForm = () => {
     <form onSubmit={(event) => void handleSubmit(event)} className="flex flex-col gap-4">
       <PasswordField label={t('unlock.password')} name="password" required autoComplete="off" />
       {errorKey ? (
-        <p role="alert" className="text-sm text-danger">
+        <p role="alert" className="animate-rise-in text-sm text-danger">
           {t(errorKey)}
         </p>
       ) : null}

@@ -60,6 +60,7 @@ These files override any default. Read the relevant ones before writing code.
 6. No `as` casts (except `as const`), no `any`, no `!`, no enums, no comments, arrow functions only.
 7. Env is read in one typed module; never `process.env` elsewhere.
 8. Before done: `node scripts/check.mjs` must pass.
+9. Everything moves. Every component animates its entrance and transitions its state changes with the motion tokens (`animate-*`, `transition`, `press`, `stagger`). Selected options slide with `SlidingPill`, dialogs and sheets animate in and out, swapped content is keyed so its entrance replays. Reduced motion keeps fades and drops movement through tokens; never switch animation off globally. See the Motion section of docs/conventions/design-system.md.
 
 ## Pipeline
 

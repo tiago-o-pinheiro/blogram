@@ -5,6 +5,7 @@ import { type ChangeEvent, type DragEvent, useEffect, useRef, useState } from 'r
 
 import { Button } from '../button'
 import { formatFileSize } from './media-format'
+import { shrinkImage } from './shrink-image'
 import { cn } from '../lib/cn'
 
 export type MediaSelection = { file: File; previewUrl: string }
@@ -21,6 +22,7 @@ export type MediaInputLabels = {
   accepted: string
   maxSize: string
   note?: string
+  preparing?: string
   formatSelected: (name: string) => string
   formatTypeError: (name: string) => string
   formatSizeError: (name: string, size: string) => string
@@ -34,6 +36,7 @@ export type MediaInputProps = {
   aspect?: 'portrait' | 'landscape'
   accept: readonly string[]
   maxBytes: number
+  maxEdge?: number
   value: MediaSelection | null
   savedSrc?: string | null
   alt?: string
@@ -85,7 +88,7 @@ const MediaPreview = ({ kind, src, alt }: MediaPreviewProps) => {
 }
 
 const FileSummary = ({ file }: { file: File }) => (
-  <p className="flex w-full max-w-full min-w-0 items-baseline gap-2">
+  <p className="flex w-full max-w-full min-w-0 animate-rise-in items-baseline gap-2">
     <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground" title={file.name}>
       {file.name}
     </span>
@@ -94,6 +97,16 @@ const FileSummary = ({ file }: { file: File }) => (
 )
 
 type MediaLegendProps = { id: string; labels: MediaInputLabels }
+
+const PreparingOverlay = ({ label }: { label?: string }) => (
+  <div className="absolute inset-0 z-10 flex animate-fade-in flex-col items-center justify-center gap-2 bg-accent-overlay text-sm font-medium text-primary">
+    <span
+      aria-hidden="true"
+      className="size-5 animate-spin rounded-full border-2 border-current border-t-transparent motion-reduce:animate-none"
+    />
+    {label ? <span className="sr-only sm:not-sr-only">{label}</span> : null}
+  </div>
+)
 
 const MediaLegend = ({ id, labels }: MediaLegendProps) => (
   <div id={id} className="flex flex-col gap-1 text-xs text-muted-foreground">
@@ -115,6 +128,7 @@ export const MediaInput = ({
   aspect = 'landscape',
   accept,
   maxBytes,
+  maxEdge,
   value,
   savedSrc = null,
   alt = '',
@@ -126,11 +140,13 @@ export const MediaInput = ({
   const chooseRef = useRef<HTMLButtonElement>(null)
   const shouldFocusChooseRef = useRef(false)
   const [isDragging, setIsDragging] = useState(false)
+  const [isPreparing, setIsPreparing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [announcement, setAnnouncement] = useState('')
   const previewUrl = value?.previewUrl
   const src = previewUrl ?? savedSrc
   const legendId = `${id}-legend`
+  const isLocked = isDisabled || isPreparing
 
   useEffect(() => {
     if (previewUrl) {
@@ -146,11 +162,7 @@ export const MediaInput = ({
     }
   })
 
-  const handleFile = (file: File) => {
-    if (!accept.includes(file.type)) {
-      setError(labels.formatTypeError(file.name))
-      return
-    }
+  const acceptFile = (file: File) => {
     if (file.size > maxBytes) {
       setError(labels.formatSizeError(file.name, formatFileSize(file.size, 'up')))
       return
@@ -158,6 +170,24 @@ export const MediaInput = ({
     setError(null)
     setAnnouncement(labels.formatSelected(file.name))
     onChange({ file, previewUrl: URL.createObjectURL(file) })
+  }
+
+  const handleFile = (file: File) => {
+    if (!accept.includes(file.type)) {
+      setError(labels.formatTypeError(file.name))
+      return
+    }
+    if (kind !== 'image' || !maxEdge) {
+      acceptFile(file)
+      return
+    }
+    setError(null)
+    setIsPreparing(true)
+    setAnnouncement(labels.preparing ?? '')
+    void shrinkImage(file, maxEdge).then((prepared) => {
+      setIsPreparing(false)
+      acceptFile(prepared)
+    })
   }
 
   const handleChoose = () => {
@@ -184,8 +214,8 @@ export const MediaInput = ({
       return
     }
     event.preventDefault()
-    event.dataTransfer.dropEffect = isDisabled ? 'none' : 'copy'
-    setIsDragging(!isDisabled)
+    event.dataTransfer.dropEffect = isLocked ? 'none' : 'copy'
+    setIsDragging(!isLocked)
   }
 
   const handleDragLeave = (event: DragEvent<HTMLDivElement>) => {
@@ -199,7 +229,7 @@ export const MediaInput = ({
     event.preventDefault()
     setIsDragging(false)
     const file = Array.from(event.dataTransfer.files)[0]
-    if (file && !isDisabled) {
+    if (file && !isLocked) {
       handleFile(file)
     }
   }
@@ -211,7 +241,7 @@ export const MediaInput = ({
       name={name}
       type="file"
       accept={accept.join(',')}
-      disabled={isDisabled}
+      disabled={isLocked}
       tabIndex={-1}
       aria-describedby={legendId}
       className="sr-only"
@@ -223,7 +253,11 @@ export const MediaInput = ({
     <>
       <MediaLegend id={legendId} labels={labels} />
       {error ? (
-        <p role="alert" className="flex items-start gap-2 text-sm text-danger">
+        <p
+          key={error}
+          role="alert"
+          className="flex animate-rise-in items-start gap-2 text-sm text-danger"
+        >
           <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
           {error}
         </p>
@@ -251,40 +285,54 @@ export const MediaInput = ({
         <div className="flex w-full min-w-0 items-center gap-4">
           <div
             className={cn(
-              'relative flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 transition-colors motion-reduce:transition-none',
+              'relative flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 transition',
               src
                 ? 'border-transparent bg-muted'
                 : 'border-dashed border-line-strong bg-surface text-muted-foreground',
-              isDragging && 'border-primary bg-accent-soft',
+              isDragging && 'border-primary bg-accent-soft ring-4 ring-accent-glow',
               isDisabled && 'opacity-disabled',
             )}
           >
             {src ? (
-              <PreviewImage src={src} alt={alt} className="size-full object-cover" />
+              <PreviewImage
+                key={src}
+                src={src}
+                alt={alt}
+                className="size-full animate-scale-in object-cover"
+              />
             ) : (
-              <User aria-hidden="true" className="size-8" />
+              <User aria-hidden="true" className="size-8 animate-fade-in" />
             )}
+            {isPreparing ? <PreparingOverlay /> : null}
           </div>
           <div className="flex min-w-0 flex-1 flex-col items-start gap-2">
             {value && !isDragging ? (
-              <FileSummary file={value.file} />
+              <FileSummary key={value.previewUrl} file={value.file} />
             ) : (
-              <p className="text-sm font-medium text-foreground">
-                {isDragging ? labels.release : idleLabel}
+              <p
+                key={isDragging ? 'release' : 'idle'}
+                className="animate-fade-in text-sm font-medium text-foreground"
+              >
+                {isPreparing ? labels.preparing : isDragging ? labels.release : idleLabel}
               </p>
             )}
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 ref={chooseRef}
                 variant="secondary"
-                disabled={isDisabled}
+                disabled={isLocked}
                 aria-describedby={legendId}
                 onClick={handleChoose}
               >
                 {chooseLabel}
               </Button>
               {value ? (
-                <Button variant="ghost" disabled={isDisabled} onClick={handleRemove}>
+                <Button
+                  variant="ghost"
+                  className="animate-scale-in"
+                  disabled={isLocked}
+                  onClick={handleRemove}
+                >
                   {removeLabel}
                 </Button>
               ) : null}
@@ -307,24 +355,24 @@ export const MediaInput = ({
       {input}
       <div
         className={cn(
-          'relative flex w-full items-center justify-center overflow-hidden rounded-xl border-2 transition-colors motion-reduce:transition-none',
+          'relative flex w-full items-center justify-center overflow-hidden rounded-xl border-2 transition',
           ASPECT_CLASSES[aspect],
           src ? 'border-transparent' : 'border-dashed border-line-strong bg-surface',
           src && (kind === 'video' ? 'bg-foreground' : 'bg-muted'),
-          isDragging && 'border-primary bg-accent-soft',
+          isDragging && 'border-primary bg-accent-soft ring-4 ring-accent-glow',
           isDisabled && 'opacity-disabled',
         )}
       >
         {src ? (
           <>
             <MediaPreview kind={kind} src={src} alt={alt} />
-            <div className="absolute top-3 right-3 flex gap-2">
+            <div className="absolute top-3 right-3 flex animate-scale-in gap-2">
               <Button
                 ref={chooseRef}
                 variant="glass"
                 size="icon"
                 className="rounded-full"
-                disabled={isDisabled}
+                disabled={isLocked}
                 aria-label={chooseLabel}
                 aria-describedby={legendId}
                 title={chooseLabel}
@@ -337,7 +385,7 @@ export const MediaInput = ({
                   variant="glass"
                   size="icon"
                   className="rounded-full"
-                  disabled={isDisabled}
+                  disabled={isLocked}
                   aria-label={removeLabel}
                   title={removeLabel}
                   onClick={handleRemove}
@@ -358,16 +406,24 @@ export const MediaInput = ({
           </>
         ) : (
           <div className="flex flex-col items-center gap-3 px-4 text-center">
-            <span className="flex size-12 items-center justify-center rounded-full bg-accent text-primary">
+            <span
+              className={cn(
+                'flex size-12 animate-scale-in items-center justify-center rounded-full bg-accent text-primary transition',
+                isDragging && 'animate-pop',
+              )}
+            >
               <Upload aria-hidden="true" className="size-5" />
             </span>
-            <p className="text-sm font-medium text-foreground">
+            <p
+              key={isDragging ? 'release' : 'drop'}
+              className="animate-fade-in text-sm font-medium text-foreground"
+            >
               {isDragging ? labels.release : labels.drop}
             </p>
             <Button
               ref={chooseRef}
               variant="secondary"
-              disabled={isDisabled}
+              disabled={isLocked}
               aria-describedby={legendId}
               onClick={handleChoose}
             >
@@ -375,8 +431,9 @@ export const MediaInput = ({
             </Button>
           </div>
         )}
+        {isPreparing ? <PreparingOverlay label={labels.preparing} /> : null}
       </div>
-      {value ? <FileSummary file={value.file} /> : null}
+      {value ? <FileSummary key={value.previewUrl} file={value.file} /> : null}
       {details}
     </div>
   )

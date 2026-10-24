@@ -2,7 +2,7 @@ import { Skeleton } from '@/design-system/ui/skeleton'
 
 const Loading = () => (
   <main
-    className="mx-auto flex min-h-dvh max-w-2xl flex-col items-center gap-6 px-4 py-16"
+    className="mx-auto flex min-h-dvh max-w-2xl animate-fade-in flex-col items-center gap-6 px-4 py-16"
     aria-busy="true"
   >
     <Skeleton className="size-24 rounded-full" />

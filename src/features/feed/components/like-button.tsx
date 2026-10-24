@@ -72,10 +72,14 @@ export const LikeButton = ({ id, likes }: { id: string; likes: number }) => {
           aria-hidden="true"
           className={cn('size-4', isLiked && 'fill-current', hasJustLiked && 'animate-pop')}
         />
-        <span aria-live="polite">{count}</span>
+        <span aria-live="polite">
+          <span key={count} className="inline-block animate-rise-in">
+            {count}
+          </span>
+        </span>
       </Button>
       {hasError ? (
-        <p role="alert" className="text-sm text-danger">
+        <p role="alert" className="animate-rise-in text-sm text-danger">
           {t('feed.likeError')}
         </p>
       ) : null}

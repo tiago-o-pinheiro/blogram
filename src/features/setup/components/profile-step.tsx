@@ -114,7 +114,7 @@ export const ProfileStep = ({
           onChange={(event) => setDescription(event.target.value)}
         />
         {errorKey ? (
-          <p role="alert" className="text-sm text-danger">
+          <p role="alert" className="animate-rise-in text-sm text-danger">
             {t(errorKey)}
           </p>
         ) : null}

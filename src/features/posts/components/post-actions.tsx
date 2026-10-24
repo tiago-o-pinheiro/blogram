@@ -57,9 +57,9 @@ export const PostActions = ({ post }: PostActionsProps) => {
         onClick={() => void handleToggle()}
       >
         {isDraft ? (
-          <Send aria-hidden="true" className="size-5" />
+          <Send aria-hidden="true" className="size-5 animate-scale-in" />
         ) : (
-          <EyeOff aria-hidden="true" className="size-5" />
+          <EyeOff aria-hidden="true" className="size-5 animate-scale-in" />
         )}
       </Button>
     </div>

@@ -16,6 +16,7 @@
   "mediaField.maxSize": "hasta {{max}}",
   "mediaField.videoNote": "Los vídeos verticales también valen.",
   "mediaField.or": "o",
+  "mediaField.preparing": "Optimizando foto…",
   "mediaField.selected": "Seleccionado {{name}}",
   "mediaField.error.type": "{{name}} no se puede usar. Formatos admitidos: {{formats}}.",
   "mediaField.error.size": "{{name}} pesa {{size}}. El límite es {{max}}, así que elige un archivo más pequeño."

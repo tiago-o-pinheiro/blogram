@@ -41,7 +41,7 @@ export const GoogleSignIn = ({ hasCallbackError = false }: { hasCallbackError?: 
         {t('google.signin')}
       </Button>
       {error || hasCallbackError ? (
-        <p role="alert" className="text-sm text-danger">
+        <p role="alert" className="animate-rise-in text-sm text-danger">
           {error || t('google.error')}
         </p>
       ) : null}

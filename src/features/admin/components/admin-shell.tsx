@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { type ReactNode } from 'react'
 
 import { cn } from '@/design-system/ui/lib/cn'
+import { SlidingPill } from '@/design-system/ui/sliding-pill'
 import { type TranslationKey } from '@/i18n'
 import { useT } from '@/i18n/i18n-context'
 
@@ -52,6 +53,7 @@ const NAV_ITEMS: readonly NavItem[] = [
 export const AdminShell = ({ children }: AdminShellProps) => {
   const t = useT()
   const pathname = usePathname()
+  const activeHref = NAV_ITEMS.find((item) => item.isActive(pathname))?.href ?? ''
 
   return (
     <div className="flex min-h-screen flex-col md:flex-col-reverse md:justify-end">
@@ -64,7 +66,8 @@ export const AdminShell = ({ children }: AdminShellProps) => {
           'md:sticky md:inset-x-0 md:top-0 md:bottom-auto md:left-auto md:max-w-none md:translate-x-0 md:animate-none md:rounded-none md:border-x-0 md:border-t-0 md:px-4 md:py-2',
         )}
       >
-        <ul className="flex items-center gap-1 md:gap-2">
+        <ul className="relative flex items-center gap-1 md:gap-2">
+          <SlidingPill activeKey={activeHref} className="rounded-full bg-accent shadow-sm" />
           {NAV_ITEMS.map((item) => {
             const isCurrent = item.isActive(pathname)
             return (
@@ -72,15 +75,19 @@ export const AdminShell = ({ children }: AdminShellProps) => {
                 <Link
                   href={item.href}
                   aria-current={isCurrent ? 'page' : undefined}
+                  data-active={isCurrent || undefined}
                   className={cn(
-                    'flex min-h-11 min-w-11 press flex-col items-center justify-center gap-0.5 rounded-full px-3 py-1.5 text-xs font-medium md:flex-row md:gap-2 md:py-2 md:text-sm',
+                    'relative flex min-h-11 min-w-11 press flex-col items-center justify-center gap-0.5 rounded-full px-3 py-1.5 text-xs font-medium md:flex-row md:gap-2 md:py-2 md:text-sm',
                     'focus-visible:outline-2 focus-visible:outline-ring',
                     isCurrent
-                      ? 'bg-accent text-accent-foreground shadow-sm'
+                      ? 'bg-accent text-accent-foreground shadow-sm pill-ready:bg-transparent pill-ready:shadow-none'
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                   )}
                 >
-                  <item.icon aria-hidden="true" className="size-5" />
+                  <item.icon
+                    aria-hidden="true"
+                    className={cn('size-5', isCurrent && 'animate-pop')}
+                  />
                   {t(item.labelKey)}
                 </Link>
               </li>

@@ -85,6 +85,7 @@ export const MediaField = ({
         aspect={kind === 'photo' ? 'portrait' : 'landscape'}
         accept={accept}
         maxBytes={maxBytes}
+        maxEdge={kind === 'video' ? undefined : Models.IMAGE_MAX_EDGE}
         value={value}
         savedSrc={savedSrc}
         alt={alt ?? label}
@@ -101,6 +102,7 @@ export const MediaField = ({
           accepted: formats,
           maxSize: t('mediaField.maxSize', { max }),
           note: kind === 'video' ? t('mediaField.videoNote') : undefined,
+          preparing: t('mediaField.preparing'),
           formatSelected: (fileName) => t('mediaField.selected', { name: fileName }),
           formatTypeError: (fileName) => t('mediaField.error.type', { name: fileName, formats }),
           formatSizeError: (fileName, size) =>

@@ -27,7 +27,7 @@ export const PostCard = ({ post, owner, origin, locale, messages }: PostCardProp
         <div className="flex min-w-0 flex-wrap items-center gap-x-3">
           <Link
             href={`/posts/${post.id}`}
-            className="inline-flex min-h-11 items-center text-sm font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+            className="inline-flex min-h-11 items-center text-sm font-medium underline-offset-4 transition-colors hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
             aria-label={t('feed.permalink')}
           >
             <time dateTime={date}>
@@ -48,7 +48,7 @@ export const PostCard = ({ post, owner, origin, locale, messages }: PostCardProp
           href={post.link.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="block space-y-3 border-b border-line p-5 hover:bg-surface focus-visible:outline-2 focus-visible:outline-ring"
+          className="group block space-y-3 border-b border-line p-5 transition-colors hover:bg-surface focus-visible:outline-2 focus-visible:outline-ring"
         >
           <p className="text-xs font-medium break-words text-muted-foreground">
             {post.link.source || new URL(post.link.url).hostname}
@@ -61,7 +61,10 @@ export const PostCard = ({ post, owner, origin, locale, messages }: PostCardProp
           ) : null}
           <span className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary">
             {t('feed.visit')}
-            <ArrowUpRight aria-hidden="true" className="size-4" />
+            <ArrowUpRight
+              aria-hidden="true"
+              className="size-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5 motion-reduce:translate-none"
+            />
           </span>
         </a>
       ) : null}

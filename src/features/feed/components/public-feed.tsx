@@ -1,6 +1,7 @@
 import Link from 'next/link'
 
 import { cn } from '@/design-system/ui/lib/cn'
+import { SlidingPill } from '@/design-system/ui/sliding-pill'
 import { type Locale, type Messages, createTranslator } from '@/i18n'
 import { Models } from '@/models'
 
@@ -23,18 +24,20 @@ export const PublicFeed = ({ page, filter, owner, origin, locale, messages }: Pu
     <section className="mx-auto w-full max-w-2xl space-y-8" aria-label={t('feed.label')}>
       <nav
         aria-label={t('feed.filters')}
-        className="sticky top-3 z-10 flex justify-start gap-1 overflow-x-auto rounded-full glass p-1 sm:justify-center"
+        className="sticky top-3 z-10 flex animate-rise-in justify-start gap-1 overflow-x-auto rounded-full glass p-1 sm:justify-center"
       >
+        <SlidingPill activeKey={filter} className="rounded-full bg-foreground shadow-sm" />
         {Models.FEED_FILTERS.map((type) => (
           <Link
             key={type}
             href={Models.toFeedHref(type)}
             scroll={false}
             aria-current={filter === type ? 'page' : undefined}
+            data-active={filter === type || undefined}
             className={cn(
-              'inline-flex min-h-11 shrink-0 items-center rounded-full px-3 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-ring motion-reduce:transition-none sm:px-5',
+              'relative inline-flex min-h-11 shrink-0 press items-center rounded-full px-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-ring sm:px-5',
               filter === type
-                ? 'bg-foreground text-background'
+                ? 'bg-foreground text-background pill-ready:bg-transparent'
                 : 'text-muted-foreground hover:bg-muted',
             )}
           >
@@ -66,7 +69,7 @@ export const PublicFeed = ({ page, filter, owner, origin, locale, messages }: Pu
           {hasPrevious ? (
             <Link
               href={Models.toFeedHref(filter, page.meta.page - 1)}
-              className="inline-flex min-h-11 items-center rounded-full border border-line-strong px-5 text-sm hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
+              className="inline-flex min-h-11 press animate-rise-in items-center rounded-full border border-line-strong px-5 text-sm hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
             >
               {t('feed.previous')}
             </Link>
@@ -76,7 +79,7 @@ export const PublicFeed = ({ page, filter, owner, origin, locale, messages }: Pu
           {hasNext ? (
             <Link
               href={Models.toFeedHref(filter, page.meta.page + 1)}
-              className="inline-flex min-h-11 items-center rounded-full border border-line-strong px-5 text-sm hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
+              className="inline-flex min-h-11 press animate-rise-in items-center rounded-full border border-line-strong px-5 text-sm hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
             >
               {t('feed.next')}
             </Link>

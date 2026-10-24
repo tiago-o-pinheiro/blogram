@@ -28,7 +28,7 @@ const OwnerAside = () => {
   const t = useT()
 
   return (
-    <aside className="flex flex-col gap-6 rounded-xl border border-line bg-surface-soft p-6 sm:p-8">
+    <aside className="flex animate-rise-in flex-col gap-6 rounded-xl border border-line bg-surface-soft p-6 sm:p-8">
       <div className="flex size-12 items-center justify-center rounded-lg bg-accent text-primary">
         <KeyRound className="size-5" aria-hidden="true" />
       </div>
@@ -101,7 +101,7 @@ export const OwnerStep = () => {
           className="min-h-12 rounded-lg"
         />
         {errorKey ? (
-          <p role="alert" className="text-sm text-danger">
+          <p role="alert" className="animate-rise-in text-sm text-danger">
             {t(errorKey)}
           </p>
         ) : null}

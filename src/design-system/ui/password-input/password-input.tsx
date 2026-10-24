@@ -40,9 +40,9 @@ export const PasswordInput = ({
         onClick={() => setIsVisible((visible) => !visible)}
       >
         {isVisible ? (
-          <EyeOff aria-hidden="true" className="size-4" />
+          <EyeOff aria-hidden="true" className="size-4 animate-scale-in" />
         ) : (
-          <Eye aria-hidden="true" className="size-4" />
+          <Eye aria-hidden="true" className="size-4 animate-scale-in" />
         )}
       </Button>
     </div>

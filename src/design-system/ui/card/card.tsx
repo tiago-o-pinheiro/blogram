@@ -12,7 +12,7 @@ export type CardFooterProps = ComponentProps<'div'>
 export const Card = ({ className, ...props }: CardProps) => (
   <div
     className={cn(
-      'flex flex-col gap-4 rounded-lg border border-border bg-card p-6 text-card-foreground shadow-sm',
+      'flex flex-col gap-4 rounded-lg border border-border bg-card p-6 text-card-foreground shadow-sm transition',
       className,
     )}
     {...props}

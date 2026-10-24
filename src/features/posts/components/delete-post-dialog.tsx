@@ -72,7 +72,7 @@ export const DeletePostDialog = ({ post, trigger, onDeleted }: DeletePostDialogP
           <DialogDescription>{t('postList.deleteDescription')}</DialogDescription>
         </DialogHeader>
         {errorKey ? (
-          <p role="alert" className="text-sm text-danger">
+          <p role="alert" className="animate-rise-in text-sm text-danger">
             {t(errorKey)}
           </p>
         ) : null}

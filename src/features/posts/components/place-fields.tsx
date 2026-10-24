@@ -42,7 +42,7 @@ export const PlaceFields = ({ value, onChange, isDisabled }: PlaceFieldsProps) =
             <span className="truncate">{value.name}</span>
           </p>
         ) : (
-          <div aria-hidden="true" className="flex min-w-0 flex-col gap-0.5">
+          <div aria-hidden="true" className="flex min-w-0 animate-fade-in flex-col gap-0.5">
             <span className="text-sm font-medium">{t('postForm.place')}</span>
             <span className="text-xs text-muted-foreground">{t('postForm.placeSummary')}</span>
           </div>
@@ -72,7 +72,7 @@ export const PlaceFields = ({ value, onChange, isDisabled }: PlaceFieldsProps) =
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full"
+              className="animate-scale-in rounded-full"
               aria-label={t('postForm.removePlace')}
               title={t('postForm.removePlace')}
               onClick={() => onChange(null)}

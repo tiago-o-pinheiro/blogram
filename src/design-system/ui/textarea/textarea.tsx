@@ -24,7 +24,7 @@ export const Textarea = ({ label, error, id, className, ...props }: TextareaProp
         className={cn(
           'min-h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base text-foreground',
           'placeholder:text-muted-foreground',
-          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+          'outline-2 outline-offset-2 outline-transparent transition focus-visible:border-ring focus-visible:outline-ring',
           'disabled:cursor-not-allowed disabled:opacity-disabled',
           'aria-invalid:border-danger',
           className,
@@ -32,7 +32,7 @@ export const Textarea = ({ label, error, id, className, ...props }: TextareaProp
         {...props}
       />
       {error ? (
-        <p id={errorId} className="text-sm text-danger">
+        <p id={errorId} className="animate-rise-in text-sm text-danger">
           {error}
         </p>
       ) : null}

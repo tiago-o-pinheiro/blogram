@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -92,6 +92,14 @@ const createObjectURL = vi.fn()
 const revokeObjectURL = vi.fn()
 
 const pngFile = () => new File(['a'], 'a.png', { type: 'image/png' })
+
+const deferResponse = () => {
+  const settle = { resolve: (_response: Response) => {} }
+  const promise = new Promise<Response>((resolve) => {
+    settle.resolve = resolve
+  })
+  return { promise, resolve: (response: Response) => settle.resolve(response) }
+}
 
 const textFile = () => new File(['t'], 't.txt', { type: 'text/plain' })
 
@@ -635,12 +643,13 @@ describe('PostForm edit', () => {
 
   it('Given a new photo, should call the image endpoint, refresh and keep previewing the new photo', async () => {
     const user = userEvent.setup()
-    const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(Response.json(REFRESHED_IMAGE_POST))
+    const upload = deferResponse()
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockReturnValue(upload.promise)
     renderForm({ post: POST })
 
     await user.upload(getFileInput('Photo'), pngFile())
+    expect(await screen.findByText('a.png')).toBeVisible()
+    act(() => upload.resolve(Response.json(REFRESHED_IMAGE_POST)))
 
     expect(await screen.findByRole('status')).toHaveTextContent('Image replaced.')
     const [url, init] = fetchSpy.mock.calls[0] ?? []
@@ -657,10 +666,13 @@ describe('PostForm edit', () => {
 
   it('Given a replaced photo, should show the saved image once the refreshed post arrives', async () => {
     const user = userEvent.setup()
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json(POST))
+    const upload = deferResponse()
+    vi.spyOn(globalThis, 'fetch').mockReturnValue(upload.promise)
     const { rerender } = renderForm({ post: POST })
 
     await user.upload(getFileInput('Photo'), pngFile())
+    expect(await screen.findByText('a.png')).toBeVisible()
+    act(() => upload.resolve(Response.json(POST)))
     expect(await screen.findByRole('status')).toHaveTextContent('Image replaced.')
     rerender(toForm(REFRESHED_IMAGE_POST))
 

@@ -70,12 +70,12 @@ export const LanguageForm = ({ settings }: LanguageFormProps) => {
       </Select>
       <p className="text-sm text-muted-foreground">{t('languageForm.hint')}</p>
       {errorKey ? (
-        <p role="alert" className="text-sm text-danger">
+        <p role="alert" className="animate-rise-in text-sm text-danger">
           {t(errorKey)}
         </p>
       ) : null}
       {isSaved ? (
-        <p role="status" className="text-sm text-muted-foreground">
+        <p role="status" className="animate-rise-in text-sm text-muted-foreground">
           {t('languageForm.saved')}
         </p>
       ) : null}

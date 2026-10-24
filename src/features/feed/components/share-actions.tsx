@@ -79,7 +79,7 @@ export const ShareActions = ({ id, title, url }: ShareActionsProps) => {
       ) : null}
       {shouldShowLink ? (
         <input
-          className="w-full rounded-md border border-border p-2 text-sm"
+          className="w-full animate-rise-in rounded-md border border-border p-2 text-sm"
           aria-label={t('feed.copy')}
           value={url}
           readOnly
