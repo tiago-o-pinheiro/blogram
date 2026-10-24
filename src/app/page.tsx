@@ -50,8 +50,8 @@ const Page = async ({ searchParams }: HomePageProps = {}) => {
   })
 
   return (
-    <main className="mx-auto min-h-dvh max-w-5xl animate-fade-in px-4 py-8 sm:px-8 sm:py-12">
-      <div className="mb-10 sm:mb-14">
+    <main className="mx-auto min-h-dvh max-w-5xl animate-fade-in px-4 pt-6 pb-8 sm:px-8 sm:py-12">
+      <div className="mb-6 sm:mb-10">
         <ProfileHeader
           name={profile.name}
           description={profile.description}

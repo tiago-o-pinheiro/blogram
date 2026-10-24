@@ -138,7 +138,7 @@ export const ProfileForm = ({ profile, maxPhotoBytes }: ProfileFormProps) => {
       </form>
       <section
         aria-label={t('profileAdmin.previewLabel')}
-        className="rounded-md border border-input"
+        className="rounded-md border border-input p-4"
       >
         <ProfileHeader
           as="h2"
