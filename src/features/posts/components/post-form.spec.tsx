@@ -446,12 +446,14 @@ describe('PostForm create', () => {
     renderForm()
 
     await user.upload(getFileInput('Photo'), pngFile())
+    await user.type(screen.getByLabelText('Title (optional)'), '::title::')
     await user.type(screen.getByLabelText('Alt text'), 'A sunrise')
     await user.type(screen.getByLabelText('Caption'), 'Sunrise')
     await user.click(screen.getByRole('button', { name: 'Save draft' }))
 
     await vi.waitFor(() => expect(push).toHaveBeenCalledWith('/admin/posts/AbCdEfGh12'))
     expect(fetchSpy.mock.calls[0]?.[0]).toBe('/api/admin/posts')
+    expect(readBody(fetchSpy).get('title')).toBe('::title::')
     expect(readBody(fetchSpy).get('altText')).toBe('A sunrise')
     expect(readBody(fetchSpy).get('text')).toBe('Sunrise')
     expect(readBody(fetchSpy).get('type')).toBe('photo')
@@ -587,6 +589,28 @@ describe('PostForm edit', () => {
     expect(screen.queryByRole('radio')).not.toBeInTheDocument()
   })
 
+  it('Given a titled post, should show its title and save a new one', async () => {
+    const user = userEvent.setup()
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json(POST))
+    renderForm({ post: { ...POST, title: '::title::' } })
+
+    await user.clear(screen.getByLabelText('Title (optional)'))
+    await user.type(screen.getByLabelText('Title (optional)'), '::new title::')
+    await user.click(screen.getByRole('button', { name: 'Save draft' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Changes saved.')
+    expect(JSON.parse(String(fetchSpy.mock.calls[0]?.[1]?.body))).toMatchObject({
+      title: '::new title::',
+    })
+  })
+
+  it('Given a link post, should keep the link title as its only title field', () => {
+    renderForm({ post: LINK_POST })
+
+    expect(screen.queryByLabelText('Title (optional)')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Title')).toHaveValue('::title::')
+  })
+
   it('Given Save draft, should persist text and alt text then refresh', async () => {
     const user = userEvent.setup()
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json(POST))
@@ -601,6 +625,7 @@ describe('PostForm edit', () => {
     expect(url).toBe('/api/admin/posts/AbCdEfGh12')
     expect(init?.method).toBe('PATCH')
     expect(JSON.parse(String(init?.body))).toEqual({
+      title: '',
       text: 'Sunrise',
       altText: 'Dawn',
       place: null,

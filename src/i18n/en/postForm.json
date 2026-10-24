@@ -46,5 +46,6 @@
   "postForm.placeMap": "Map of {{name}}",
   "postForm.placeDragHint": "Drag the pin to adjust",
   "postForm.placeSave": "Save place",
-  "postForm.placeCancel": "Cancel"
+  "postForm.placeCancel": "Cancel",
+  "postForm.postTitle": "Title (optional)"
 }

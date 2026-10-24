@@ -135,7 +135,13 @@ export class PostService {
         written.push(video.key)
       }
       const record = await db.transaction(async (tx) => {
-        const draft = await this.insertPost(tx, input.text, input.type, details, input.place)
+        const draft = await this.insertPost(tx, {
+          type: input.type,
+          title: Models.isLinkPostType(input.type) ? '' : (input.title?.trim() ?? ''),
+          text: input.text,
+          details,
+          place: input.place,
+        })
         const [image] = processed
           ? await tx
               .insert(media)
@@ -209,6 +215,9 @@ export class PostService {
         .set({
           ...(update.place !== undefined ? { place: update.place } : {}),
           ...(update.text !== undefined ? { text: update.text } : {}),
+          ...(update.title !== undefined && !Models.isLinkPostType(currentPost.type)
+            ? { title: update.title.trim() }
+            : {}),
           ...(hasDetails ? { details } : {}),
           updatedAt: new Date(),
         })
@@ -426,15 +435,12 @@ export class PostService {
 
   private insertPost = async (
     tx: DbTransaction,
-    text: string,
-    type: Models.PostType,
-    details: unknown,
-    place?: Models.PostPlace,
+    values: Pick<typeof post.$inferInsert, 'type' | 'title' | 'text' | 'details' | 'place'>,
   ): Promise<PostRow> => {
     for (let attempt = 0; attempt < PUBLIC_ID_ATTEMPTS; attempt += 1) {
       const [draft] = await tx
         .insert(post)
-        .values({ publicId: createPublicId(), type, text, details, place })
+        .values({ publicId: createPublicId(), ...values })
         .onConflictDoNothing({ target: post.publicId })
         .returning()
       if (draft) {

@@ -10,6 +10,7 @@ export const post = pgTable(
     status: text('status', { enum: ['draft', 'published'] })
       .notNull()
       .default('draft'),
+    title: text('title').notNull().default(''),
     text: text('text').notNull().default(''),
     place: jsonb('place'),
     details: jsonb('details').notNull().default({}),

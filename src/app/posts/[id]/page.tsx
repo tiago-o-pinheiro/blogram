@@ -5,6 +5,7 @@ import { cache } from 'react'
 
 import { getMessages } from '@/i18n'
 import { getServerLocale } from '@/i18n/server'
+import { Models } from '@/models'
 
 import { PostCard } from '@/features/feed/components/post-card'
 import { env } from '@/server/config/env'
@@ -31,7 +32,7 @@ export const generateMetadata = async ({ params }: PostPageProps): Promise<Metad
   const { id } = await params
   const post = await getPublishedPost(id)
   const profile = await profileService.getProfile()
-  const title = post.link?.title || post.text.slice(0, 100) || profile?.name || 'Blogram'
+  const title = Models.toPostTitle(post) || post.text.slice(0, 100) || profile?.name || 'Blogram'
   const description =
     post.text.slice(0, 300) || post.link?.description || profile?.description || ''
   const origin = new URL(env.BETTER_AUTH_URL).origin
@@ -65,7 +66,9 @@ const PostPage = async ({ params }: PostPageProps) => {
   const messages = getMessages(locale)
   return (
     <main className="mx-auto min-h-dvh max-w-2xl animate-page-in space-y-6 px-4 py-8 sm:py-12">
-      <h1 className="sr-only">{post.link?.title || post.text || profile?.name || 'Blogram'}</h1>
+      <h1 className="sr-only">
+        {Models.toPostTitle(post) || post.text || profile?.name || 'Blogram'}
+      </h1>
       <Link
         href="/"
         className="inline-flex min-h-11 press items-center rounded-full px-4 text-sm text-muted-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"

@@ -8,6 +8,7 @@ import {
   isPostPage,
   isPostStatusChange,
   isPostUpdate,
+  toPostTitle,
 } from './post.model'
 
 const toPost = () => ({
@@ -111,5 +112,24 @@ describe('PostListQuery', () => {
 describe('PostPage', () => {
   it('Given a page of posts, should recognise it', () => {
     expect(isPostPage({ data: [toPost()], meta: { total: 1, page: 1, pageSize: 20 } })).toBe(true)
+  })
+})
+
+describe('toPostTitle', () => {
+  it('Given a link post, should use the title of the link', () => {
+    expect(
+      toPostTitle({
+        title: '::post title::',
+        link: { url: 'https://example.test', title: '::link title::', description: '', source: '' },
+      }),
+    ).toBe('::link title::')
+  })
+
+  it('Given a titled photo, should use its own title', () => {
+    expect(toPostTitle({ title: '::title::' })).toBe('::title::')
+  })
+
+  it('Given no title, should return an empty title', () => {
+    expect(toPostTitle({})).toBe('')
   })
 })

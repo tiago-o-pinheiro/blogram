@@ -13,7 +13,7 @@ export const PostCreateFields = Type.Object({
   text: Type.String({ maxLength: Models.POST_TEXT_MAX, default: '' }),
   altText: Type.String({ maxLength: Models.ALT_TEXT_MAX, default: '' }),
   url: Type.Optional(Type.String({ minLength: 1, maxLength: 2048 })),
-  title: Type.Optional(Type.String({ minLength: 1, maxLength: 300 })),
+  title: Type.Optional(Type.String({ maxLength: Models.POST_TITLE_MAX })),
   description: Type.Optional(Type.String({ maxLength: 1000 })),
   source: Type.Optional(Type.String({ maxLength: 300 })),
 })

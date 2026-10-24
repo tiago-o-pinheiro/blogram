@@ -65,6 +65,7 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
   const isEdit = post !== undefined
   const [postType, setPostType] = useState<Models.PostType>(post?.type ?? 'photo')
   const [place, setPlace] = useState<Models.PostPlace | null>(post?.place ?? null)
+  const [title, setTitle] = useState(post?.title ?? '')
   const [text, setText] = useState(post?.text ?? '')
   const [altText, setAltText] = useState(post?.image?.altText ?? '')
   const [file, setFile] = useState<MediaSelection | null>(null)
@@ -236,7 +237,7 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
           text,
           place,
           altText,
-          ...(isLink ? link : {}),
+          ...(isLink ? link : { title }),
           ...(postType === 'youtube' ? { url: link.url } : {}),
         })
         if (shouldPublish) {
@@ -250,7 +251,7 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
           altText,
           ...(file ? { file: file.file } : {}),
           ...(poster ? { poster: poster.file } : {}),
-          ...(isLink ? link : {}),
+          ...(isLink ? link : { title }),
           ...(postType === 'youtube' ? { url: link.url } : {}),
         })
         try {
@@ -327,6 +328,20 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
               onChange={(event) => handleLinkChange({ ...link, url: event.target.value })}
             />
           ) : null}
+          {isLink ? null : (
+            <Field
+              label={t('postForm.postTitle')}
+              name="title"
+              value={title}
+              maxLength={Models.POST_TITLE_MAX}
+              disabled={isPending}
+              autoComplete="off"
+              onChange={(event) => {
+                setStatusKey(null)
+                setTitle(event.target.value)
+              }}
+            />
+          )}
           {isLink ? (
             <LinkFields
               value={link}

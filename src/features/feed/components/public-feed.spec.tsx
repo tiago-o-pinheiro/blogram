@@ -2,20 +2,23 @@ import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import { getMessages } from '@/i18n'
+import { I18nProvider } from '@/i18n/i18n-context'
 import { type Models } from '@/models'
 
 import { PublicFeed } from './public-feed'
 
 const renderFeed = (page: Models.PostPage, filter: Models.FeedFilter = 'all') =>
   render(
-    <PublicFeed
-      page={page}
-      filter={filter}
-      owner="::owner::"
-      origin="https://example.test"
-      locale="en"
-      messages={getMessages('en')}
-    />,
+    <I18nProvider locale="en" messages={getMessages('en')}>
+      <PublicFeed
+        page={page}
+        filter={filter}
+        owner="::owner::"
+        origin="https://example.test"
+        locale="en"
+        messages={getMessages('en')}
+      />
+    </I18nProvider>,
   )
 
 describe('PublicFeed', () => {
@@ -52,5 +55,28 @@ describe('PublicFeed', () => {
     expect(screen.getByRole('heading', { name: 'Nothing here yet.' })).toBeVisible()
     expect(screen.getByText('Come back soon for new moments and discoveries.')).toBeVisible()
     expect(screen.queryByRole('navigation', { name: 'Browse the journal' })).not.toBeInTheDocument()
+  })
+
+  it('Given a titled photo, should show the title above its caption', () => {
+    renderFeed({
+      data: [
+        {
+          id: 'AbCdEfGh12',
+          type: 'photo',
+          status: 'published',
+          title: '::title::',
+          text: '::caption::',
+          likes: 0,
+          publishedAt: '2026-10-24T10:00:00.000Z',
+          createdAt: '2026-10-24T10:00:00.000Z',
+          updatedAt: '2026-10-24T10:00:00.000Z',
+          image: null,
+        },
+      ],
+      meta: { total: 1, page: 1, pageSize: 12 },
+    })
+
+    expect(screen.getByRole('heading', { name: '::title::' })).toBeVisible()
+    expect(screen.getByText('::caption::')).toBeVisible()
   })
 })

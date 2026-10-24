@@ -15,6 +15,7 @@ export const toPost = ({ post: row, media: image, video }: PostRecord): Models.P
   id: row.publicId,
   type: row.type,
   status: row.status,
+  ...(row.title ? { title: row.title } : {}),
   text: row.text,
   likes: row.likes,
   ...(Value.Check(Models.PostPlace, row.place) ? { place: row.place } : {}),

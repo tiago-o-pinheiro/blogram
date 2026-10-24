@@ -7,6 +7,7 @@ export const POST_TYPES = ['photo', 'video', 'youtube', 'link', 'news'] as const
 export const CREATABLE_POST_TYPES = POST_TYPES
 export const POST_STATUSES = ['draft', 'published'] as const
 export const POST_TEXT_MAX = 2000
+export const POST_TITLE_MAX = 300
 export const ALT_TEXT_MAX = 500
 export const POST_ID_PATTERN = '^[A-Za-z0-9_-]{10}$'
 export const IMAGE_VARIANT_NAMES = ['w480', 'w960', 'w1600'] as const
@@ -92,6 +93,7 @@ export const Post = Type.Object({
   id: Type.String({ pattern: POST_ID_PATTERN }),
   type: PostType,
   status: PostStatus,
+  title: Type.Optional(Type.String({ minLength: 1, maxLength: POST_TITLE_MAX })),
   text: Type.String({ maxLength: POST_TEXT_MAX }),
   place: Type.Optional(PostPlace),
   likes: Type.Integer({ minimum: 0 }),
@@ -105,13 +107,18 @@ export const Post = Type.Object({
 })
 export type Post = Static<typeof Post>
 
+export const isLinkPostType = (type: PostType): boolean => type === 'link' || type === 'news'
+
+export const toPostTitle = (post: Pick<Post, 'title' | 'link'>): string =>
+  post.link?.title || post.title || ''
+
 export const PostUpdate = Type.Object(
   {
     place: Type.Optional(Type.Union([PostPlace, Type.Null()])),
     text: Type.Optional(Type.String({ maxLength: POST_TEXT_MAX })),
     altText: Type.Optional(Type.String({ maxLength: ALT_TEXT_MAX })),
     url: Type.Optional(Type.String({ minLength: 1, maxLength: 2048 })),
-    title: Type.Optional(Type.String({ minLength: 1, maxLength: 300 })),
+    title: Type.Optional(Type.String({ maxLength: POST_TITLE_MAX })),
     description: Type.Optional(Type.String({ maxLength: 1000 })),
     source: Type.Optional(Type.String({ maxLength: 300 })),
   },

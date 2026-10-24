@@ -84,6 +84,23 @@ describe('admin posts routes', () => {
     return created
   }
 
+  it('Given a title, should keep it on the photo and allow clearing it', async () => {
+    const draft = await createPost({ title: ' ::title:: ' })
+    expect(draft.title).toBe('::title::')
+
+    const renamed = await PATCH_POST(
+      sendJson(`/${draft.id}`, 'PATCH', { title: '::new title::' }, cookie),
+      idContext(draft.id),
+    )
+    expect(await renamed.json()).toMatchObject({ title: '::new title::' })
+    const cleared = await PATCH_POST(
+      sendJson(`/${draft.id}`, 'PATCH', { title: '' }, cookie),
+      idContext(draft.id),
+    )
+    expect(cleared.status).toBe(200)
+    expect(await cleared.json()).not.toHaveProperty('title')
+  })
+
   it('Given a place, should preserve it through publishing and allow removal', async () => {
     const place = {
       name: '::place::',

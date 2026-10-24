@@ -2,7 +2,7 @@ import { ArrowUpRight } from 'lucide-react'
 import Link from 'next/link'
 
 import { type Locale, type Messages, createTranslator } from '@/i18n'
-import { type Models } from '@/models'
+import { Models } from '@/models'
 
 import { PostPlace } from '@/components/post-place'
 import { LikeButton } from '@/features/feed/components/like-button'
@@ -19,7 +19,7 @@ type PostCardProps = {
 
 export const PostCard = ({ post, owner, origin, locale, messages }: PostCardProps) => {
   const t = createTranslator(messages)
-  const title = post.link?.title || post.text || owner
+  const title = Models.toPostTitle(post) || post.text || owner
   const date = post.publishedAt ?? post.createdAt
   return (
     <article className="animate-rise-in overflow-hidden rounded-xl border border-line bg-card shadow-sm transition-shadow hover:shadow-md">
@@ -65,10 +65,17 @@ export const PostCard = ({ post, owner, origin, locale, messages }: PostCardProp
           </span>
         </a>
       ) : null}
-      {post.text ? (
-        <p className="px-5 pt-4 text-sm leading-relaxed break-words whitespace-pre-wrap">
-          {post.text}
-        </p>
+      {post.title || post.text ? (
+        <div className="flex flex-col gap-1.5 px-5 pt-4">
+          {post.title ? (
+            <h2 className="text-lg leading-snug font-semibold tracking-tight break-words">
+              {post.title}
+            </h2>
+          ) : null}
+          {post.text ? (
+            <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">{post.text}</p>
+          ) : null}
+        </div>
       ) : null}
       <footer className="flex flex-wrap items-start justify-between gap-2 px-2 py-2">
         <LikeButton id={post.id} likes={post.likes} />

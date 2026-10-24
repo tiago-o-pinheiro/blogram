@@ -1,7 +1,7 @@
 import sharp from 'sharp'
 
 import { SHARE_CARD } from '@/design-system/tokens/share-card'
-import { type Models } from '@/models'
+import { Models } from '@/models'
 
 import { env } from '@/server/config/env'
 import { feedService } from '@/server/modules/feed/services/feed.service'
@@ -111,11 +111,11 @@ export class ShareCardService {
     const profile = await profileService.getProfile()
     const layout = SHARE_CARD[format]
     const domain = new URL(env.BETTER_AUTH_URL).host
-    const title = post.link?.title || post.text || profile?.name || domain
+    const title = Models.toPostTitle(post) || post.text || profile?.name || domain
     const owner = wrapCardText(profile?.name || domain, format === 'story' ? 38 : 29, 1)[0] ?? ''
     const titleX = format === 'story' ? layout.inset : 600
     const lines = wrapCardText(title, layout.lineLength, layout.maxLines)
-    const excerpt = post.link && post.text ? wrapCardText(post.text, 40, 2) : []
+    const excerpt = Models.toPostTitle(post) && post.text ? wrapCardText(post.text, 40, 2) : []
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${layout.width}" height="${layout.height}">
       <rect width="100%" height="100%" fill="${SHARE_CARD.background}"/>
       <g font-family="${SHARE_CARD.font}" fill="${SHARE_CARD.foreground}">

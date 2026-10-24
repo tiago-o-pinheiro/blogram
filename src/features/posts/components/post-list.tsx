@@ -10,7 +10,7 @@ import { Button, buttonVariants } from '@/design-system/ui/button'
 import { cn } from '@/design-system/ui/lib/cn'
 import { type TranslationKey } from '@/i18n'
 import { useT } from '@/i18n/i18n-context'
-import type * as Models from '@/models/models'
+import * as Models from '@/models/models'
 
 import { DeletePostDialog } from './delete-post-dialog'
 import { PostStatusBadge } from './post-status-badge'
@@ -103,7 +103,10 @@ const PostRow = ({ post }: { post: Models.Post }) => {
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex items-center gap-2">
           <p className="min-w-0 flex-1 truncate text-sm font-medium">
-            {post.link?.title || post.text || post.image?.altText || t(`posts.type.${post.type}`)}
+            {Models.toPostTitle(post) ||
+              post.text ||
+              post.image?.altText ||
+              t(`posts.type.${post.type}`)}
           </p>
           <PostStatusBadge status={post.status} label={t(`posts.status.${post.status}`)} />
         </div>

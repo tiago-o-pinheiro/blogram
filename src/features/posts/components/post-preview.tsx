@@ -76,6 +76,9 @@ export const PostPreview = ({ post }: PostPreviewProps) => {
           </p>
         </div>
       ) : null}
+      {post.title ? (
+        <h2 className="text-2xl font-semibold tracking-tight break-words">{post.title}</h2>
+      ) : null}
       <p className={post.text ? 'whitespace-pre-line' : 'text-muted-foreground'}>
         {post.text || t('postPreview.noText')}
       </p>
