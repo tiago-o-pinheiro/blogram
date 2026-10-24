@@ -79,8 +79,8 @@ const MediaPreview = ({ kind, src, alt }: MediaPreviewProps) => {
 }
 
 const FileSummary = ({ file }: { file: File }) => (
-  <p className="flex min-w-0 items-baseline gap-2">
-    <span className="min-w-0 truncate text-sm font-medium text-foreground" title={file.name}>
+  <p className="flex w-full max-w-full min-w-0 items-baseline gap-2">
+    <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground" title={file.name}>
       {file.name}
     </span>
     <span className="shrink-0 text-xs text-muted-foreground">{formatFileSize(file.size)}</span>
@@ -241,14 +241,14 @@ export const MediaInput = ({
   if (layout === 'avatar') {
     return (
       <div
-        className="flex flex-col gap-3"
+        className="flex w-full max-w-full min-w-0 flex-col gap-3"
         onDragEnter={handleDragOver}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
         {input}
-        <div className="flex items-center gap-4">
+        <div className="flex w-full min-w-0 items-center gap-4">
           <div
             className={cn(
               'relative flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 transition-colors motion-reduce:transition-none',
@@ -265,7 +265,7 @@ export const MediaInput = ({
               <User aria-hidden="true" className="size-8" />
             )}
           </div>
-          <div className="flex min-w-0 flex-col items-start gap-2">
+          <div className="flex min-w-0 flex-1 flex-col items-start gap-2">
             {value && !isDragging ? (
               <FileSummary file={value.file} />
             ) : (
@@ -298,7 +298,7 @@ export const MediaInput = ({
 
   return (
     <div
-      className={cn('flex flex-col gap-3', aspect === 'portrait' && 'max-w-md')}
+      className={cn('flex w-full min-w-0 flex-col gap-3', aspect === 'portrait' && 'max-w-md')}
       onDragEnter={handleDragOver}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -325,7 +325,7 @@ export const MediaInput = ({
               )}
             >
               {value ? (
-                <div className="mr-auto flex min-w-0">
+                <div className="mr-auto flex min-w-0 flex-1">
                   <FileSummary file={value.file} />
                 </div>
               ) : null}

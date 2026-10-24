@@ -76,8 +76,8 @@ export const ProfileStep = ({
 
   return (
     <div className="grid items-start gap-8 lg:grid-cols-2 lg:gap-12">
-      <form onSubmit={(event) => void handleSubmit(event)} className="flex flex-col gap-6">
-        <Card className="rounded-xl border-border/20 bg-surface/60 p-4 shadow-none sm:p-5">
+      <form onSubmit={(event) => void handleSubmit(event)} className="flex min-w-0 flex-col gap-6">
+        <Card className="min-w-0 rounded-xl border-border/20 bg-surface/60 p-4 shadow-none sm:p-5">
           <MediaField
             name="photo"
             label={t('wizard.profile.photo')}

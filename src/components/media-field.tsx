@@ -69,7 +69,7 @@ export const MediaField = ({
 
   return (
     <div
-      className="flex flex-col gap-2"
+      className="flex w-full max-w-full min-w-0 flex-col gap-2"
       onDragEnter={handleStrayDragOver}
       onDragOver={handleStrayDragOver}
       onDrop={handleStrayDrop}

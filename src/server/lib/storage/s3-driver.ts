@@ -62,7 +62,10 @@ export const createS3Driver = (
     put: async (key, body, contentType) => {
       const response = await send(toUrl(key), {
         method: 'PUT',
-        headers: { 'content-type': contentType },
+        headers: {
+          'content-type': contentType,
+          'content-length': String(body.byteLength),
+        },
         body: new Uint8Array(body),
       })
       if (!response.ok) {
