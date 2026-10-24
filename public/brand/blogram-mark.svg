@@ -1,0 +1,15 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 128 128"
+  fill="none"
+  role="img"
+  aria-labelledby="blogram-mark-title"
+>
+  <title id="blogram-mark-title">Blogram — a journal for your moments</title>
+  <g stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M38 18H79L104 43V96A14 14 0 0 1 90 110H38A14 14 0 0 1 24 96V32A14 14 0 0 1 38 18Z" />
+    <path d="M79 19V43H103M38 20V108" />
+    <circle cx="69" cy="68" r="18" />
+    <path d="M61 68A8 8 0 0 1 69 60M55 97H83" />
+  </g>
+</svg>
