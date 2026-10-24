@@ -8,6 +8,7 @@ export const PostIdParams = Type.Object({
 })
 
 export const PostCreateFields = Type.Object({
+  place: Type.Optional(Models.PostPlace),
   type: Type.Union(Models.CREATABLE_POST_TYPES.map((type) => Type.Literal(type))),
   text: Type.String({ maxLength: Models.POST_TEXT_MAX, default: '' }),
   altText: Type.String({ maxLength: Models.ALT_TEXT_MAX, default: '' }),

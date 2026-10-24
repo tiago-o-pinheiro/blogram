@@ -19,6 +19,7 @@ type CreatePhotoPostInput = {
 }
 
 type CreatePostInput = {
+  place?: Models.PostPlace
   type: Models.PostType
   text: string
   altText: string
@@ -59,6 +60,9 @@ export const createPhotoPost = async (input: CreatePhotoPostInput): Promise<Mode
 
 export const createPost = async (input: CreatePostInput): Promise<Models.Post> => {
   const body = new FormData()
+  if (input.place) {
+    body.append('place', JSON.stringify(input.place))
+  }
   body.append('type', input.type)
   body.append('text', input.text)
   body.append('altText', input.altText)

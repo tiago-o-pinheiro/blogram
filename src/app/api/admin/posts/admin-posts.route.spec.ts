@@ -84,6 +84,42 @@ describe('admin posts routes', () => {
     return created
   }
 
+  it('Given a place, should preserve it through publishing and allow removal', async () => {
+    const place = {
+      name: '::place::',
+      mapUrl: 'https://www.openstreetmap.org/?mlat=40.4&mlon=-3.7#map=15/40.4/-3.7',
+    }
+    const draft = await createPost({ place: JSON.stringify(place) })
+    expect(draft.place).toEqual(place)
+    const published = await PUT_STATUS(
+      sendJson(`/${draft.id}/status`, 'PUT', { status: 'published' }, cookie),
+      idContext(draft.id),
+    )
+    expect(published.status).toBe(200)
+    expect(await published.json()).toMatchObject({ status: 'published', place })
+    const edited = await PATCH_POST(
+      sendJson(`/${draft.id}`, 'PATCH', { text: '::text::' }, cookie),
+      idContext(draft.id),
+    )
+    expect(await edited.json()).toMatchObject({ place })
+    const removed = await PATCH_POST(
+      sendJson(`/${draft.id}`, 'PATCH', { place: null }, cookie),
+      idContext(draft.id),
+    )
+    expect(removed.status).toBe(200)
+    expect(await removed.json()).not.toHaveProperty('place')
+  })
+
+  it.each([
+    '{',
+    JSON.stringify({ name: '   ' }),
+    JSON.stringify({ name: '::place::', mapUrl: 'javascript:alert(1)' }),
+    JSON.stringify({ name: '::place::', mapUrl: 'https://openstreetmap.org.evil.test/' }),
+  ])('Given invalid place %s, should reject the draft', async (place) => {
+    const response = await POST_POST(sendForm('', 'POST', { type: 'photo', place }, cookie))
+    expect(response.status).toBe(422)
+  })
+
   it('Given no session, should answer 401 on every posts route', async () => {
     const file = toFile(await createPng(), 'a.png', 'image/png')
 

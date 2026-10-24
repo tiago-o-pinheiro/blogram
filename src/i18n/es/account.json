@@ -11,5 +11,7 @@
   "account.errors.generic": "No pudimos cambiar tu contraseña. Inténtalo de nuevo.",
   "admin.title": "Panel",
   "admin.welcome": "Bienvenido, {{name}}",
-  "admin.accountLink": "Ajustes de la cuenta"
+  "admin.accountLink": "Ajustes de la cuenta",
+  "account.session": "Sesión",
+  "account.sessionHint": "Cierra la sesión de Blogram en este dispositivo."
 }

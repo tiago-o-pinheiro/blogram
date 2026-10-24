@@ -80,11 +80,20 @@ export type LinkMetadata = Static<typeof LinkMetadata>
 export const isLinkMetadata = (value: unknown): value is LinkMetadata =>
   Value.Check(LinkMetadata, value)
 
+export const PLACE_NAME_MAX = 300
+export const PLACE_MAP_URL_PATTERN = '^https://(www\\.)?openstreetmap\\.org/[^\\s]*$'
+export const PostPlace = Type.Object({
+  name: Type.String({ minLength: 1, maxLength: PLACE_NAME_MAX, pattern: '\\S' }),
+  mapUrl: Type.Optional(Type.String({ maxLength: 2048, pattern: PLACE_MAP_URL_PATTERN })),
+})
+export type PostPlace = Static<typeof PostPlace>
+
 export const Post = Type.Object({
   id: Type.String({ pattern: POST_ID_PATTERN }),
   type: PostType,
   status: PostStatus,
   text: Type.String({ maxLength: POST_TEXT_MAX }),
+  place: Type.Optional(PostPlace),
   likes: Type.Integer({ minimum: 0 }),
   publishedAt: Type.Union([Type.String(), Type.Null()]),
   createdAt: Type.String(),
@@ -98,6 +107,7 @@ export type Post = Static<typeof Post>
 
 export const PostUpdate = Type.Object(
   {
+    place: Type.Optional(Type.Union([PostPlace, Type.Null()])),
     text: Type.Optional(Type.String({ maxLength: POST_TEXT_MAX })),
     altText: Type.Optional(Type.String({ maxLength: ALT_TEXT_MAX })),
     url: Type.Optional(Type.String({ minLength: 1, maxLength: 2048 })),

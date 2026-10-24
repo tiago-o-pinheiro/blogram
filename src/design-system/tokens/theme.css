@@ -1,4 +1,6 @@
 :root {
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --admin-nav-space: calc(6rem + var(--safe-bottom));
   --background: #ffffff;
   --foreground: #0f172a;
   --surface: #f8fafc;

@@ -25,5 +25,12 @@
   "postForm.saving": "Guardando",
   "postForm.saved": "Cambios guardados.",
   "postForm.replacing": "Reemplazando",
-  "postForm.replaced": "Imagen reemplazada."
+  "postForm.replaced": "Imagen reemplazada.",
+  "postForm.place": "Lugar (opcional)",
+  "postForm.addPlace": "Añadir un lugar",
+  "postForm.placeName": "Nombre del lugar",
+  "postForm.placeHint": "Añade una ciudad o un sitio. Para una ubicación exacta, búscala en OpenStreetMap y pega su enlace para compartir. El lugar será visible al publicar.",
+  "postForm.findPlace": "Buscar en OpenStreetMap",
+  "postForm.placeMapUrl": "Enlace de OpenStreetMap (opcional)",
+  "postForm.removePlace": "Quitar lugar"
 }

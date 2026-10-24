@@ -183,6 +183,18 @@ For links/news, fetch text metadata if desired, then edit it. A failed preview n
 
 ### Public browsing/sharing
 
+### Attach a place
+
+In the post editor, choose **Add a place**, then enter a city, venue or other place name. The place appears below the media in previews and published posts. It is optional for every post type, can be edited later, and **Remove place** clears it when you save.
+
+Choose **Find on OpenStreetMap** to search in a new tab. For an exact location, use OpenStreetMap's Share control and paste the full `https://www.openstreetmap.org/...` link into the optional map-link field. Without a map link, the published label opens an OpenStreetMap search for that name. This integration uses ordinary links: no geocoding API key, automatic location access, external search requests while typing, or map tiles are required. Place labels are public when the post is published.
+
+Upgrading an existing installation requires `pnpm db:migrate`; migration `0005` adds a nullable place column and preserves existing posts. Railway runs migrations before deploying.
+
+### Mobile navigation and account
+
+The mobile bottom bar has four icon tabs: **Feed**, **New**, **Profile** and **Account**. Feed opens your posts, including drafts. Sign out is under **Account → Session**. The Account page also holds password and Google sign-in settings.
+
 Filters use `/?type=photo`, `/?type=video`, `/?type=link` or `/?type=news`; video includes uploaded video and YouTube. Pagination preserves the filter, and `/posts/<id>` is the permanent URL.
 
 Likes increment on the server. `post:<id>:liked` localStorage remembers a confirmed vote in that browser. There is no unlike or one-human-one-vote guarantee. Native sharing depends on the device/browser; copy and download are alternatives. Story cards are static, including videos. There is no direct publishing to WhatsApp statuses or social stories.
@@ -446,7 +458,7 @@ Do not use development preflight as a production supervisor. Do not run `next de
 The application works without Google; password access remains available.
 
 1. Create a Google OAuth **Web application** client and consent screen; add the owner as a test user if the Google project is in testing mode.
-2. Register exactly `https://journal.example.com/api/auth/callback/google`. Development uses `http://localhost:3000/api/auth/callback/google`.
+2. Register exactly `https://<yourdomain>/api/auth/callback/google`, replacing `<yourdomain>` with your real public domain or subdomain (including a Railway domain). The Account page shows the callback derived from `BETTER_AUTH_URL`; register that exact value. Development uses `http://localhost:3000/api/auth/callback/google`.
 3. Set both Google environment variables, keep public/auth origins consistent, then restart/recreate web.
 4. Sign in with the existing password and open `/admin/account`.
 5. Choose **Link Google** and complete Google's flow. Linking/unlinking requires a session created within five minutes; sign out/in again if requested.

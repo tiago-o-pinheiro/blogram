@@ -11,6 +11,7 @@ export const post = pgTable(
       .notNull()
       .default('draft'),
     text: text('text').notNull().default(''),
+    place: jsonb('place'),
     details: jsonb('details').notNull().default({}),
     likes: integer('likes').notNull().default(0),
     publishedAt: timestamp('published_at', { withTimezone: true }),

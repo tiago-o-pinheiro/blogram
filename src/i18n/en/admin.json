@@ -1,7 +1,7 @@
 {
   "adminShell.navLabel": "Admin",
-  "adminShell.posts": "Posts",
-  "adminShell.newPost": "New post",
+  "adminShell.posts": "Feed",
+  "adminShell.newPost": "New",
   "adminShell.profile": "Profile",
   "adminShell.account": "Account",
   "adminShell.signOut": "Sign out",

@@ -1,6 +1,8 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
+  --spacing-safe: var(--safe-bottom);
+  --spacing-admin-nav: var(--admin-nav-space);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);

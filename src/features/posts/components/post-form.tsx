@@ -13,6 +13,7 @@ import { useT } from '@/i18n/i18n-context'
 import * as Models from '@/models/models'
 
 import { LinkFields, type LinkFieldsValue } from './link-fields'
+import { PlaceFields } from './place-fields'
 import { PostMediaFields } from './post-media-fields'
 import { PostTypePicker } from './post-type-picker'
 import {
@@ -59,6 +60,7 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
   const router = useRouter()
   const isEdit = post !== undefined
   const [postType, setPostType] = useState<Models.PostType>(post?.type ?? 'photo')
+  const [place, setPlace] = useState<Models.PostPlace | null>(post?.place ?? null)
   const [text, setText] = useState(post?.text ?? '')
   const [altText, setAltText] = useState(post?.image?.altText ?? '')
   const [file, setFile] = useState<MediaSelection | null>(null)
@@ -207,6 +209,7 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
       if (post) {
         await updatePost(post.id, {
           text,
+          place,
           altText,
           ...(isLink ? link : {}),
           ...(postType === 'youtube' ? { url: link.url } : {}),
@@ -215,6 +218,7 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
         const draft = await createPost({
           type: postType,
           text,
+          ...(place ? { place } : {}),
           altText,
           ...(file ? { file: file.file } : {}),
           ...(poster ? { poster: poster.file } : {}),
@@ -314,6 +318,7 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
           {postType === 'photo' && altText.trim().length === 0 ? (
             <p className="text-sm text-muted-foreground">{t('postForm.altTextHint')}</p>
           ) : null}
+          <PlaceFields value={place} onChange={setPlace} isDisabled={isPending} />
           <Textarea
             label={t('postForm.text')}
             name="text"

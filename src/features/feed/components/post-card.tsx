@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { type Locale, type Messages, createTranslator } from '@/i18n'
 import { type Models } from '@/models'
 
+import { PostPlace } from '@/components/post-place'
 import { LikeButton } from '@/features/feed/components/like-button'
 import { PostMedia } from '@/features/feed/components/post-media'
 import { ShareActions } from '@/features/feed/components/share-actions'
@@ -42,6 +43,9 @@ export const PostCard = ({ post, owner, origin, locale, messages }: PostCardProp
         </span>
       </header>
       <PostMedia post={post} />
+      <div className="px-5">
+        <PostPlace place={post.place} />
+      </div>
       {post.link ? (
         <a
           href={post.link.url}

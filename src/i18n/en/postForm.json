@@ -25,5 +25,12 @@
   "postForm.saving": "Saving",
   "postForm.saved": "Changes saved.",
   "postForm.replacing": "Replacing",
-  "postForm.replaced": "Image replaced."
+  "postForm.replaced": "Image replaced.",
+  "postForm.place": "Place (optional)",
+  "postForm.addPlace": "Add a place",
+  "postForm.placeName": "Place name",
+  "postForm.placeHint": "Add a city or venue. For an exact pin, find it on OpenStreetMap and paste its share link below. Your place is visible when you publish.",
+  "postForm.findPlace": "Find on OpenStreetMap",
+  "postForm.placeMapUrl": "OpenStreetMap link (optional)",
+  "postForm.removePlace": "Remove place"
 }

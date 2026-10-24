@@ -41,6 +41,7 @@ type PostServiceDependencies = {
 }
 
 export type PostDraftInput = {
+  place?: Models.PostPlace
   type: Models.PostType
   text: string
   altText: string
@@ -134,7 +135,7 @@ export class PostService {
         written.push(video.key)
       }
       const record = await db.transaction(async (tx) => {
-        const draft = await this.insertPost(tx, input.text, input.type, details)
+        const draft = await this.insertPost(tx, input.text, input.type, details, input.place)
         const [image] = processed
           ? await tx
               .insert(media)
@@ -206,6 +207,7 @@ export class PostService {
       await tx
         .update(post)
         .set({
+          ...(update.place !== undefined ? { place: update.place } : {}),
           ...(update.text !== undefined ? { text: update.text } : {}),
           ...(hasDetails ? { details } : {}),
           updatedAt: new Date(),
@@ -427,11 +429,12 @@ export class PostService {
     text: string,
     type: Models.PostType,
     details: unknown,
+    place?: Models.PostPlace,
   ): Promise<PostRow> => {
     for (let attempt = 0; attempt < PUBLIC_ID_ATTEMPTS; attempt += 1) {
       const [draft] = await tx
         .insert(post)
-        .values({ publicId: createPublicId(), type, text, details })
+        .values({ publicId: createPublicId(), type, text, details, place })
         .onConflictDoNothing({ target: post.publicId })
         .returning()
       if (draft) {

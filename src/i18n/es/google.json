@@ -7,5 +7,7 @@
   "google.unlink": "Desvincular Google",
   "google.signin": "Continuar con Google",
   "google.error": "No se pudo completar el acceso con Google. Solo puede entrar la cuenta de Google vinculada en tus ajustes. Inténtalo de nuevo o usa tu contraseña.",
-  "google.reauthenticate": "Cierra sesión y vuelve a entrar con tu contraseña antes de intentarlo de nuevo. El acceso con contraseña debe seguir disponible."
+  "google.reauthenticate": "Cierra sesión y vuelve a entrar con tu contraseña antes de intentarlo de nuevo. El acceso con contraseña debe seguir disponible.",
+  "google.domainHint": "Sustituye <yourdomain> por tu dominio o subdominio público, incluido uno de Railway. Configura BETTER_AUTH_URL con ese origen HTTPS y registra su callback exacto en Google Cloud.",
+  "google.configuredCallback": "Callback actual del servidor (BETTER_AUTH_URL)"
 }

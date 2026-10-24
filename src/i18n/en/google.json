@@ -7,5 +7,7 @@
   "google.unlink": "Unlink Google",
   "google.signin": "Continue with Google",
   "google.error": "Google sign-in could not finish. Only the Google account linked in your settings can sign in. Try again or use your password.",
-  "google.reauthenticate": "Sign out and sign back in with your password, then try again. Password access must remain available."
+  "google.reauthenticate": "Sign out and sign back in with your password, then try again. Password access must remain available.",
+  "google.domainHint": "Replace <yourdomain> with your public domain or subdomain, including a Railway domain. Set BETTER_AUTH_URL to that HTTPS origin and register its exact callback in Google Cloud.",
+  "google.configuredCallback": "Current server callback (BETTER_AUTH_URL)"
 }

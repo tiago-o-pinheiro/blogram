@@ -33,6 +33,8 @@ describe('Google account controls', () => {
     expect(
       screen.getByText('https://journal.example.com/api/auth/callback/google'),
     ).toBeInTheDocument()
+    expect(screen.getByText('https://<yourdomain>/api/auth/callback/google')).toBeVisible()
+    expect(screen.getByText(/Replace <yourdomain>/)).toHaveTextContent('Railway')
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 

@@ -11,5 +11,7 @@
   "account.errors.generic": "We could not change your password. Try again.",
   "admin.title": "Dashboard",
   "admin.welcome": "Welcome, {{name}}",
-  "admin.accountLink": "Account settings"
+  "admin.accountLink": "Account settings",
+  "account.session": "Session",
+  "account.sessionHint": "Sign out of Blogram on this device."
 }

@@ -17,6 +17,7 @@ export const toPost = ({ post: row, media: image, video }: PostRecord): Models.P
   status: row.status,
   text: row.text,
   likes: row.likes,
+  ...(Value.Check(Models.PostPlace, row.place) ? { place: row.place } : {}),
   publishedAt: row.publishedAt?.toISOString() ?? null,
   createdAt: row.createdAt.toISOString(),
   updatedAt: row.updatedAt.toISOString(),

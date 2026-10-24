@@ -65,14 +65,20 @@ export const GoogleAccountControls = ({
   }
 
   return (
-    <section aria-labelledby="google-title" className="flex flex-col gap-4">
+    <section
+      aria-labelledby="google-title"
+      className="flex flex-col gap-4 rounded-xl border border-border/20 bg-card p-5"
+    >
       <h2 id="google-title" className="text-lg font-semibold">
         {t('google.title')}
       </h2>
-      <p className="text-sm text-muted">{t('google.description')}</p>
+      <p className="text-sm text-muted-foreground">{t('google.description')}</p>
       {!isConfigured ? (
         <div className="flex flex-col gap-2 rounded-md bg-surface p-4 text-sm">
           <p>{t('google.configure')}</p>
+          <code className="break-all">{'https://<yourdomain>/api/auth/callback/google'}</code>
+          <p>{t('google.domainHint')}</p>
+          <p className="font-medium">{t('google.configuredCallback')}</p>
           <code className="break-all">{callbackURL}</code>
         </div>
       ) : null}

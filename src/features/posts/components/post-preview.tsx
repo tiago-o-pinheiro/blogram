@@ -3,6 +3,8 @@
 import { useT } from '@/i18n/i18n-context'
 import * as Models from '@/models/models'
 
+import { PostPlace } from '@/components/post-place'
+
 type PostPreviewProps = {
   post: Models.Post
 }
@@ -54,6 +56,7 @@ export const PostPreview = ({ post }: PostPreviewProps) => {
       ) : (
         <p className="text-muted-foreground">{t('postPreview.noImage')}</p>
       )}
+      <PostPlace place={post.place} />
       {post.link ? (
         <div className="flex flex-col gap-2">
           <p className="text-sm font-medium text-muted-foreground">

@@ -578,7 +578,11 @@ describe('PostForm edit', () => {
     const [url, init] = fetchSpy.mock.calls[0] ?? []
     expect(url).toBe('/api/admin/posts/AbCdEfGh12')
     expect(init?.method).toBe('PATCH')
-    expect(JSON.parse(String(init?.body))).toEqual({ text: 'Sunrise', altText: 'Dawn' })
+    expect(JSON.parse(String(init?.body))).toEqual({
+      text: 'Sunrise',
+      altText: 'Dawn',
+      place: null,
+    })
     expect(refresh).toHaveBeenCalledTimes(1)
   })
 

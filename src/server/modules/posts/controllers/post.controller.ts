@@ -34,6 +34,20 @@ const readTextField = (form: FormData, name: string) => {
   return typeof value === 'string' ? value : undefined
 }
 
+const readPlace = (form: FormData): Models.PostPlace | undefined => {
+  const raw = readTextField(form, 'place')
+  if (raw === undefined) {
+    return undefined
+  }
+  let place: unknown
+  try {
+    place = JSON.parse(raw)
+  } catch {
+    throw new ValidationError('Place must be valid JSON')
+  }
+  return decode(Models.PostPlace, place)
+}
+
 export class PostController {
   constructor(private readonly postService: PostService) {}
 
@@ -52,6 +66,7 @@ export class PostController {
       postPostApiSchema.fields,
       coerce(postPostApiSchema.fields, {
         type: readTextField(form, 'type'),
+        place: readPlace(form),
         text: readTextField(form, 'text'),
         altText: readTextField(form, 'altText'),
         url: readTextField(form, 'url'),
