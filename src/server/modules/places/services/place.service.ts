@@ -6,7 +6,9 @@ import { type Models } from '@/models'
 import { ServiceUnavailableError } from '@/server/errors/http-errors'
 
 const PHOTON_URL = 'https://photon.komoot.io/api/'
-const PLACE_LIMIT = 6
+const PLACE_LIMIT = 8
+const PLACE_LAYERS = ['city', 'district']
+const SETTLEMENT_TAGS = ['place:city', 'place:town', 'place:village', 'place:municipality']
 const PLACE_TIMEOUT_MS = 5000
 const USER_AGENT = 'Blogram/1.0 (+https://github.com/tiago-o-pinheiro/blogram)'
 const PHOTON_LANGUAGES: Record<NonNullable<Models.PlaceSearchQuery['lang']>, string> = {
@@ -58,7 +60,8 @@ export class PlaceService {
     const url = new URL(PHOTON_URL)
     url.searchParams.set('q', q.trim())
     url.searchParams.set('limit', String(PLACE_LIMIT))
-    url.searchParams.set('layer', 'city')
+    PLACE_LAYERS.forEach((layer) => url.searchParams.append('layer', layer))
+    SETTLEMENT_TAGS.forEach((tag) => url.searchParams.append('osm_tag', tag))
     url.searchParams.set('lang', PHOTON_LANGUAGES[lang ?? 'en'])
     const response = await this.send(url, {
       headers: { accept: 'application/json', 'user-agent': USER_AGENT },

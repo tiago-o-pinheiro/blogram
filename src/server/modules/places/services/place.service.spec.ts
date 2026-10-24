@@ -18,18 +18,34 @@ const toService = (respond: () => Promise<Response>) => {
 const respondWith = (body: unknown) => () => Promise.resolve(Response.json(body))
 
 describe('PlaceService', () => {
-  it('Given a city query, should ask for cities in the visitor language', async () => {
+  it('Given a city query, should ask for settlements in the visitor language', async () => {
     const { send, service } = toService(respondWith({ features: [] }))
 
     await service.search({ q: ' ::city:: ', lang: 'en' })
 
     const [url, init] = send.mock.calls[0] ?? []
     expect(url).toBeInstanceOf(URL)
-    expect(String(url)).toBe(
-      'https://photon.komoot.io/api/?q=%3A%3Acity%3A%3A&limit=6&layer=city&lang=en',
-    )
+    const params = new URL(String(url)).searchParams
+    expect(params.get('q')).toBe('::city::')
+    expect(params.get('limit')).toBe('8')
+    expect(params.get('lang')).toBe('en')
     expect(init?.signal).toBeInstanceOf(AbortSignal)
     expect(new Headers(init?.headers).get('user-agent')).toContain('Blogram')
+  })
+
+  it('Given a village filed as part of a commune, should still search villages', async () => {
+    const { send, service } = toService(respondWith({ features: [] }))
+
+    await service.search({ q: 'Viscri', lang: 'en' })
+
+    const params = new URL(String(send.mock.calls[0]?.[0])).searchParams
+    expect(params.getAll('layer')).toEqual(['city', 'district'])
+    expect(params.getAll('osm_tag')).toEqual([
+      'place:city',
+      'place:town',
+      'place:village',
+      'place:municipality',
+    ])
   })
 
   it('Given Spanish, should use local names because the provider has no Spanish names', async () => {
