@@ -28,7 +28,7 @@ const OwnerAside = () => {
   const t = useT()
 
   return (
-    <aside className="flex flex-col gap-6 rounded-xl border border-border/20 bg-surface/60 p-6 sm:p-8">
+    <aside className="flex flex-col gap-6 rounded-xl border border-line bg-surface-soft p-6 sm:p-8">
       <div className="flex size-12 items-center justify-center rounded-lg bg-accent text-primary">
         <KeyRound className="size-5" aria-hidden="true" />
       </div>
@@ -38,7 +38,7 @@ const OwnerAside = () => {
           {t('wizard.owner.asideDescription')}
         </p>
       </div>
-      <p className="flex items-start gap-3 border-t border-border/20 pt-5 text-xs leading-relaxed text-muted-foreground">
+      <p className="flex items-start gap-3 border-t border-line pt-5 text-xs leading-relaxed text-muted-foreground">
         <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
         {t('wizard.owner.privateHint')}
       </p>
@@ -105,7 +105,7 @@ export const OwnerStep = () => {
             {t(errorKey)}
           </p>
         ) : null}
-        <div className="mt-3 flex flex-col-reverse gap-3 border-t border-border/20 pt-6 sm:flex-row sm:justify-between">
+        <div className="mt-3 flex flex-col-reverse gap-3 border-t border-line pt-6 sm:flex-row sm:justify-between">
           <Button variant="ghost" className="rounded-full" onClick={() => goTo(1)}>
             <ArrowLeft className="size-4" aria-hidden="true" />
             {t('finalize.owner.back')}

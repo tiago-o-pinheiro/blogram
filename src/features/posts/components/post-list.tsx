@@ -1,6 +1,6 @@
 'use client'
 
-import { FileText, Trash2 } from 'lucide-react'
+import { ExternalLink, FileText, Pencil, Send, Trash2 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -98,7 +98,7 @@ const PostRow = ({ post }: { post: Models.Post }) => {
   }
 
   return (
-    <li className="flex gap-3 p-4">
+    <li className="flex animate-rise-in gap-3 p-4 transition-colors hover:bg-surface">
       <PostThumbnail post={post} />
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex items-center gap-2">
@@ -119,29 +119,36 @@ const PostRow = ({ post }: { post: Models.Post }) => {
             {t(errorKey)}
           </p>
         ) : null}
-        <div className="mt-1 flex items-center gap-2">
+        <div className="mt-1 flex items-center gap-1">
           <Link
             href={`/admin/posts/${post.id}`}
-            className={buttonVariants({ variant: 'secondary', size: 'sm' })}
+            aria-label={t('postList.edit')}
+            title={t('postList.edit')}
+            className={cn(buttonVariants({ variant: 'secondary', size: 'icon' }), 'rounded-full')}
           >
-            {t('postList.edit')}
+            <Pencil aria-hidden="true" className="size-4" />
           </Link>
           {post.status === 'draft' ? (
             <Button
               variant="accent"
-              size="sm"
+              size="icon"
+              className="rounded-full"
+              aria-label={t('postList.publish')}
+              title={t('postList.publish')}
               isLoading={isPending}
               loadingLabel={t('postList.publishing')}
               onClick={() => void handlePublish()}
             >
-              {t('postList.publish')}
+              <Send aria-hidden="true" className="size-4" />
             </Button>
           ) : (
             <Link
               href={`/posts/${post.id}`}
-              className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+              aria-label={t('postList.view')}
+              title={t('postList.view')}
+              className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'rounded-full')}
             >
-              {t('postList.view')}
+              <ExternalLink aria-hidden="true" className="size-4" />
             </Link>
           )}
           <DeletePostDialog
@@ -150,7 +157,7 @@ const PostRow = ({ post }: { post: Models.Post }) => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="ml-auto text-muted-foreground"
+                className="ml-auto rounded-full text-muted-foreground hover:bg-danger-soft hover:text-danger"
                 aria-label={t('postList.delete')}
                 title={t('postList.delete')}
               >
@@ -182,7 +189,7 @@ export const PostList = ({ page, status }: PostListProps) => {
     <div className="flex flex-col gap-6">
       <nav
         aria-label={t('postList.filterLabel')}
-        className="flex gap-1 rounded-full border border-border/20 glass p-1 shadow-sm sm:w-fit"
+        className="flex gap-1 rounded-full glass p-1 sm:w-fit"
       >
         {STATUS_FILTERS.map((filter) => (
           <Link
@@ -209,7 +216,7 @@ export const PostList = ({ page, status }: PostListProps) => {
         </div>
       ) : (
         <>
-          <ul className="flex flex-col divide-y divide-border/20 overflow-hidden rounded-xl border border-border/20 bg-card">
+          <ul className="flex flex-col divide-y divide-line overflow-hidden rounded-xl border border-line bg-card stagger">
             {page.data.map((post) => (
               <PostRow key={post.id} post={post} />
             ))}

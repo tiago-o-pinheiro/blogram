@@ -2,6 +2,7 @@ import { Plus } from 'lucide-react'
 import Link from 'next/link'
 
 import { buttonVariants } from '@/design-system/ui/button'
+import { cn } from '@/design-system/ui/lib/cn'
 import { getServerTranslator } from '@/i18n/server'
 import * as Models from '@/models/models'
 
@@ -40,10 +41,11 @@ const Page = async ({ searchParams }: PageProps) => {
       aside={
         <Link
           href="/admin/posts/new"
-          className={buttonVariants({ size: 'sm', className: 'ml-auto' })}
+          aria-label={t('postList.emptyAction')}
+          title={t('postList.emptyAction')}
+          className={cn(buttonVariants({ size: 'icon' }), 'ml-auto rounded-full')}
         >
-          <Plus aria-hidden="true" className="size-4" />
-          {t('postList.emptyAction')}
+          <Plus aria-hidden="true" className="size-5" />
         </Link>
       }
     >

@@ -64,12 +64,16 @@ export const ShareActions = ({ id, title, url }: ShareActionsProps) => {
         href={`/api/posts/${id}/card`}
         download={`blogram-${id}.png`}
         aria-label={t('feed.card')}
-        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
+        className="inline-flex min-h-11 min-w-11 press items-center justify-center rounded-full hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
       >
         <Download className="size-4" aria-hidden="true" />
       </a>
       {message ? (
-        <p className="w-full text-right text-sm text-muted-foreground" role="status">
+        <p
+          key={message}
+          className="w-full animate-rise-in text-right text-sm text-muted-foreground"
+          role="status"
+        >
           {message}
         </p>
       ) : null}

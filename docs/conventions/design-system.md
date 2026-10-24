@@ -23,18 +23,15 @@ Packages are `tokens` and `ui`. In single layout they live at `src/design-system
 
 ## Tokens
 
-`tokens/src/theme.css` holds values as CSS variables: `:root` for light, `.dark` for overrides.
+`tokens/theme.ts` is the single source of every visual value. Nothing else holds a color, alpha, shadow, blur, radius, typeface or motion value.
 
-- Color roles: `background`, `foreground`, `surface`, `muted`, `primary`, `primary-foreground`, `accent`, `danger`, `border`, `ring`.
-- Corner (radius) scale, spacing on a 4px base, typefaces, font sizes, elevation (shadows), motion.
+- Themes: one palette per theme (`THEMES.light`, `THEMES.dark`), typed so every theme defines every role. A new theme is a new palette.
+- Color roles: `background`, `foreground`, `surface`, `muted`, `primary`, `accent`, `danger`, `border`, `ring`, `card`, `popover`, `secondary`, `input`, plus theme-dependent elevation and glass tints.
+- Derived roles (`line`, `line-strong`, `scrim`, `glass`, `primary-hover`, `danger-soft`, ...) are `color-mix` formulas over the palette, so themes inherit them.
+- Shared values: corners, typefaces, motion (durations, easings, distances), glass blur, layout offsets.
+- `MOTION` exports the same durations and easings as numbers for JS animations.
+- `THEME_CSS` renders everything as CSS variables (`:root` for light, `.dark` for overrides); the root layout injects it once in `<head>`.
 - Dark mode: `.dark` class on `html`. Never `prefers-color-scheme` alone.
-
-`tokens/src/motion.ts` holds durations and easing as `as const`, for JS animations only (CSS uses the CSS variables).
-
-```ts
-export const DURATION = { fast: 120, base: 200, slow: 320 } as const
-export const EASING = { out: [0.16, 1, 0.3, 1] } as const
-```
 
 ## Contract
 
@@ -88,7 +85,6 @@ Order in the app global CSS is fixed:
 
 ```css
 @import 'tailwindcss';
-@import '<tokens>/theme.css';
 @import '<tokens>/tailwind.css';
 @source '<path to ui src>';
 ```
@@ -97,9 +93,11 @@ Order in the app global CSS is fixed:
 
 ## Adding a token
 
-1. Add the CSS variable to `theme.css` for light and dark.
-2. Add the mapping to `tailwind.css`.
-3. Never define a value inside a component.
+1. Add the value to `theme.ts`: a palette role in every theme, a derived role, or a shared value.
+2. Add the mapping to `tailwind.css` (`--color-*`, `--radius-*`, `--shadow-*`, `--animate-*`, ...). `tailwind.css` maps and composes variables only; it holds no raw values.
+3. Never define a value inside a component. No opacity modifiers on colors (`bg-primary/90`): add a named role instead.
+
+Motion: use the `animate-*` utilities (`page-in`, `rise-in`, `fade-in`, `scale-in`, `sheet-in`, `pop`, `pin-drop`), `stagger` on list parents and `press` on tappable elements. Reduced motion is handled globally.
 
 ## Visual rules
 

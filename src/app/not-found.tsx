@@ -1,7 +1,7 @@
 import Link from 'next/link'
 
 const NotFoundPage = () => (
-  <main className="mx-auto flex min-h-dvh max-w-2xl flex-col items-start justify-center gap-4 p-6">
+  <main className="mx-auto flex min-h-dvh max-w-2xl animate-page-in flex-col items-start justify-center gap-4 p-6">
     <h1 className="text-2xl font-semibold">We could not find that page</h1>
     <p className="text-muted-foreground">It may have moved, or the address may be mistyped.</p>
     <Link

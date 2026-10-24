@@ -28,10 +28,6 @@
   "postForm.replaced": "Image replaced.",
   "postForm.place": "Place (optional)",
   "postForm.addPlace": "Add a place",
-  "postForm.placeName": "Place name",
-  "postForm.placeHint": "Add a city or venue. For an exact pin, find it on OpenStreetMap and paste its share link below. Your place is visible when you publish.",
-  "postForm.findPlace": "Find on OpenStreetMap",
-  "postForm.placeMapUrl": "OpenStreetMap link (optional)",
   "postForm.removePlace": "Remove place",
   "postForm.publish": "Publish",
   "postForm.publishing": "Publishing",
@@ -39,5 +35,16 @@
   "postForm.unpublish": "Unpublish",
   "postForm.unpublishing": "Unpublishing",
   "postForm.unpublished": "Post moved back to drafts.",
-  "postForm.placeSummary": "A city, venue or map pin"
+  "postForm.placeSummary": "A city, venue or map pin",
+  "postForm.editPlace": "Change place",
+  "postForm.placeIntro": "Search a city, then drag the pin to the exact spot if you like.",
+  "postForm.placeSearch": "Search a city",
+  "postForm.placeSearching": "Searching",
+  "postForm.placeEmpty": "No cities found.",
+  "postForm.placeError": "Place search is not available right now. Try again in a moment.",
+  "postForm.placeResults": "Cities",
+  "postForm.placeMap": "Map of {{name}}",
+  "postForm.placeDragHint": "Drag the pin to adjust",
+  "postForm.placeSave": "Save place",
+  "postForm.placeCancel": "Cancel"
 }

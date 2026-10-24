@@ -33,9 +33,9 @@ export const GoogleSignIn = ({ hasCallbackError = false }: { hasCallbackError?: 
   return (
     <div className="flex flex-col gap-4">
       <div aria-hidden="true" className="flex items-center gap-3 text-xs text-muted-foreground">
-        <span className="h-px flex-1 bg-border/20" />
+        <span className="h-px flex-1 bg-line" />
         {t('signin.or')}
-        <span className="h-px flex-1 bg-border/20" />
+        <span className="h-px flex-1 bg-line" />
       </div>
       <Button variant="secondary" disabled={isPending} onClick={() => void handleSignIn()}>
         {t('google.signin')}

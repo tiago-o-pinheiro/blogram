@@ -1,6 +1,7 @@
 import { type Metadata } from 'next'
 import { type ReactNode } from 'react'
 
+import { THEME_CSS } from '@/design-system/tokens/theme'
 import { getMessages } from '@/i18n'
 import { I18nProvider } from '@/i18n/i18n-context'
 import { getServerLocale } from '@/i18n/server'
@@ -22,6 +23,9 @@ const RootLayout = async ({ children }: RootLayoutProps) => {
 
   return (
     <html lang={locale}>
+      <head>
+        <style>{THEME_CSS}</style>
+      </head>
       <body className="min-h-dvh bg-background font-sans text-foreground antialiased">
         <I18nProvider locale={locale} messages={getMessages(locale)}>
           {children}

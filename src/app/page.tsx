@@ -50,7 +50,7 @@ const Page = async ({ searchParams }: HomePageProps = {}) => {
   })
 
   return (
-    <main className="mx-auto min-h-dvh max-w-5xl px-4 py-8 sm:px-8 sm:py-12">
+    <main className="mx-auto min-h-dvh max-w-5xl animate-page-in px-4 py-8 sm:px-8 sm:py-12">
       <div className="mb-10 sm:mb-14">
         <ProfileHeader
           name={profile.name}
@@ -66,7 +66,7 @@ const Page = async ({ searchParams }: HomePageProps = {}) => {
         locale={locale}
         messages={messages}
       />
-      <footer className="mx-auto mt-16 flex max-w-2xl flex-wrap items-center justify-between gap-3 border-t border-border/20 py-6 text-xs text-muted-foreground">
+      <footer className="mx-auto mt-16 flex max-w-2xl flex-wrap items-center justify-between gap-3 border-t border-line py-6 text-xs text-muted-foreground">
         <p>
           {messages['feed.builtWith']}{' '}
           <a

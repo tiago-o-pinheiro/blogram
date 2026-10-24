@@ -56,7 +56,7 @@ const WizardStepper = ({ step }: StepProps) => {
   return (
     <ol
       aria-label={t('wizard.progress')}
-      className="grid grid-cols-3 gap-3 border-b border-border/20 bg-surface/40 px-4 py-5 sm:px-10 sm:py-6"
+      className="grid grid-cols-3 gap-3 border-b border-line bg-surface-soft px-4 py-5 sm:px-10 sm:py-6"
     >
       {STEPS.map((item) => (
         <li
@@ -74,7 +74,7 @@ const WizardStepper = ({ step }: StepProps) => {
               'flex size-8 shrink-0 items-center justify-center rounded-full border text-xs',
               item.step === step && 'border-primary bg-primary text-primary-foreground shadow-sm',
               item.step < step && 'border-accent bg-accent text-accent-foreground',
-              item.step > step && 'border-border/30 bg-background text-muted-foreground',
+              item.step > step && 'border-line-strong bg-background text-muted-foreground',
             )}
           >
             {item.step < step ? <Check className="size-4" /> : `0${item.step}`}
@@ -100,7 +100,7 @@ const WizardStepBody = ({ step, maxPhotoBytes }: StepProps & { maxPhotoBytes?: n
   }, [step])
 
   return (
-    <div className="p-5 sm:p-10">
+    <div key={step} className="animate-rise-in p-5 sm:p-10">
       <header className="mb-7 max-w-xl space-y-3 sm:mb-9">
         <h1
           ref={headingRef}
@@ -128,11 +128,11 @@ const WizardBody = ({ maxPhotoBytes }: { maxPhotoBytes?: number }) => {
     <main className="relative min-h-dvh bg-surface px-4 py-6 sm:px-8 sm:py-10">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-linear-to-b from-accent/35 to-transparent"
+        className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-linear-to-b from-accent-glow to-transparent"
       />
       <div className="relative mx-auto max-w-5xl">
         <WizardHeader step={step} />
-        <Card className="gap-0 overflow-hidden rounded-2xl border-border/20 bg-background p-0 shadow-md">
+        <Card className="animate-page-in gap-0 overflow-hidden rounded-2xl border-line bg-background p-0 shadow-md">
           <WizardStepper step={step} />
           <WizardStepBody step={step} maxPhotoBytes={maxPhotoBytes} />
         </Card>

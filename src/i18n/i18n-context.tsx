@@ -35,3 +35,11 @@ export const useT = (): I18nValue['t'] => {
   }
   return value.t
 }
+
+export const useLocale = (): I18nValue['locale'] => {
+  const value = useContext(I18nContext)
+  if (!value) {
+    throw new Error('useLocale must be used within an I18nProvider')
+  }
+  return value.locale
+}

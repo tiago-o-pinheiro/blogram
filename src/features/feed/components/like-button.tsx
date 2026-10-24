@@ -22,6 +22,7 @@ export const LikeButton = ({ id, likes }: { id: string; likes: number }) => {
   const count = Math.max(likes, confirmation.id === id ? confirmation.likes : 0)
   const [isSaving, setIsSaving] = useState(false)
   const [hasError, setHasError] = useState(false)
+  const [hasJustLiked, setHasJustLiked] = useState(false)
   const isSubmitting = useRef(false)
 
   if (confirmation.id !== id || likes > confirmation.likes) {
@@ -47,6 +48,7 @@ export const LikeButton = ({ id, likes }: { id: string; likes: number }) => {
         likes: Math.max(body.likes, currentConfirmation.id === id ? currentConfirmation.likes : 0),
       }))
       rememberLike(id)
+      setHasJustLiked(true)
     } catch {
       setHasError(true)
     } finally {
@@ -66,7 +68,10 @@ export const LikeButton = ({ id, likes }: { id: string; likes: number }) => {
         disabled={isSaving || isLiked}
         onClick={() => void handleLike()}
       >
-        <Heart aria-hidden="true" className={cn('size-4', isLiked && 'fill-current')} />
+        <Heart
+          aria-hidden="true"
+          className={cn('size-4', isLiked && 'fill-current', hasJustLiked && 'animate-pop')}
+        />
         <span aria-live="polite">{count}</span>
       </Button>
       {hasError ? (

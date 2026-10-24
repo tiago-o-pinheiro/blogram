@@ -24,7 +24,7 @@ export const Select = ({ label, error, id, className, children, ...props }: Sele
         className={cn(
           'min-h-11 w-full rounded-md border border-input bg-background px-3 text-base text-foreground',
           'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-          'disabled:cursor-not-allowed disabled:opacity-60',
+          'disabled:cursor-not-allowed disabled:opacity-disabled',
           'aria-invalid:border-danger',
           className,
         )}

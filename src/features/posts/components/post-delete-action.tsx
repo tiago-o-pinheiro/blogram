@@ -21,9 +21,14 @@ export const PostDeleteAction = ({ post }: PostDeleteActionProps) => {
     <DeletePostDialog
       post={post}
       trigger={
-        <Button variant="ghost" size="sm" className="w-fit text-danger hover:bg-danger/10">
-          <Trash2 aria-hidden="true" className="size-4" />
-          {t('postList.deleteConfirm')}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full text-danger hover:bg-danger-soft"
+          aria-label={t('postList.deleteConfirm')}
+          title={t('postList.deleteConfirm')}
+        >
+          <Trash2 aria-hidden="true" className="size-5" />
         </Button>
       }
       onDeleted={() => router.replace('/admin/posts')}

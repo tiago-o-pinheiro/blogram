@@ -1,8 +1,7 @@
+import { SHARE_CARD_COLORS } from './theme'
+
 export const SHARE_CARD = {
-  background: '#f8fafc',
-  foreground: '#0f172a',
-  secondary: '#475569',
-  border: '#e2e8f0',
+  ...SHARE_CARD_COLORS,
   font: 'DejaVu Sans Mono, monospace',
   story: {
     width: 1080,

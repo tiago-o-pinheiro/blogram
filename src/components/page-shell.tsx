@@ -19,7 +19,10 @@ export const PageShell = ({
 }: PageShellProps) => (
   <main className={cn('min-h-dvh', isWide && 'bg-surface')}>
     <div
-      className={cn('mx-auto flex flex-col p-6', isWide ? 'max-w-5xl gap-8' : 'max-w-2xl gap-6')}
+      className={cn(
+        'mx-auto flex animate-page-in flex-col p-6',
+        isWide ? 'max-w-5xl gap-8' : 'max-w-2xl gap-6',
+      )}
     >
       <header className="flex flex-col gap-1">
         <div className="flex flex-wrap items-center gap-3">

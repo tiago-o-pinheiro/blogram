@@ -1,7 +1,9 @@
+import { Pencil } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 import { buttonVariants } from '@/design-system/ui/button'
+import { cn } from '@/design-system/ui/lib/cn'
 import { getServerTranslator } from '@/i18n/server'
 
 import { PageShell } from '@/components/page-shell'
@@ -30,16 +32,24 @@ const Page = async ({ params }: PageProps) => {
   })
 
   return (
-    <PageShell title={t('postPreview.title')}>
-      <Link
-        href={`/admin/posts/${post.id}`}
-        className={buttonVariants({ variant: 'secondary', className: 'w-fit' })}
-      >
-        {t('postList.edit')}
-      </Link>
+    <PageShell
+      title={t('postPreview.title')}
+      aside={
+        <div className="ml-auto flex items-center gap-2">
+          <Link
+            href={`/admin/posts/${post.id}`}
+            aria-label={t('postList.edit')}
+            title={t('postList.edit')}
+            className={cn(buttonVariants({ variant: 'secondary', size: 'icon' }), 'rounded-full')}
+          >
+            <Pencil aria-hidden="true" className="size-5" />
+          </Link>
+          <PostActions post={post} />
+          <PostDeleteAction post={post} />
+        </div>
+      }
+    >
       <PostPreview post={post} />
-      <PostActions post={post} />
-      <PostDeleteAction post={post} />
     </PageShell>
   )
 }

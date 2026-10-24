@@ -22,7 +22,7 @@ export const PostCard = ({ post, owner, origin, locale, messages }: PostCardProp
   const title = post.link?.title || post.text || owner
   const date = post.publishedAt ?? post.createdAt
   return (
-    <article className="overflow-hidden rounded-xl border border-border/20 bg-card shadow-sm">
+    <article className="animate-rise-in overflow-hidden rounded-xl border border-line bg-card shadow-sm transition-shadow hover:shadow-md">
       <header className="flex items-center justify-between gap-3 px-5 py-1">
         <div className="flex min-w-0 flex-wrap items-center gap-x-3">
           <Link
@@ -48,7 +48,7 @@ export const PostCard = ({ post, owner, origin, locale, messages }: PostCardProp
           href={post.link.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="block space-y-3 border-b border-border/20 p-5 hover:bg-surface focus-visible:outline-2 focus-visible:outline-ring"
+          className="block space-y-3 border-b border-line p-5 hover:bg-surface focus-visible:outline-2 focus-visible:outline-ring"
         >
           <p className="text-xs font-medium break-words text-muted-foreground">
             {post.link.source || new URL(post.link.url).hostname}

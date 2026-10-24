@@ -72,9 +72,14 @@ const MediaPreview = ({ kind, src, alt }: MediaPreviewProps) => {
         src={src}
         alt=""
         isHidden
-        className="absolute inset-0 size-full scale-110 object-cover blur-2xl"
+        className="absolute inset-0 size-full media-backdrop animate-fade-in object-cover"
       />
-      <PreviewImage src={src} alt={alt} className="relative size-full object-contain" />
+      <PreviewImage
+        key={src}
+        src={src}
+        alt={alt}
+        className="relative size-full animate-fade-in object-contain"
+      />
     </>
   )
 }
@@ -249,9 +254,9 @@ export const MediaInput = ({
               'relative flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 transition-colors motion-reduce:transition-none',
               src
                 ? 'border-transparent bg-muted'
-                : 'border-dashed border-border/40 bg-surface text-muted-foreground',
-              isDragging && 'border-primary bg-accent/40',
-              isDisabled && 'opacity-60',
+                : 'border-dashed border-line-strong bg-surface text-muted-foreground',
+              isDragging && 'border-primary bg-accent-soft',
+              isDisabled && 'opacity-disabled',
             )}
           >
             {src ? (
@@ -304,10 +309,10 @@ export const MediaInput = ({
         className={cn(
           'relative flex w-full items-center justify-center overflow-hidden rounded-xl border-2 transition-colors motion-reduce:transition-none',
           ASPECT_CLASSES[aspect],
-          src ? 'border-transparent' : 'border-dashed border-border/40 bg-surface',
+          src ? 'border-transparent' : 'border-dashed border-line-strong bg-surface',
           src && (kind === 'video' ? 'bg-foreground' : 'bg-muted'),
-          isDragging && 'border-primary bg-accent/40',
-          isDisabled && 'opacity-60',
+          isDragging && 'border-primary bg-accent-soft',
+          isDisabled && 'opacity-disabled',
         )}
       >
         {src ? (
@@ -318,7 +323,7 @@ export const MediaInput = ({
                 ref={chooseRef}
                 variant="secondary"
                 size="icon"
-                className="rounded-full bg-card/90 shadow-md"
+                className="rounded-full glass"
                 disabled={isDisabled}
                 aria-label={chooseLabel}
                 aria-describedby={legendId}
@@ -331,7 +336,7 @@ export const MediaInput = ({
                 <Button
                   variant="secondary"
                   size="icon"
-                  className="rounded-full bg-card/90 shadow-md"
+                  className="rounded-full glass"
                   disabled={isDisabled}
                   aria-label={removeLabel}
                   title={removeLabel}
@@ -346,7 +351,7 @@ export const MediaInput = ({
               ) : null}
             </div>
             {isDragging ? (
-              <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-accent/70 text-base font-medium text-primary">
+              <div className="pointer-events-none absolute inset-0 z-10 flex animate-fade-in items-center justify-center bg-accent-overlay text-base font-medium text-primary">
                 {labels.release}
               </div>
             ) : null}

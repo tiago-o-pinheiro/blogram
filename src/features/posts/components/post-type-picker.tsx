@@ -33,7 +33,7 @@ export const PostTypePicker = ({ legend, value, isDisabled, onChange }: PostType
           return (
             <label
               key={type}
-              className="flex min-h-11 min-w-24 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground has-checked:bg-card has-checked:text-foreground has-checked:shadow-sm has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring has-disabled:cursor-not-allowed has-disabled:opacity-60 motion-reduce:transition-none"
+              className="flex min-h-11 min-w-24 flex-1 press cursor-pointer items-center justify-center gap-2 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground has-checked:bg-card has-checked:text-foreground has-checked:shadow-sm has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring has-disabled:cursor-not-allowed has-disabled:opacity-disabled motion-reduce:transition-none"
             >
               <input
                 type="radio"

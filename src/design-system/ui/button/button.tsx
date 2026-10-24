@@ -5,18 +5,18 @@ import { cn } from '../lib/cn'
 
 export const buttonVariants = cva(
   [
-    'inline-flex min-w-11 items-center justify-center gap-2 rounded-md font-medium transition-colors',
+    'press inline-flex min-w-11 items-center justify-center gap-2 rounded-md font-medium',
     'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-    'disabled:cursor-not-allowed disabled:opacity-60',
+    'disabled:cursor-not-allowed disabled:opacity-disabled',
   ],
   {
     variants: {
       variant: {
-        primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
-        secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-        accent: 'bg-accent text-accent-foreground hover:bg-accent/80',
+        primary: 'bg-primary text-primary-foreground hover:bg-primary-hover',
+        secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary-hover',
+        accent: 'bg-accent text-accent-foreground hover:bg-accent-hover',
         ghost: 'bg-transparent text-foreground hover:bg-muted',
-        destructive: 'bg-danger text-danger-foreground hover:bg-danger/90',
+        destructive: 'bg-danger text-danger-foreground hover:bg-danger-hover',
       },
       size: {
         sm: 'min-h-11 px-3 text-sm',
@@ -59,7 +59,7 @@ export const Button = ({
         className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent motion-reduce:animate-none"
       />
     ) : null}
-    {children}
+    {isLoading && size === 'icon' ? null : children}
     {isLoading ? <span className="sr-only">{loadingLabel}</span> : null}
   </button>
 )

@@ -7,6 +7,7 @@ import { cn } from '@/design-system/ui/lib/cn'
 import { getServerTranslator } from '@/i18n/server'
 
 import { PageShell } from '@/components/page-shell'
+import { PostDeleteAction } from '@/features/posts/components/post-delete-action'
 import { PostForm } from '@/features/posts/components/post-form'
 import { PostStatusBadge } from '@/features/posts/components/post-status-badge'
 import { env } from '@/server/config/env'
@@ -49,6 +50,7 @@ const Page = async ({ params }: PageProps) => {
           >
             <Eye aria-hidden="true" className="size-5" />
           </Link>
+          <PostDeleteAction post={post} />
         </>
       }
     >

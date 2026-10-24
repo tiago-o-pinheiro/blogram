@@ -16,16 +16,23 @@ export const DialogClose = DialogPrimitive.Close
 
 export const DialogContent = ({ className, children, ...props }: DialogContentProps) => (
   <DialogPrimitive.Portal>
-    <DialogPrimitive.Overlay className="fixed inset-0 bg-foreground/50" />
+    <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-scrim backdrop-blur-scrim state-open:animate-fade-in state-closed:animate-fade-out" />
     <DialogPrimitive.Content
       className={cn(
-        'fixed top-1/2 left-1/2 flex w-full max-w-lg -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-lg border border-border bg-popover p-6 text-popover-foreground shadow-md',
+        'fixed inset-x-0 bottom-0 z-50 flex max-h-dvh w-full flex-col gap-4 overflow-y-auto rounded-t-2xl border border-line bg-popover p-6 pb-sheet text-popover-foreground shadow-md',
+        'state-open:animate-sheet-in state-closed:animate-sheet-out',
+        'sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:pb-6',
+        'sm:state-open:animate-scale-in sm:state-closed:animate-scale-out',
         className,
       )}
       {...props}
     >
+      <span
+        aria-hidden="true"
+        className="mx-auto -mt-2 h-1 w-10 shrink-0 rounded-full bg-line-strong sm:hidden"
+      />
       {children}
-      <DialogPrimitive.Close className="absolute top-2 right-2 inline-flex size-11 items-center justify-center rounded-md text-foreground transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+      <DialogPrimitive.Close className="absolute top-2 right-2 inline-flex size-11 press items-center justify-center rounded-full text-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
         <X aria-hidden="true" className="size-4" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>

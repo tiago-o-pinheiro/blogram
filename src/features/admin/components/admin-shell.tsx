@@ -56,38 +56,38 @@ export const AdminShell = ({ children }: AdminShellProps) => {
   return (
     <div className="flex min-h-screen flex-col md:flex-col-reverse md:justify-end">
       <div className="flex-1 pb-admin-nav md:pb-0">{children}</div>
-      <div
+      <nav
+        aria-label={t('adminShell.navLabel')}
         className={cn(
-          'fixed inset-x-0 bottom-0 z-20 flex items-center border-t border-border/20 glass pb-safe shadow-md',
-          'md:sticky md:top-0 md:border-t-0 md:border-b md:pb-0 md:shadow-none',
+          'fixed inset-x-3 bottom-nav-float z-20 animate-rise-in rounded-full glass p-1.5',
+          'sm:inset-x-auto sm:left-1/2 sm:w-full sm:max-w-md sm:-translate-x-1/2',
+          'md:sticky md:inset-x-0 md:top-0 md:bottom-auto md:left-auto md:max-w-none md:translate-x-0 md:animate-none md:rounded-none md:border-x-0 md:border-t-0 md:px-4 md:py-2',
         )}
       >
-        <nav aria-label={t('adminShell.navLabel')} className="flex flex-1 items-center">
-          <ul className="flex flex-1 items-center justify-around px-2 py-2 md:justify-start md:gap-2 md:px-4">
-            {NAV_ITEMS.map((item) => {
-              const isCurrent = item.isActive(pathname)
-              return (
-                <li key={item.href} className="flex-1 md:flex-none">
-                  <Link
-                    href={item.href}
-                    aria-current={isCurrent ? 'page' : undefined}
-                    className={cn(
-                      'flex min-h-11 min-w-11 flex-col items-center justify-center gap-1 rounded-xl px-3 py-2 text-xs font-medium transition-colors motion-reduce:transition-none md:flex-row md:gap-2 md:text-sm',
-                      'focus-visible:outline-2 focus-visible:outline-ring',
-                      isCurrent
-                        ? 'bg-accent text-accent-foreground'
-                        : 'text-muted-foreground hover:bg-muted',
-                    )}
-                  >
-                    <item.icon aria-hidden="true" className="size-5" />
-                    {t(item.labelKey)}
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-        </nav>
-      </div>
+        <ul className="flex items-center gap-1 md:gap-2">
+          {NAV_ITEMS.map((item) => {
+            const isCurrent = item.isActive(pathname)
+            return (
+              <li key={item.href} className="flex-1 md:flex-none">
+                <Link
+                  href={item.href}
+                  aria-current={isCurrent ? 'page' : undefined}
+                  className={cn(
+                    'flex min-h-11 min-w-11 press flex-col items-center justify-center gap-0.5 rounded-full px-3 py-1.5 text-xs font-medium md:flex-row md:gap-2 md:py-2 md:text-sm',
+                    'focus-visible:outline-2 focus-visible:outline-ring',
+                    isCurrent
+                      ? 'bg-accent text-accent-foreground shadow-sm'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                  )}
+                >
+                  <item.icon aria-hidden="true" className="size-5" />
+                  {t(item.labelKey)}
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
+      </nav>
     </div>
   )
 }

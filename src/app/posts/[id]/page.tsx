@@ -64,11 +64,11 @@ const PostPage = async ({ params }: PostPageProps) => {
   const locale = await getServerLocale()
   const messages = getMessages(locale)
   return (
-    <main className="mx-auto min-h-dvh max-w-2xl space-y-6 px-4 py-8 sm:py-12">
+    <main className="mx-auto min-h-dvh max-w-2xl animate-page-in space-y-6 px-4 py-8 sm:py-12">
       <h1 className="sr-only">{post.link?.title || post.text || profile?.name || 'Blogram'}</h1>
       <Link
         href="/"
-        className="inline-flex min-h-11 items-center rounded-full px-4 text-sm text-muted-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
+        className="inline-flex min-h-11 press items-center rounded-full px-4 text-sm text-muted-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
       >
         ← {messages['feed.home']}
       </Link>

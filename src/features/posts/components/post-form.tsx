@@ -1,5 +1,6 @@
 'use client'
 
+import { Check, EyeOff, Save, Send } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { type FormEvent, useState } from 'react'
 
@@ -14,7 +15,6 @@ import * as Models from '@/models/models'
 
 import { LinkFields, type LinkFieldsValue } from './link-fields'
 import { PlaceFields } from './place-fields'
-import { PostDeleteAction } from './post-delete-action'
 import { PostMediaFields } from './post-media-fields'
 import { PostTypePicker } from './post-type-picker'
 import {
@@ -283,7 +283,7 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
   return (
     <form
       onSubmit={(event) => void handleSubmit(event)}
-      className="flex flex-col gap-6 rounded-xl border border-border/20 bg-card p-4 sm:p-6"
+      className="flex flex-col gap-6 rounded-xl border border-line bg-card p-4 sm:p-6"
     >
       {!isEdit ? (
         <PostTypePicker
@@ -369,16 +369,12 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
           <PlaceFields value={place} onChange={setPlace} isDisabled={isPending} />
         </div>
       </div>
-      {post ? (
-        <div className="border-t border-border/20 pt-2">
-          <PostDeleteAction post={post} />
-        </div>
-      ) : null}
-      <div className="pointer-events-none sticky bottom-admin-dock z-10 flex flex-col items-center gap-2 sm:items-end md:bottom-6">
+      <div className="pointer-events-none sticky bottom-admin-dock z-10 flex flex-col items-end gap-2 md:bottom-6">
         {errorKey ? (
           <p
             role="alert"
-            className="rounded-full border border-border/20 glass px-4 py-2 text-sm text-danger shadow-sm"
+            key={errorKey}
+            className="animate-rise-in rounded-full glass px-4 py-2 text-sm text-danger"
           >
             {t(errorKey)}
           </p>
@@ -386,32 +382,39 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
         {statusKey ? (
           <p
             role="status"
-            className="rounded-full border border-border/20 glass px-4 py-2 text-sm text-muted-foreground shadow-sm"
+            key={statusKey}
+            className="animate-rise-in rounded-full glass px-4 py-2 text-sm text-muted-foreground"
           >
             {t(statusKey)}
           </p>
         ) : null}
-        <div className="pointer-events-auto flex w-full gap-2 rounded-full border border-border/20 glass p-1.5 shadow-md sm:w-auto">
+        <div className="pointer-events-auto flex animate-rise-in gap-2 rounded-full glass p-1.5">
           {post?.status === 'published' ? (
             <>
               <Button
                 variant="ghost"
-                className="flex-1 rounded-full sm:flex-none"
+                size="icon"
+                className="rounded-full"
+                aria-label={t('postForm.unpublish')}
+                title={t('postForm.unpublish')}
                 disabled={isPending}
                 isLoading={isPending && intent === 'unpublish'}
                 loadingLabel={t('postForm.unpublishing')}
                 onClick={() => void handleUnpublish(post.id)}
               >
-                {t('postForm.unpublish')}
+                <EyeOff aria-hidden="true" className="size-5" />
               </Button>
               <Button
                 type="submit"
-                className="flex-1 rounded-full sm:flex-none"
+                size="icon"
+                className="rounded-full"
+                aria-label={t('postForm.save')}
+                title={t('postForm.save')}
                 disabled={isPending || isIncomplete}
                 isLoading={isPending && intent === 'save'}
                 loadingLabel={t('postForm.saving')}
               >
-                {t('postForm.save')}
+                <Check aria-hidden="true" className="size-5" />
               </Button>
             </>
           ) : (
@@ -420,22 +423,28 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
                 type="submit"
                 value="save"
                 variant="secondary"
-                className="flex-1 rounded-full sm:flex-none"
+                size="icon"
+                className="rounded-full"
+                aria-label={t('postForm.create')}
+                title={t('postForm.create')}
                 disabled={isPending || isIncomplete}
                 isLoading={isPending && intent === 'save'}
                 loadingLabel={t('postForm.creating')}
               >
-                {t('postForm.create')}
+                <Save aria-hidden="true" className="size-5" />
               </Button>
               <Button
                 type="submit"
                 value="publish"
-                className="flex-1 rounded-full sm:flex-none"
+                size="icon"
+                className="rounded-full"
+                aria-label={t('postForm.publish')}
+                title={t('postForm.publish')}
                 disabled={isPending || isIncomplete}
                 isLoading={isPending && intent === 'publish'}
                 loadingLabel={t('postForm.publishing')}
               >
-                {t('postForm.publish')}
+                <Send aria-hidden="true" className="size-5" />
               </Button>
             </>
           )}

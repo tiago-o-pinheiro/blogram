@@ -1,5 +1,6 @@
 'use client'
 
+import { EyeOff, Send } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
@@ -39,18 +40,27 @@ export const PostActions = ({ post }: PostActionsProps) => {
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex items-center gap-2">
       {errorKey ? (
-        <p role="alert" className="text-sm text-danger">
+        <p role="alert" className="animate-rise-in text-sm text-danger">
           {t(errorKey)}
         </p>
       ) : null}
       <Button
+        variant={isDraft ? 'primary' : 'secondary'}
+        size="icon"
+        className="rounded-full"
+        aria-label={isDraft ? t('postPreview.publish') : t('postPreview.unpublish')}
+        title={isDraft ? t('postPreview.publish') : t('postPreview.unpublish')}
         isLoading={isPending}
         loadingLabel={t('postPreview.working')}
         onClick={() => void handleToggle()}
       >
-        {isDraft ? t('postPreview.publish') : t('postPreview.unpublish')}
+        {isDraft ? (
+          <Send aria-hidden="true" className="size-5" />
+        ) : (
+          <EyeOff aria-hidden="true" className="size-5" />
+        )}
       </Button>
     </div>
   )

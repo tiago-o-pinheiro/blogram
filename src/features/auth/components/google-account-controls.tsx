@@ -67,7 +67,7 @@ export const GoogleAccountControls = ({
   return (
     <section
       aria-labelledby="google-title"
-      className="flex flex-col gap-4 rounded-xl border border-border/20 bg-card p-5"
+      className="flex flex-col gap-4 rounded-xl border border-line bg-card p-5"
     >
       <h2 id="google-title" className="text-lg font-semibold">
         {t('google.title')}

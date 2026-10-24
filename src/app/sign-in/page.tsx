@@ -37,7 +37,7 @@ const Page = async ({
         {t('feed.home')}
       </Link>
       <div className="flex flex-1 items-center justify-center py-8">
-        <section className="flex w-full max-w-sm flex-col gap-6 rounded-xl border border-border/20 bg-card p-6 shadow-sm">
+        <section className="flex w-full max-w-sm animate-page-in flex-col gap-6 rounded-xl border border-line bg-card p-6 shadow-sm">
           <header className="flex flex-col items-center gap-3 text-center">
             {profile?.hasPhoto ? (
               <Image

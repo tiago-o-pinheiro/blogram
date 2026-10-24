@@ -28,10 +28,6 @@
   "postForm.replaced": "Imagen reemplazada.",
   "postForm.place": "Lugar (opcional)",
   "postForm.addPlace": "Añadir un lugar",
-  "postForm.placeName": "Nombre del lugar",
-  "postForm.placeHint": "Añade una ciudad o un sitio. Para una ubicación exacta, búscala en OpenStreetMap y pega su enlace para compartir. El lugar será visible al publicar.",
-  "postForm.findPlace": "Buscar en OpenStreetMap",
-  "postForm.placeMapUrl": "Enlace de OpenStreetMap (opcional)",
   "postForm.removePlace": "Quitar lugar",
   "postForm.publish": "Publicar",
   "postForm.publishing": "Publicando",
@@ -39,5 +35,16 @@
   "postForm.unpublish": "Despublicar",
   "postForm.unpublishing": "Despublicando",
   "postForm.unpublished": "La publicación volvió a borradores.",
-  "postForm.placeSummary": "Una ciudad, un lugar o un punto en el mapa"
+  "postForm.placeSummary": "Una ciudad, un lugar o un punto en el mapa",
+  "postForm.editPlace": "Cambiar lugar",
+  "postForm.placeIntro": "Busca una ciudad y, si quieres, arrastra el pin al punto exacto.",
+  "postForm.placeSearch": "Busca una ciudad",
+  "postForm.placeSearching": "Buscando",
+  "postForm.placeEmpty": "No se encontraron ciudades.",
+  "postForm.placeError": "La búsqueda de lugares no está disponible ahora. Inténtalo de nuevo en un momento.",
+  "postForm.placeResults": "Ciudades",
+  "postForm.placeMap": "Mapa de {{name}}",
+  "postForm.placeDragHint": "Arrastra el pin para ajustarlo",
+  "postForm.placeSave": "Guardar lugar",
+  "postForm.placeCancel": "Cancelar"
 }

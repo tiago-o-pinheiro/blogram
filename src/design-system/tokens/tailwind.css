@@ -1,29 +1,51 @@
 @custom-variant dark (&:where(.dark, .dark *));
+@custom-variant state-open (&[data-state='open']);
+@custom-variant state-closed (&[data-state='closed']);
 
 @theme inline {
   --spacing-safe: var(--safe-bottom);
+  --spacing-nav-float: var(--nav-float);
   --spacing-admin-nav: var(--admin-nav-space);
   --spacing-admin-dock: var(--admin-dock-offset);
+  --spacing-map: var(--map-height);
+  --spacing-sheet: var(--sheet-padding-bottom);
+  --spacing-map-pin: var(--map-pin-size);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
+  --color-surface-soft: var(--surface-soft);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
   --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-overlay: var(--accent-overlay);
+  --color-accent-glow: var(--accent-glow);
   --color-accent-foreground: var(--accent-foreground);
   --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-soft: var(--danger-soft);
   --color-danger-foreground: var(--danger-foreground);
   --color-border: var(--border);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
   --color-ring: var(--ring);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-secondary: var(--secondary);
+  --color-secondary-hover: var(--secondary-hover);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-input: var(--input);
+  --color-scrim: var(--scrim);
+  --color-glass: var(--glass);
+  --color-map-pin: var(--map-pin);
+  --color-map-pin-halo: var(--map-pin-halo);
 
   --radius-sm: var(--corner-sm);
   --radius-md: var(--corner-md);
@@ -37,11 +59,140 @@
 
   --shadow-sm: var(--elevation-sm);
   --shadow-md: var(--elevation-md);
+  --shadow-glass: var(--elevation-glass);
+
+  --blur-scrim: var(--scrim-blur);
 
   --default-transition-duration: var(--motion-base);
   --default-transition-timing-function: var(--motion-ease-out);
+
+  --animate-fade-in: fade-in var(--motion-base) var(--motion-ease-out) both;
+  --animate-fade-out: fade-out var(--motion-fast) var(--motion-ease-out) both;
+  --animate-rise-in: rise-in var(--motion-slow) var(--motion-ease-out) both;
+  --animate-page-in: rise-in var(--motion-slower) var(--motion-ease-out) both;
+  --animate-scale-in: scale-in var(--motion-base) var(--motion-ease-out) both;
+  --animate-scale-out: scale-out var(--motion-fast) var(--motion-ease-out) both;
+  --animate-sheet-in: sheet-in var(--motion-slow) var(--motion-ease-out) both;
+  --animate-sheet-out: sheet-out var(--motion-base) var(--motion-ease-out) both;
+  --animate-pop: pop var(--motion-slow) var(--motion-ease-spring);
+  --animate-pin-drop: pin-drop var(--motion-slower) var(--motion-ease-spring) both;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(var(--motion-rise));
+    }
+  }
+
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(var(--motion-scale));
+    }
+  }
+
+  @keyframes scale-out {
+    to {
+      opacity: 0;
+      transform: scale(var(--motion-scale));
+    }
+  }
+
+  @keyframes sheet-in {
+    from {
+      transform: translateY(100%);
+    }
+  }
+
+  @keyframes sheet-out {
+    to {
+      transform: translateY(100%);
+    }
+  }
+
+  @keyframes pop {
+    50% {
+      transform: scale(var(--motion-pop));
+    }
+  }
+
+  @keyframes pin-drop {
+    from {
+      opacity: 0;
+      transform: translateY(calc(var(--motion-drop) * -1));
+    }
+  }
 }
 
 @utility glass {
-  @apply bg-card/70 backdrop-blur-xl backdrop-saturate-150;
+  background-color: var(--glass);
+  border: var(--glass-edge-width) solid var(--glass-edge);
+  box-shadow: var(--elevation-glass);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+}
+
+@utility media-backdrop {
+  filter: blur(var(--backdrop-blur));
+  scale: var(--backdrop-scale);
+}
+
+@utility opacity-disabled {
+  opacity: var(--opacity-disabled);
+}
+
+@utility press {
+  transition-property: color, background-color, border-color, box-shadow, opacity, scale;
+  transition-duration: var(--motion-fast);
+  transition-timing-function: var(--motion-ease-out);
+
+  &:active:not(:disabled) {
+    scale: var(--motion-press);
+  }
+}
+
+@utility stagger {
+  & > :nth-child(2) {
+    animation-delay: var(--motion-stagger);
+  }
+  & > :nth-child(3) {
+    animation-delay: calc(var(--motion-stagger) * 2);
+  }
+  & > :nth-child(4) {
+    animation-delay: calc(var(--motion-stagger) * 3);
+  }
+  & > :nth-child(5) {
+    animation-delay: calc(var(--motion-stagger) * 4);
+  }
+  & > :nth-child(6) {
+    animation-delay: calc(var(--motion-stagger) * 5);
+  }
+  & > :nth-child(n + 7) {
+    animation-delay: calc(var(--motion-stagger) * 6);
+  }
+}
+
+@layer base {
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-delay: 0ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }

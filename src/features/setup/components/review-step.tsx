@@ -60,7 +60,7 @@ export const ReviewStep = () => {
         </Button>
       </div>
       <div className="flex flex-col gap-6">
-        <Card className="gap-5 rounded-xl border-border/20 p-6 shadow-none">
+        <Card className="gap-5 rounded-xl border-line p-6 shadow-none">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex min-w-0 flex-col gap-2">
               <h2 className="text-xs font-medium text-muted-foreground">
@@ -78,7 +78,7 @@ export const ReviewStep = () => {
               {t('wizard.review.editAccount')}
             </Button>
           </div>
-          <p className="flex items-center gap-2 border-t border-border/20 pt-4 text-sm text-muted-foreground">
+          <p className="flex items-center gap-2 border-t border-line pt-4 text-sm text-muted-foreground">
             <Check className="size-4 text-primary" aria-hidden="true" />
             {t('wizard.review.passwordSet')}
           </p>
@@ -91,7 +91,7 @@ export const ReviewStep = () => {
             {errorMessage}
           </p>
         ) : null}
-        <div className="flex flex-col-reverse gap-3 border-t border-border/20 pt-6 sm:flex-row sm:justify-between">
+        <div className="flex flex-col-reverse gap-3 border-t border-line pt-6 sm:flex-row sm:justify-between">
           <Button
             variant="ghost"
             className="rounded-full"

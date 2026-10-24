@@ -16,9 +16,9 @@ export const ProfilePreview = ({ name, description, photoSrc }: ProfilePreviewPr
     <Card
       role="region"
       aria-label={t('wizard.profile.previewLabel')}
-      className="gap-0 overflow-hidden rounded-xl border-border/20 bg-surface/60 p-0 shadow-none"
+      className="gap-0 overflow-hidden rounded-xl border-line bg-surface-soft p-0 shadow-none"
     >
-      <div className="flex items-center gap-2 border-b border-border/15 px-5 py-4">
+      <div className="flex items-center gap-2 border-b border-line px-5 py-4">
         <span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />
         <p className="text-xs font-medium tracking-wide text-muted-foreground">
           {t('wizard.profile.livePreview')}
@@ -48,7 +48,7 @@ export const ProfilePreview = ({ name, description, photoSrc }: ProfilePreviewPr
         <p className="mt-2 w-full text-sm leading-relaxed break-words whitespace-pre-wrap text-muted-foreground">
           {description || t('wizard.profile.descriptionPreview')}
         </p>
-        <div className="mt-8 flex w-full flex-col items-center gap-3 rounded-lg border border-dashed border-border/30 bg-background/70 px-5 py-6 text-muted-foreground">
+        <div className="mt-8 flex w-full flex-col items-center gap-3 rounded-lg border border-dashed border-line-strong bg-surface-soft px-5 py-6 text-muted-foreground">
           <ImagePlus className="size-5" aria-hidden="true" />
           <p className="max-w-48 text-xs leading-relaxed">{t('wizard.profile.feedPreview')}</p>
         </div>
