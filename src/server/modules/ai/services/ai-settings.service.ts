@@ -4,8 +4,8 @@ import { Models } from '@/models'
 
 import { ConflictError, ValidationError } from '@/server/errors/http-errors'
 import { db } from '@/server/lib/db'
+import { secretBox, type SecretBox } from '@/server/lib/secret-box'
 import { aiSettings } from '@/server/modules/ai/schemas/ai.table'
-import { secretBox, type SecretBox } from '@/server/modules/ai/services/secret-box'
 
 const SINGLETON_ID = 'singleton'
 const DEFAULT_PROVIDER: Models.AiProvider = 'openai'

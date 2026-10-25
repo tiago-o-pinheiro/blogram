@@ -64,6 +64,13 @@
       "when": 1792953245255,
       "tag": "0008_peaceful_fat_cobra",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792960472904,
+      "tag": "0009_perpetual_shockwave",
+      "breakpoints": true
     }
   ]
 }

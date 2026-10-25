@@ -1,14 +1,15 @@
 import { randomUUID } from 'node:crypto'
 
+import { hashPassword } from 'better-auth/crypto'
 import { and, eq } from 'drizzle-orm'
 
 import { Models } from '@/models'
 
-import { env } from '@/server/config/env'
 import { ConflictError, ValidationError } from '@/server/errors/http-errors'
-import { auth } from '@/server/lib/auth'
+import { getAuth } from '@/server/lib/auth'
 import { db, type DbTransaction } from '@/server/lib/db'
 import { account, user } from '@/server/modules/auth/schemas/auth.table'
+import { googleSettingsService } from '@/server/modules/auth/services/google-settings.service'
 
 const UNIQUE_VIOLATION_CODE = '23505'
 const CREDENTIAL_PROVIDER_ID = 'credential'
@@ -25,10 +26,10 @@ const isUniqueViolation = (error: unknown): boolean => {
 }
 
 export class AuthService {
-  handle = (request: Request): Promise<Response> => auth.handler(request)
+  handle = async (request: Request): Promise<Response> => (await getAuth()).handler(request)
 
   isGoogleSignInEnabled = async (): Promise<boolean> => {
-    if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+    if ((await googleSettingsService.readCredentials()) === null) {
       return false
     }
     const [linkedAccount] = await db
@@ -50,14 +51,13 @@ export class AuthService {
       .where(and(eq(account.userId, owner.id), eq(account.providerId, 'google')))
       .limit(1)
     return {
-      isConfigured: Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET),
+      isConfigured: (await googleSettingsService.readCredentials()) !== null,
       accountId: linkedAccount?.id ?? null,
-      callbackURL: new URL('/api/auth/callback/google', env.BETTER_AUTH_URL).toString(),
     }
   }
 
   findUser = async (headers: Headers): Promise<Models.User | null> => {
-    const session = await auth.api.getSession({ headers })
+    const session = await (await getAuth()).api.getSession({ headers })
     if (!session) {
       return null
     }
@@ -73,8 +73,7 @@ export class AuthService {
     if (!identifier) {
       throw new ValidationError('Invalid owner identifier')
     }
-    const context = await auth.$context
-    const passwordHash = await context.password.hash(input.password)
+    const passwordHash = await hashPassword(input.password)
     const id = randomUUID()
     const isEmail = identifier.kind === 'email'
     const email = isEmail ? identifier.value : `${identifier.value}@${USERNAME_EMAIL_DOMAIN}`
@@ -108,6 +107,7 @@ export class AuthService {
     if (!parsed) {
       throw new ValidationError('Invalid owner identifier')
     }
+    const auth = await getAuth()
     if (parsed.kind === 'email') {
       return auth.api.signInEmail({
         body: { email: parsed.value, password },

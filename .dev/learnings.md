@@ -15,3 +15,5 @@
 - [bug-hunt] BH repro specs stay in the tree, so minor BH findings fail the gate too; include every BH id in the fix round, not only blocker/major (20261025-1859-necesito-que-me-ayudes-en)
 - [ai] Map provider failures by the error body reason, not the status alone: Gemini answers 400 for both a bad key (API_KEY_INVALID) and an invalid argument (20261025-1859-necesito-que-me-ayudes-en)
 - [security] A secret sealed with a key derived from BETTER_AUTH_SECRET must count as present only if it opens; after rotation the UI otherwise shows a saved key that always fails (20261025-1859-necesito-que-me-ayudes-en)
+- [git] Coders must never `git stash` while other coders of the same group are running; it snapshots and replays their in-progress files and unstages renames (20261025-2034-move-google-sign-in-configuration)
+- [auth] A cache key over several credentials must encode them as a tuple (`JSON.stringify([a, b])`), never plain concatenation, or different pairs collide and a stale instance keeps serving (20261025-2034-move-google-sign-in-configuration)

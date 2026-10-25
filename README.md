@@ -26,7 +26,7 @@
 - Camera details under photos and blurred loading previews
 - Story cards and Open Graph images for sharing
 - Local or S3-compatible storage (Cloudflare R2, MinIO, AWS)
-- Optional Google sign-in linked to the single owner
+- Optional Google sign-in linked to the single owner, configured from Account settings
 - English and Spanish interface
 - Built with Next.js, PostgreSQL, Drizzle, Better Auth and TypeBox
 

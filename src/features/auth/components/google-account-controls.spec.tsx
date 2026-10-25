@@ -17,24 +17,15 @@ vi.mock('next/navigation', () => ({
 const mount = (isConfigured: boolean, accountId: string | null = null) =>
   render(
     <I18nProvider locale="en" messages={getMessages('en')}>
-      <GoogleAccountControls
-        isConfigured={isConfigured}
-        accountId={accountId}
-        callbackURL="https://journal.example.com/api/auth/callback/google"
-      />
+      <GoogleAccountControls isConfigured={isConfigured} accountId={accountId} />
     </I18nProvider>,
   )
 
 describe('Google account controls', () => {
-  it('Given no OAuth credentials, should explain configuration and show no activation control', () => {
+  it('Given no OAuth credentials and no link, should show the hint and no Link button', () => {
     mount(false)
 
-    expect(screen.getByText(/GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET/)).toBeInTheDocument()
-    expect(
-      screen.getByText('https://journal.example.com/api/auth/callback/google'),
-    ).toBeInTheDocument()
-    expect(screen.getByText('https://<yourdomain>/api/auth/callback/google')).toBeVisible()
-    expect(screen.getByText(/Replace <yourdomain>/)).toHaveTextContent('Railway')
+    expect(screen.getByText(/Save and enable the Google settings above/)).toBeVisible()
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 

@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { GET, PUT } from '@/app/api/admin/ai/settings/route'
 import { db } from '@/server/lib/db'
+import { createSecretBox } from '@/server/lib/secret-box'
 import { aiSettings } from '@/server/modules/ai/schemas/ai.table'
-import { createSecretBox } from '@/server/modules/ai/services/secret-box'
 import { createOwnerSession } from '@/test/auth-session'
 
 const URL = 'http://localhost:3000/api/admin/ai/settings'

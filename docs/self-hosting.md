@@ -8,33 +8,33 @@ You need a domain with HTTPS, a PostgreSQL 17 database and somewhere to keep upl
 
 Configuration is parsed in `src/server/config/env.ts`. Keep secrets on the server and keep the public origins consistent. Generate secrets yourself with `openssl rand -hex 32` and never reuse them between installations.
 
-| Variable                  | Default / requirement       | Purpose                                                                     |
-| ------------------------- | --------------------------- | --------------------------------------------------------------------------- |
-| `DATABASE_URL`            | Local PostgreSQL sample URL | Database connection; production Compose overrides it inside containers      |
-| `BETTER_AUTH_SECRET`      | Development sample          | Unique stable secret, at least 32 characters; sample rejected in production |
-| `BETTER_AUTH_URL`         | `http://localhost:3000`     | Public application and auth origin; HTTPS in production                     |
-| `CORS_ORIGIN`             | `http://localhost:3000`     | Trusted auth origins, comma-separated; include every public domain          |
-| `SETUP_PASSWORD`          | Unset                       | Installer password, at least 12 characters; remove after setup              |
-| `STORAGE_DRIVER`          | `local`                     | `local` or `s3`                                                             |
-| `STORAGE_LOCAL_DIR`       | `.data/uploads`             | Persistent media directory; use an absolute path for a service              |
-| `UPLOAD_MAX_IMAGE_BYTES`  | `10485760`                  | 10 MiB per image, profile photo or poster                                   |
-| `UPLOAD_MAX_IMAGE_PIXELS` | `50000000`                  | Decoded image pixel cap                                                     |
-| `UPLOAD_MAX_VIDEO_BYTES`  | `268435456`                 | 256 MiB per video; positive integer up to `2147483647`                      |
-| `S3_ENDPOINT`             | Unset                       | S3 API origin, required for S3                                              |
-| `S3_REGION`               | `auto`                      | Provider signing region                                                     |
-| `S3_BUCKET`               | Unset                       | Private bucket name                                                         |
-| `S3_ACCESS_KEY_ID`        | Unset                       | Server access key                                                           |
-| `S3_SECRET_ACCESS_KEY`    | Unset                       | Server secret key                                                           |
-| `S3_FORCE_PATH_STYLE`     | `true`                      | Path-style addressing; `false` uses the bucket subdomain                    |
-| `GOOGLE_CLIENT_ID`        | Unset                       | Optional OAuth web client; set together with the secret                     |
-| `GOOGLE_CLIENT_SECRET`    | Unset                       | Optional OAuth web client secret                                            |
-| `NODE_ENV`                | Set by Next and scripts     | `production` enables secure cookies and auth rate limiting                  |
-| `POSTGRES_PASSWORD`       | Production Compose only     | Required database password; use hex characters                              |
-| `DB_PORT`                 | Dev Compose: `5432`         | Host port of the development database; keep equal to the port in the URL    |
-| `PORT`                    | `3000`                      | Port used by `pnpm start`                                                   |
+| Variable                  | Default / requirement       | Purpose                                                                                            |
+| ------------------------- | --------------------------- | -------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`            | Local PostgreSQL sample URL | Database connection; production Compose overrides it inside containers                             |
+| `BETTER_AUTH_SECRET`      | Development sample          | Unique stable secret, at least 32 characters; sample rejected in production                        |
+| `BETTER_AUTH_URL`         | `http://localhost:3000`     | Public application and auth origin; HTTPS in production                                            |
+| `CORS_ORIGIN`             | `http://localhost:3000`     | Trusted auth origins, comma-separated; include every public domain                                 |
+| `SETUP_PASSWORD`          | Unset                       | Installer password, at least 12 characters; remove after setup                                     |
+| `STORAGE_DRIVER`          | `local`                     | `local` or `s3`                                                                                    |
+| `STORAGE_LOCAL_DIR`       | `.data/uploads`             | Persistent media directory; use an absolute path for a service                                     |
+| `UPLOAD_MAX_IMAGE_BYTES`  | `10485760`                  | 10 MiB per image, profile photo or poster                                                          |
+| `UPLOAD_MAX_IMAGE_PIXELS` | `50000000`                  | Decoded image pixel cap                                                                            |
+| `UPLOAD_MAX_VIDEO_BYTES`  | `268435456`                 | 256 MiB per video; positive integer up to `2147483647`                                             |
+| `S3_ENDPOINT`             | Unset                       | S3 API origin, required for S3                                                                     |
+| `S3_REGION`               | `auto`                      | Provider signing region                                                                            |
+| `S3_BUCKET`               | Unset                       | Private bucket name                                                                                |
+| `S3_ACCESS_KEY_ID`        | Unset                       | Server access key                                                                                  |
+| `S3_SECRET_ACCESS_KEY`    | Unset                       | Server secret key                                                                                  |
+| `S3_FORCE_PATH_STYLE`     | `true`                      | Path-style addressing; `false` uses the bucket subdomain                                           |
+| `GOOGLE_CLIENT_ID`        | Unset                       | Optional override of Account > Security; set together with the secret                              |
+| `GOOGLE_CLIENT_SECRET`    | Unset                       | Optional override secret; when both are set the Account block is read-only                         |
+| `NODE_ENV`                | Set by Next and scripts     | `production` enables secure cookies and auth rate limiting                                         |
+| `POSTGRES_PASSWORD`       | Production Compose only     | Required database password; use hex characters                                                     |
+| `DB_PORT`                 | Dev Compose: `5432`         | Host port of the development database; keep equal to the port in the URL                           |
+| `PORT`                    | `3000`                      | Port used by `pnpm start`                                                                          |
 | `BLOGRAM_VERSION`         | `latest`                    | Image tag used by production Compose: `latest`, a release such as `1.2.3`, or `sha-<short commit>` |
 
-Leave unused S3 assignments commented out, as in `.env.example`: empty strings are invalid. Set both Google values or neither.
+Leave unused S3 assignments commented out, as in `.env.example`: empty strings are invalid. Set both Google values or neither; when set, they override the Google settings saved in Account > Security. `BETTER_AUTH_SECRET` always stays in the environment: it also encrypts the Google client secret stored in the database.
 
 ## Railway and Cloudflare R2
 
@@ -195,8 +195,13 @@ Optional. Password sign-in always works.
 
 1. Create a Google OAuth **Web application** client. In testing mode, add the owner as a test user.
 2. Register `https://<your-domain>/api/auth/callback/google` as the redirect URI. The Account page shows the exact value; locally it is `http://localhost:3000/api/auth/callback/google`.
-3. Set both Google variables and restart or recreate web.
-4. Sign in with your password, open `/admin/account` and choose **Link Google**. Linking needs a session younger than five minutes.
+3. Sign in with your password and open `/admin/account?section=security`. Copy the redirect URI shown in the Google block.
+4. Turn the switch on, paste the Client ID and Client Secret, and save. No restart is needed.
+5. Choose **Link Google**. Linking needs a session younger than five minutes.
+
+The saved secret is encrypted with `BETTER_AUTH_SECRET`. Rotating `BETTER_AUTH_SECRET` makes it unreadable, so Google sign-in turns off until you enter the secret again.
+
+Alternatively, set both `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in the environment. They win over saved settings and the Account block becomes read-only; remove both to manage Google there again.
 
 Google cannot create users and a matching email never links an account. Only the explicitly linked Google identity can sign in. The password cannot be unlinked.
 
@@ -289,28 +294,28 @@ Username-only accounts have an internal `@owner.invalid` email; sign in with the
 
 ## Troubleshooting
 
-| Symptom                              | Check / action                                                                                                    |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| Setup not configured                 | Set `SETUP_PASSWORD` to at least 12 characters, recreate web, reload `/admin`                                     |
-| Wrong setup password                 | Use the installer password, not the owner login; check for stray spaces or quotes                                 |
-| Setup 429                            | Honor `Retry-After`; the guard uses a 15-minute budget                                                            |
-| Wizard closed after installation     | Expected: use `/sign-in` with the owner credentials                                                               |
-| Site looks newly installed           | Confirm the original database, project name and volumes before starting another setup                             |
-| Production build rejects auth secret | Replace the development sample secret                                                                             |
-| Compose missing database password    | Set `POSTGRES_PASSWORD` before starting                                                                           |
-| Database auth fails                  | Check the URL, port and original password; env changes do not change an initialized role password                 |
-| Deploy healthcheck fails             | `/api/health` queries the database and returns 503 when it is down; check `DATABASE_URL` and the database service |
-| `.env` change ineffective            | Restart Node; recreate Compose containers                                                                         |
-| Login fails behind proxy             | Check HTTPS, forwarded host and scheme, and the auth origins                                                      |
-| Upload 413                           | Check app and proxy limits; a video request also carries its poster                                               |
-| Image 422                            | Check real JPEG, PNG or WebP bytes, decoded pixels and file size                                                  |
-| Video unavailable                    | Ensure `ffprobe` is on the service `PATH`; Docker includes it                                                     |
-| Accepted video will not play         | Check browser codecs and proxy range handling; try H.264 MP4                                                      |
-| Blank link preview                   | The target may be blocked, private, slow or too large; enter metadata by hand                                     |
-| S3 failures                          | Check the API origin, bucket, region, addressing and read/write/delete permissions                                |
-| Old bytes after storage outage       | Restore provider access and retry cleanup; queued keys stay in PostgreSQL                                         |
-| Google button absent                 | Set both OAuth variables and recreate web                                                                         |
-| Google callback fails                | Match the exact callback and public origin; check consent and test-user settings                                  |
-| Google linking asks to sign in again | A session younger than five minutes is required                                                                   |
+| Symptom                              | Check / action                                                                                                                      |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Setup not configured                 | Set `SETUP_PASSWORD` to at least 12 characters, recreate web, reload `/admin`                                                       |
+| Wrong setup password                 | Use the installer password, not the owner login; check for stray spaces or quotes                                                   |
+| Setup 429                            | Honor `Retry-After`; the guard uses a 15-minute budget                                                                              |
+| Wizard closed after installation     | Expected: use `/sign-in` with the owner credentials                                                                                 |
+| Site looks newly installed           | Confirm the original database, project name and volumes before starting another setup                                               |
+| Production build rejects auth secret | Replace the development sample secret                                                                                               |
+| Compose missing database password    | Set `POSTGRES_PASSWORD` before starting                                                                                             |
+| Database auth fails                  | Check the URL, port and original password; env changes do not change an initialized role password                                   |
+| Deploy healthcheck fails             | `/api/health` queries the database and returns 503 when it is down; check `DATABASE_URL` and the database service                   |
+| `.env` change ineffective            | Restart Node; recreate Compose containers                                                                                           |
+| Login fails behind proxy             | Check HTTPS, forwarded host and scheme, and the auth origins                                                                        |
+| Upload 413                           | Check app and proxy limits; a video request also carries its poster                                                                 |
+| Image 422                            | Check real JPEG, PNG or WebP bytes, decoded pixels and file size                                                                    |
+| Video unavailable                    | Ensure `ffprobe` is on the service `PATH`; Docker includes it                                                                       |
+| Accepted video will not play         | Check browser codecs and proxy range handling; try H.264 MP4                                                                        |
+| Blank link preview                   | The target may be blocked, private, slow or too large; enter metadata by hand                                                       |
+| S3 failures                          | Check the API origin, bucket, region, addressing and read/write/delete permissions                                                  |
+| Old bytes after storage outage       | Restore provider access and retry cleanup; queued keys stay in PostgreSQL                                                           |
+| Google button absent                 | Save the Client ID and Secret in Account > Security and turn the switch on; re-enter the secret after rotating `BETTER_AUTH_SECRET` |
+| Google callback fails                | Match the exact callback and public origin; check consent and test-user settings                                                    |
+| Google linking asks to sign in again | A session younger than five minutes is required                                                                                     |
 
 Production logs: `docker compose -f docker-compose.production.yml logs --tail=100 web migrate`. Share sanitized errors only, never environment dumps, cookies, tokens or database URLs.
