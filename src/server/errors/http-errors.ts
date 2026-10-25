@@ -1,5 +1,7 @@
 import { StatusCodes } from 'http-status-codes'
 
+import { type Models } from '@/models'
+
 import { GlobalError } from './global-error'
 
 export class NotFoundError extends GlobalError {
@@ -41,6 +43,12 @@ export class TooManyRequestsError extends GlobalError {
 export class ServiceUnavailableError extends GlobalError {
   constructor(message = 'Service unavailable', details?: unknown) {
     super(message, StatusCodes.SERVICE_UNAVAILABLE, details)
+  }
+}
+
+export class BadGatewayError extends GlobalError {
+  constructor(message = 'Bad gateway', details?: { reason: Models.AiFailureReason }) {
+    super(message, StatusCodes.BAD_GATEWAY, details)
   }
 }
 

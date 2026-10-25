@@ -7,6 +7,8 @@
   "postForm.altTextHint": "Describe la imagen para ayudar a quienes usan lectores de pantalla.",
   "postForm.video": "Archivo de vídeo",
   "postForm.videoReplaced": "Vídeo reemplazado.",
+  "postForm.uploadingVideo": "Subiendo vídeo",
+  "postForm.checkingVideo": "Comprobando vídeo",
   "postForm.poster": "Portada del vídeo",
   "postForm.url": "URL de destino",
   "postForm.youtubeUrl": "URL de YouTube",

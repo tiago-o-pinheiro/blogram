@@ -11,14 +11,9 @@ import { authClient } from '@/lib/auth-client'
 type GoogleAccountControlsProps = {
   isConfigured: boolean
   accountId: string | null
-  callbackURL: string
 }
 
-export const GoogleAccountControls = ({
-  isConfigured,
-  accountId,
-  callbackURL,
-}: GoogleAccountControlsProps) => {
+export const GoogleAccountControls = ({ isConfigured, accountId }: GoogleAccountControlsProps) => {
   const t = useT()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -65,23 +60,7 @@ export const GoogleAccountControls = ({
   }
 
   return (
-    <section
-      aria-labelledby="google-title"
-      className="flex flex-col gap-4 rounded-xl border border-line bg-card p-5"
-    >
-      <h2 id="google-title" className="text-lg font-semibold">
-        {t('google.title')}
-      </h2>
-      <p className="text-sm text-muted-foreground">{t('google.description')}</p>
-      {!isConfigured ? (
-        <div className="flex flex-col gap-2 rounded-md bg-surface p-4 text-sm">
-          <p>{t('google.configure')}</p>
-          <code className="break-all">{'https://<yourdomain>/api/auth/callback/google'}</code>
-          <p>{t('google.domainHint')}</p>
-          <p className="font-medium">{t('google.configuredCallback')}</p>
-          <code className="break-all">{callbackURL}</code>
-        </div>
-      ) : null}
+    <>
       {accountId && !hasUnlinked ? (
         <>
           <p className="text-sm">{t('google.linked')}</p>
@@ -93,12 +72,14 @@ export const GoogleAccountControls = ({
         <Button variant="secondary" disabled={isPending} onClick={() => void handleLink()}>
           {t('google.link')}
         </Button>
-      ) : null}
+      ) : (
+        <p className="text-sm text-muted-foreground">{t('google.linkUnavailable')}</p>
+      )}
       {error || searchParams.get('google') === 'error' ? (
         <p role="alert" className="animate-rise-in text-sm text-danger">
           {error || t('google.error')}
         </p>
       ) : null}
-    </section>
+    </>
   )
 }

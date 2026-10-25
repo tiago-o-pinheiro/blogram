@@ -12,6 +12,7 @@ import { PostForm } from '@/features/posts/components/post-form'
 import { PostStatusBadge } from '@/features/posts/components/post-status-badge'
 import { env } from '@/server/config/env'
 import { NotFoundError } from '@/server/errors/http-errors'
+import { aiSettingsService } from '@/server/modules/ai/services/ai-settings.service'
 import { requireOwnerPage } from '@/server/modules/auth/guards/admin-page.guard'
 import { postService } from '@/server/modules/posts/services/post.service'
 
@@ -31,6 +32,8 @@ const Page = async ({ params }: PageProps) => {
     }
     throw error
   })
+
+  const { isEnabled } = await aiSettingsService.getSettings()
 
   return (
     <PageShell
@@ -56,8 +59,10 @@ const Page = async ({ params }: PageProps) => {
     >
       <PostForm
         post={post}
+        isAiEnabled={isEnabled}
         maxImageBytes={env.UPLOAD_MAX_IMAGE_BYTES}
         maxVideoBytes={env.UPLOAD_MAX_VIDEO_BYTES}
+        videoUploadMode={env.STORAGE_DRIVER === 's3' ? 'direct' : 'form'}
       />
     </PageShell>
   )

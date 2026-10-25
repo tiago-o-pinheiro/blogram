@@ -2,13 +2,17 @@ import * as Models from '@/models/models'
 
 import { API_URL } from '@/lib/api-url'
 
+export type PostsApiFailure = 'status' | 'interrupted' | 'storageCors'
+
 export class PostsApiError extends Error {
   readonly status: number
+  readonly reason: PostsApiFailure
 
-  constructor(status: number) {
+  constructor(status: number, reason: PostsApiFailure = 'status') {
     super(`Posts request failed with status ${status}`)
     this.name = 'PostsApiError'
     this.status = status
+    this.reason = reason
   }
 }
 
@@ -25,6 +29,7 @@ type CreatePostInput = {
   altText: string
   file?: File
   poster?: File
+  videoUploadId?: string
   url?: string
   title?: string
   description?: string
@@ -32,7 +37,15 @@ type CreatePostInput = {
 }
 
 const request = async (path: string, init: RequestInit): Promise<Response> => {
-  const response = await fetch(`${API_URL}${path}`, { ...init, credentials: 'same-origin' })
+  const response = await fetch(`${API_URL}${path}`, {
+    ...init,
+    credentials: 'same-origin',
+  }).catch((error: unknown) => {
+    if (error instanceof TypeError) {
+      throw new PostsApiError(0, 'interrupted')
+    }
+    throw error
+  })
   if (!response.ok) {
     throw new PostsApiError(response.status)
   }
@@ -72,7 +85,7 @@ export const createPost = async (input: CreatePostInput): Promise<Models.Post> =
   if (input.poster) {
     body.append('poster', input.poster)
   }
-  for (const field of ['url', 'title', 'description', 'source'] as const) {
+  for (const field of ['videoUploadId', 'url', 'title', 'description', 'source'] as const) {
     if (input[field] !== undefined) {
       body.append(field, input[field])
     }
@@ -104,9 +117,25 @@ export const replacePostVideo = async (id: string, file: File): Promise<Models.P
   return readPost(await request(`/admin/posts/${id}/video`, { method: 'PUT', body }))
 }
 
+export const replacePostVideoFromUpload = async (
+  id: string,
+  uploadId: string,
+): Promise<Models.Post> => readPost(await sendJson(`/admin/posts/${id}/video`, 'PUT', { uploadId }))
+
 export const setPostStatus = async (id: string, status: Models.PostStatus): Promise<Models.Post> =>
   readPost(await sendJson(`/admin/posts/${id}/status`, 'PUT', { status }))
 
 export const deletePost = async (id: string): Promise<void> => {
   await request(`/admin/posts/${id}`, { method: 'DELETE' })
+}
+
+export const deleteAllPosts = async (): Promise<Models.PostBulkDeleteResult> => {
+  const response = await sendJson('/admin/posts', 'DELETE', {
+    confirm: Models.DELETE_ALL_POSTS_CONFIRM,
+  })
+  const result: unknown = await response.json()
+  if (!Models.isPostBulkDeleteResult(result)) {
+    throw new PostsApiError(response.status)
+  }
+  return result
 }

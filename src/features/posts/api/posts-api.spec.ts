@@ -2,9 +2,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   createPhotoPost,
+  createPost,
   deletePost,
   PostsApiError,
   replacePostImage,
+  replacePostVideoFromUpload,
   setPostStatus,
   updatePost,
 } from './posts-api'
@@ -100,6 +102,40 @@ describe('posts api', () => {
     mockFetch(new Response(null, { status }))
 
     await expect(deletePost(POST.id)).rejects.toMatchObject({ status })
+  })
+
+  it('Given a fetch rejection, should throw an interrupted PostsApiError with status 0', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'))
+
+    await expect(deletePost(POST.id)).rejects.toMatchObject({ status: 0, reason: 'interrupted' })
+  })
+
+  it('Given a video upload id, should append it instead of a file', async () => {
+    const fetchSpy = mockFetch(Response.json(POST, { status: 201 }))
+
+    await createPost({ type: 'video', text: 'T', altText: 'A', videoUploadId: 'u-1' })
+
+    const body = fetchSpy.mock.calls[0]?.[1]?.body
+    expect(body).toBeInstanceOf(FormData)
+    if (body instanceof FormData) {
+      expect(body.get('videoUploadId')).toBe('u-1')
+      expect(body.get('file')).toBeNull()
+    }
+  })
+
+  it('Given an upload id, should put JSON to the video endpoint', async () => {
+    const fetchSpy = mockFetch(Response.json(POST))
+
+    await expect(replacePostVideoFromUpload(POST.id, 'u-1')).resolves.toEqual(POST)
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/admin/posts/AbCdEfGhIj/video',
+      expect.objectContaining({
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ uploadId: 'u-1' }),
+      }),
+    )
   })
 
   it('Given a malformed post body, should throw a PostsApiError', async () => {

@@ -13,5 +13,21 @@
   "admin.welcome": "Bienvenido, {{name}}",
   "admin.accountLink": "Ajustes de la cuenta",
   "account.session": "Sesión",
-  "account.sessionHint": "Cierra la sesión de Blogram en este dispositivo."
+  "account.sessionHint": "Cierra la sesión de Blogram en este dispositivo.",
+  "account.sections.label": "Secciones de la cuenta",
+  "account.sections.security": "Seguridad",
+  "account.sections.ai": "Asistente de IA",
+  "account.sections.data": "Datos",
+  "account.data.title": "Borrar todas las publicaciones",
+  "account.data.hint": "Elimina todos los borradores y publicaciones con sus fotos y vídeos. No se puede deshacer.",
+  "account.data.count": "Se borrarán {{count}} publicaciones.",
+  "account.deleteAll.open": "Borrar todas las publicaciones",
+  "account.deleteAll.title": "¿Borrar todas las publicaciones?",
+  "account.deleteAll.description": "Todas las publicaciones, fotos y vídeos se eliminarán para siempre.",
+  "account.deleteAll.confirmLabel": "Escribe la palabra de abajo para confirmar",
+  "account.deleteAll.confirmWord": "BORRAR",
+  "account.deleteAll.submit": "Borrar todo",
+  "account.deleteAll.submitting": "Borrando",
+  "account.deleteAll.done": "{{count}} publicaciones borradas.",
+  "account.deleteAll.error": "No pudimos borrar las publicaciones. Inténtalo de nuevo."
 }

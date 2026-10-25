@@ -10,6 +10,8 @@
   "posts.error.tooLarge": "That file is too large.",
   "posts.error.invalid": "Some of the information is not valid. Check it and try again.",
   "posts.error.generic": "Something went wrong. Please try again.",
+  "posts.error.interrupted": "The upload was cut by the network or a proxy. Check your connection and try again.",
+  "posts.error.storageCors": "The bucket does not allow uploads from the browser. Check its CORS rule.",
   "postList.title": "Posts",
   "postList.empty": "No posts yet. Create your first one.",
   "postList.emptyAction": "New post",

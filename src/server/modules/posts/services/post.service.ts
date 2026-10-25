@@ -18,6 +18,10 @@ import { storage, type StorageDriver, type StorageObject } from '@/server/lib/st
 import { media } from '@/server/modules/media/schemas/media.table'
 import { MediaCleanupService } from '@/server/modules/media/services/media-cleanup.service'
 import { mediaService, type MediaService } from '@/server/modules/media/services/media.service'
+import {
+  videoUploadService,
+  type VideoUploadService,
+} from '@/server/modules/media/services/video-upload.service'
 import { post } from '@/server/modules/posts/schemas/post.table'
 
 import { normalizeWebUrl, normalizeYoutubeUrl } from './post-url'
@@ -38,7 +42,10 @@ type PostServiceDependencies = {
   storage: StorageDriver
   media?: Pick<MediaService, 'processPostImage' | 'deleteObjects'> &
     Partial<Pick<MediaService, 'processPostVideo'>>
+  videoUploads?: Pick<VideoUploadService, 'claim'>
 }
+
+export type VideoSource = { uploadId: string } | { file: File }
 
 export type PostDraftInput = {
   place?: Models.PostPlace
@@ -46,6 +53,7 @@ export type PostDraftInput = {
   text: string
   altText: string
   file?: File
+  videoUploadId?: string
   poster?: File
   url?: string
   title?: string
@@ -92,10 +100,12 @@ export class PostService {
   private readonly storage: StorageDriver
   private readonly media: Pick<MediaService, 'processPostImage' | 'deleteObjects'> &
     Partial<Pick<MediaService, 'processPostVideo'>>
+  private readonly videoUploads: Pick<VideoUploadService, 'claim'>
   private readonly cleanup: MediaCleanupService
 
   constructor(dependencies: PostServiceDependencies) {
     this.storage = dependencies.storage
+    this.videoUploads = dependencies.videoUploads ?? videoUploadService
     this.media = dependencies.media ?? mediaService
     this.cleanup = new MediaCleanupService(this.storage)
   }
@@ -113,8 +123,14 @@ export class PostService {
         : input.type === 'link' || input.type === 'news'
           ? toLink(input)
           : {}
-    if ((input.type === 'photo' || input.type === 'video') && !input.file) {
+    if (input.type === 'photo' && !input.file) {
       throw new ValidationError('A media file is required')
+    }
+    if (input.type !== 'video' && input.videoUploadId) {
+      throw new ValidationError('An upload id is only valid for video posts')
+    }
+    if (input.type === 'video' && Boolean(input.file) === Boolean(input.videoUploadId)) {
+      throw new ValidationError('A video needs exactly one of a file or an upload id')
     }
     if (input.type === 'video' && !input.poster) {
       throw new ValidationError('A video poster image is required')
@@ -127,14 +143,18 @@ export class PostService {
       if (processed) {
         written.push(processed.key, ...processed.variants.map((variant) => variant.key))
       }
-      const video =
+      const processedVideo =
         input.type === 'video' && input.file
           ? await (this.media.processPostVideo ?? mediaService.processPostVideo)(input.file)
           : undefined
-      if (video) {
-        written.push(video.key)
+      if (processedVideo) {
+        written.push(processedVideo.key)
       }
       const record = await db.transaction(async (tx) => {
+        const video =
+          input.type === 'video' && input.videoUploadId
+            ? await this.videoUploads.claim(tx, input.videoUploadId)
+            : processedVideo
         const draft = await this.insertPost(tx, {
           type: input.type,
           title: Models.isLinkPostType(input.type) ? '' : (input.title?.trim() ?? ''),
@@ -270,15 +290,23 @@ export class PostService {
     return this.getPost(id)
   }
 
-  replaceVideo = async (id: string, file: File): Promise<Models.Post> => {
+  replaceVideo = async (id: string, source: VideoSource): Promise<Models.Post> => {
     const record = await this.requireRecord(id)
     if (record.post.type !== 'video') {
       throw new ValidationError('Only uploaded video posts accept video replacement')
     }
-    const processed = await (this.media.processPostVideo ?? mediaService.processPostVideo)(file)
+    const processedFile =
+      'file' in source
+        ? await (this.media.processPostVideo ?? mediaService.processPostVideo)(source.file)
+        : undefined
     try {
       await db.transaction(async (tx) => {
         await this.lockPost(tx, record.post.id)
+        const processed =
+          'uploadId' in source ? await this.videoUploads.claim(tx, source.uploadId) : processedFile
+        if (!processed) {
+          throw new ValidationError('A video source is required')
+        }
         const [previous] = await tx
           .select()
           .from(media)
@@ -300,7 +328,7 @@ export class PostService {
         await this.cleanup.enqueue(tx, previous ? toStoredKeys(previous) : [])
       })
     } catch (error) {
-      await this.media.deleteObjects([processed.key])
+      await this.media.deleteObjects(processedFile ? [processedFile.key] : [])
       throw error
     }
     await this.cleanup.drain()
@@ -350,6 +378,23 @@ export class PostService {
       await tx.delete(post).where(eq(post.id, record.post.id))
     })
     await this.cleanup.drain()
+  }
+
+  countPosts = async (): Promise<number> => {
+    const [row] = await db.select({ total: sql<number>`count(*)::int` }).from(post)
+    return row?.total ?? 0
+  }
+
+  deleteAllPosts = async (): Promise<{ deleted: number }> => {
+    const deleted = await db.transaction(async (tx) => {
+      const locked = await tx.select({ id: post.id }).from(post).for('update')
+      const files = await tx.select().from(media)
+      await this.cleanup.enqueue(tx, files.flatMap(toStoredKeys))
+      await tx.delete(post)
+      return locked.length
+    })
+    await this.cleanup.drain()
+    return { deleted }
   }
 
   readMedia = async (

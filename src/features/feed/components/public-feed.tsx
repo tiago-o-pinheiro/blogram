@@ -1,11 +1,9 @@
 import Link from 'next/link'
 
-import { cn } from '@/design-system/ui/lib/cn'
-import { SlidingPill } from '@/design-system/ui/sliding-pill'
 import { type Locale, type Messages, createTranslator } from '@/i18n'
 import { Models } from '@/models'
 
-import { FeedSearch } from '@/features/feed/components/feed-search'
+import { FeedFilterBar } from '@/features/feed/components/feed-filter-bar'
 import { PostCard } from '@/features/feed/components/post-card'
 
 type PublicFeedProps = {
@@ -33,35 +31,12 @@ export const PublicFeed = ({
   const hasNext = page.meta.page * page.meta.pageSize < page.meta.total
   return (
     <section className="mx-auto w-full max-w-2xl space-y-8" aria-label={t('feed.label')}>
-      <FeedSearch query={query} filter={filter} messages={messages} />
       {query ? (
         <h2 key={query} className="animate-rise-in text-lg font-medium">
           {t('search.results', { query })}
         </h2>
       ) : null}
-      <nav
-        aria-label={t('feed.filters')}
-        className="sticky top-3 z-10 flex animate-rise-in justify-start gap-1 overflow-x-auto rounded-full glass p-1 sm:justify-center"
-      >
-        <SlidingPill activeKey={filter} className="rounded-full bg-foreground shadow-sm" />
-        {Models.FEED_FILTERS.map((type) => (
-          <Link
-            key={type}
-            href={Models.toFeedHref(type, 1, scope)}
-            scroll={false}
-            aria-current={filter === type ? 'page' : undefined}
-            data-active={filter === type || undefined}
-            className={cn(
-              'relative inline-flex min-h-11 shrink-0 press items-center rounded-full px-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-ring sm:px-5',
-              filter === type
-                ? 'bg-foreground text-background pill-ready:bg-transparent'
-                : 'text-muted-foreground hover:bg-muted',
-            )}
-          >
-            {t(`feed.${type}`)}
-          </Link>
-        ))}
-      </nav>
+      <FeedFilterBar filter={filter} query={query} />
       {page.data.length === 0 && query ? (
         <div
           key={`empty-${query}`}

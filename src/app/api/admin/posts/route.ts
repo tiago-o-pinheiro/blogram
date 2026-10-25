@@ -4,3 +4,4 @@ import { postController } from '@/server/modules/posts/controllers/post.controll
 
 export const GET = withErrorHandler(requireSession(postController.list))
 export const POST = withErrorHandler(requireSession(postController.create))
+export const DELETE = withErrorHandler(requireSession(postController.removeAll))

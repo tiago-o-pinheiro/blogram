@@ -6,16 +6,16 @@ How the owner publishes and how visitors read. To install it, see [Self-hosting]
 
 Save a draft, preview it, then publish. Drafts and their files are visible only to the owner; unpublishing hides a post and its files from public routes.
 
-| Route                       | Purpose                                                |
-| --------------------------- | ------------------------------------------------------ |
-| `/admin`                    | Installer before setup; owner administration afterward |
-| `/sign-in`                  | Email or username and password sign-in                 |
-| `/admin/posts`              | Posts with type, status, date and likes                |
-| `/admin/posts/new`          | Type-specific creation form                            |
-| `/admin/posts/<id>`         | Edit or replace media                                  |
-| `/admin/posts/<id>/preview` | Preview, publish, unpublish or delete                  |
-| `/admin/profile`            | Public name, description, photo and default language   |
-| `/admin/account`            | Password change, Google linking and sign out           |
+| Route                       | Purpose                                                        |
+| --------------------------- | -------------------------------------------------------------- |
+| `/admin`                    | Installer before setup; owner administration afterward         |
+| `/sign-in`                  | Email or username and password sign-in                         |
+| `/admin/posts`              | Posts with type, status, date and likes                        |
+| `/admin/posts/new`          | Type-specific creation form                                    |
+| `/admin/posts/<id>`         | Edit or replace media                                          |
+| `/admin/posts/<id>/preview` | Preview, publish, unpublish or delete                          |
+| `/admin/profile`            | Public name, description, photo and default language           |
+| `/admin/account`            | Password change, Google sign-in settings and linking, sign out |
 
 First run: open `/admin`, enter the installer password, set your public profile, choose the owner's email or username and password, then finish. If interrupted, unlock again with the same installer password; the saved profile persists. Once finished, the wizard never reopens.
 

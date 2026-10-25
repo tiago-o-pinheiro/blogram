@@ -35,6 +35,13 @@ describe('Textarea', () => {
     expect(screen.getByLabelText('Caption')).toBeValid()
   })
 
+  it('Given a label action, should render it beside the label and keep the textarea name', () => {
+    render(<Textarea label="Caption" labelAction={<button type="button">Write</button>} />)
+
+    expect(screen.getByRole('button', { name: 'Write' })).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Caption' })).toBeInTheDocument()
+  })
+
   it('Given the disabled prop, should disable the textarea', () => {
     render(<Textarea label="Caption" disabled />)
 

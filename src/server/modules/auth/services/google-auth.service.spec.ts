@@ -4,7 +4,7 @@ import { betterAuth } from 'better-auth'
 import { and, count, eq } from 'drizzle-orm'
 import { describe, expect, it, vi } from 'vitest'
 
-import { auth } from '@/server/lib/auth'
+import { getAuth } from '@/server/lib/auth'
 import { db } from '@/server/lib/db'
 import { account, session, user } from '@/server/modules/auth/schemas/auth.table'
 import { authService } from '@/server/modules/auth/services/auth.service'
@@ -22,7 +22,8 @@ const createOwner = () =>
     authService.createOwner(tx, { identifier: 'owner@example.test', password: PASSWORD }),
   )
 
-const suppliedProvider = (email: string, subject = GOOGLE_SUBJECT) => {
+const suppliedProvider = async (email: string, subject = GOOGLE_SUBJECT) => {
+  const auth = await getAuth()
   const google = auth.options.socialProviders.google
   if (!google) {
     throw new TypeError('Google must be configured for provider profile tests')
@@ -62,7 +63,10 @@ const post = (path: string, body: unknown, cookie = '') =>
     body: JSON.stringify(body),
   })
 
-const signInGoogle = (provider: ReturnType<typeof suppliedProvider>, requestSignUp = false) =>
+const signInGoogle = (
+  provider: Awaited<ReturnType<typeof suppliedProvider>>,
+  requestSignUp = false,
+) =>
   provider.handler(
     post('sign-in/social', {
       provider: 'google',
@@ -81,7 +85,7 @@ describe('Google authentication with supplied verified provider profiles', () =>
   it('Given a verified Google email matching the owner, should reject implicit linking', async () => {
     await createOwner()
 
-    const response = await signInGoogle(suppliedProvider('owner@example.test'))
+    const response = await signInGoogle(await suppliedProvider('owner@example.test'))
 
     expect(response.ok).toBe(false)
     expect(await response.text()).toMatch(/not.linked/i)
@@ -93,7 +97,7 @@ describe('Google authentication with supplied verified provider profiles', () =>
   })
 
   it('Given an unrecognized Google identity requesting signup, should create no user or session', async () => {
-    const response = await signInGoogle(suppliedProvider('stranger@example.test'), true)
+    const response = await signInGoogle(await suppliedProvider('stranger@example.test'), true)
 
     expect(response.ok).toBe(false)
     const [row] = await db.select({ total: count() }).from(user)
@@ -109,7 +113,7 @@ describe('Google authentication with supplied verified provider profiles', () =>
       userId: owner.id,
     })
 
-    const response = await signInGoogle(suppliedProvider('changed@example.test'))
+    const response = await signInGoogle(await suppliedProvider('changed@example.test'))
 
     expect(response.ok).toBe(true)
     expect(cookieOf(response)).toContain('session_token=')
@@ -127,7 +131,9 @@ describe('Google authentication with supplied verified provider profiles', () =>
       userId: owner.id,
     })
 
-    const response = await signInGoogle(suppliedProvider('owner@example.test', 'another-subject'))
+    const response = await signInGoogle(
+      await suppliedProvider('owner@example.test', 'another-subject'),
+    )
 
     expect(response.ok).toBe(false)
   })
@@ -135,9 +141,9 @@ describe('Google authentication with supplied verified provider profiles', () =>
   it('Given no session, should deny explicit linking', async () => {
     expect(
       (
-        await suppliedProvider('owner@example.test').handler(
-          post('link-social', { provider: 'google' }),
-        )
+        await (
+          await suppliedProvider('owner@example.test')
+        ).handler(post('link-social', { provider: 'google' }))
       ).status,
     ).toBe(401)
   })
@@ -146,7 +152,9 @@ describe('Google authentication with supplied verified provider profiles', () =>
     const owner = await createOwner()
     const cookie = cookieOf(await authService.signInOwner('owner@example.test', PASSWORD))
 
-    const response = await suppliedProvider('different@example.test').handler(
+    const response = await (
+      await suppliedProvider('different@example.test')
+    ).handler(
       post(
         'link-social',
         { provider: 'google', idToken: { token: 'supplied-provider-token' } },
@@ -173,9 +181,9 @@ describe('Google authentication with supplied verified provider profiles', () =>
 
     expect(
       (
-        await suppliedProvider('owner@example.test').handler(
-          post('link-social', { provider: 'google' }, cookie),
-        )
+        await (
+          await suppliedProvider('owner@example.test')
+        ).handler(post('link-social', { provider: 'google' }, cookie))
       ).status,
     ).toBe(403)
   })
@@ -196,10 +204,18 @@ describe('Google authentication with supplied verified provider profiles', () =>
     const cookie = cookieOf(await authService.signInOwner('owner@example.test', PASSWORD))
 
     expect(
-      (await auth.handler(post('unlink-account', { accountId: credential?.id }, cookie))).status,
+      (
+        await (
+          await getAuth()
+        ).handler(post('unlink-account', { accountId: credential?.id }, cookie))
+      ).status,
     ).toBe(403)
     expect(
-      (await auth.handler(post('unlink-account', { accountId: googleAccountId }, cookie))).ok,
+      (
+        await (
+          await getAuth()
+        ).handler(post('unlink-account', { accountId: googleAccountId }, cookie))
+      ).ok,
     ).toBe(true)
     expect((await authService.signInOwner('owner@example.test', PASSWORD)).ok).toBe(true)
   })
@@ -220,7 +236,11 @@ describe('Google authentication with supplied verified provider profiles', () =>
       .where(eq(session.userId, owner.id))
 
     expect(
-      (await auth.handler(post('unlink-account', { accountId: googleAccountId }, cookie))).ok,
+      (
+        await (
+          await getAuth()
+        ).handler(post('unlink-account', { accountId: googleAccountId }, cookie))
+      ).ok,
     ).toBe(false)
     expect(await authService.isGoogleSignInEnabled()).toBe(true)
   })
@@ -238,7 +258,11 @@ describe('Google authentication with supplied verified provider profiles', () =>
     await db.update(account).set({ password: null }).where(eq(account.providerId, 'credential'))
 
     expect(
-      (await auth.handler(post('unlink-account', { accountId: googleAccountId }, cookie))).status,
+      (
+        await (
+          await getAuth()
+        ).handler(post('unlink-account', { accountId: googleAccountId }, cookie))
+      ).status,
     ).toBe(403)
     expect(await authService.isGoogleSignInEnabled()).toBe(true)
   })

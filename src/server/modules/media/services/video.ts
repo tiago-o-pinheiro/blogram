@@ -17,39 +17,72 @@ const VideoProbe = Type.Object({
   format: Type.Object({ format_name: Type.String() }),
 })
 
-export const inspectVideo = async (
-  bytes: Uint8Array,
-): Promise<{ width: number; height: number; contentType: 'video/mp4' | 'video/webm' }> => {
-  const output = await new Promise<string>((resolve, reject) => {
-    const child = execFile(
-      'ffprobe',
-      [
-        '-v',
-        'error',
-        '-protocol_whitelist',
-        'pipe',
-        '-show_entries',
-        'format=format_name:stream=codec_type,codec_name,width,height',
-        '-of',
-        'json',
-        'pipe:0',
-      ],
-      { timeout: 15000, maxBuffer: 65536 },
-      (error, stdout) => {
-        if (error) {
-          if ('code' in error && error.code === 'ENOENT') {
-            reject(new ServiceUnavailableError('Video uploads require ffprobe on the server'))
-            return
-          }
-          reject(new ValidationError('Invalid video'))
+export type VideoProbeResult = {
+  width: number
+  height: number
+  contentType: 'video/mp4' | 'video/webm'
+}
+
+const PROBE_ENTRIES = 'format=format_name:stream=codec_type,codec_name,width,height'
+const URL_READ_TIMEOUT_MICROSECONDS = '15000000'
+
+const runProbe = (args: string[], timeout: number, input?: Uint8Array): Promise<VideoProbeResult> =>
+  new Promise<string>((resolve, reject) => {
+    const child = execFile('ffprobe', args, { timeout, maxBuffer: 65536 }, (error, stdout) => {
+      if (error) {
+        if ('code' in error && error.code === 'ENOENT') {
+          reject(new ServiceUnavailableError('Video uploads require ffprobe on the server'))
           return
         }
-        resolve(stdout)
-      },
-    )
-    child.stdin?.on('error', () => undefined)
-    child.stdin?.end(bytes)
-  })
+        reject(new ValidationError('Invalid video'))
+        return
+      }
+      resolve(stdout)
+    })
+    if (input) {
+      child.stdin?.on('error', () => undefined)
+      child.stdin?.end(input)
+    }
+  }).then(parseProbe)
+
+export const inspectVideo = (bytes: Uint8Array): Promise<VideoProbeResult> =>
+  runProbe(
+    [
+      '-v',
+      'error',
+      '-protocol_whitelist',
+      'pipe',
+      '-show_entries',
+      PROBE_ENTRIES,
+      '-of',
+      'json',
+      'pipe:0',
+    ],
+    15000,
+    bytes,
+  )
+
+export const inspectVideoUrl = (url: string): Promise<VideoProbeResult> => {
+  const whitelist = url.startsWith('https:') ? 'https,tls,tcp' : 'http,tcp'
+  return runProbe(
+    [
+      '-v',
+      'error',
+      '-protocol_whitelist',
+      whitelist,
+      '-rw_timeout',
+      URL_READ_TIMEOUT_MICROSECONDS,
+      '-show_entries',
+      PROBE_ENTRIES,
+      '-of',
+      'json',
+      url,
+    ],
+    60000,
+  )
+}
+
+const parseProbe = (output: string): VideoProbeResult => {
   let probe: unknown
   try {
     probe = JSON.parse(output)

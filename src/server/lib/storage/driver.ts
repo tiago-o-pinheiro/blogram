@@ -19,6 +19,24 @@ export type StorageDriver = {
   delete: (key: string) => Promise<void>
 }
 
+export type MultipartPart = { partNumber: number; etag: string }
+
+export type StoredObjectHead = { size: number; contentType: string }
+
+export type DirectUploadDriver = {
+  createMultipartUpload: (key: string, contentType: string) => Promise<string>
+  presignUploadPart: (
+    key: string,
+    uploadId: string,
+    partNumber: number,
+    expiresInSeconds: number,
+  ) => Promise<string>
+  completeMultipartUpload: (key: string, uploadId: string, parts: MultipartPart[]) => Promise<void>
+  abortMultipartUpload: (key: string, uploadId: string) => Promise<void>
+  head: (key: string) => Promise<StoredObjectHead | null>
+  presignGet: (key: string, expiresInSeconds: number) => Promise<string>
+}
+
 const STORAGE_KEY_PATTERN =
   /^[a-z0-9-]+\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[a-z0-9]{2,5}$/
 const STORAGE_PREFIX_PATTERN = /^[a-z0-9-]+$/

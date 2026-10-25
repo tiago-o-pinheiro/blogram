@@ -1,22 +1,34 @@
-import { type ComponentProps, useId } from 'react'
+import { type ComponentProps, type ReactNode, useId } from 'react'
 
 import { cn } from '../lib/cn'
 
 export type TextareaProps = Omit<ComponentProps<'textarea'>, 'children'> & {
   label: string
   error?: string
+  labelAction?: ReactNode
 }
 
-export const Textarea = ({ label, error, id, className, ...props }: TextareaProps) => {
+export const Textarea = ({ label, labelAction, error, id, className, ...props }: TextareaProps) => {
   const generatedId = useId()
   const textareaId = id ?? generatedId
   const errorId = `${textareaId}-error`
 
+  const labelElement = (
+    <label htmlFor={textareaId} className="text-sm font-medium text-foreground">
+      {label}
+    </label>
+  )
+
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={textareaId} className="text-sm font-medium text-foreground">
-        {label}
-      </label>
+      {labelAction ? (
+        <div className="flex items-center justify-between gap-2">
+          {labelElement}
+          {labelAction}
+        </div>
+      ) : (
+        labelElement
+      )}
       <textarea
         id={textareaId}
         aria-invalid={error ? true : undefined}

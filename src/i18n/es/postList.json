@@ -10,6 +10,8 @@
   "posts.error.tooLarge": "Ese archivo es demasiado grande.",
   "posts.error.invalid": "Alguna información no es válida. Revísala e inténtalo de nuevo.",
   "posts.error.generic": "Algo salió mal. Inténtalo de nuevo.",
+  "posts.error.interrupted": "La subida se cortó por la red o un proxy. Revisa la conexión e inténtalo de nuevo.",
+  "posts.error.storageCors": "El bucket no permite subidas desde el navegador. Revisa su regla CORS.",
   "postList.title": "Publicaciones",
   "postList.empty": "Aún no hay publicaciones. Crea la primera.",
   "postList.emptyAction": "Nueva publicación",

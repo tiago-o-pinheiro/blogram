@@ -7,6 +7,8 @@
   "postForm.altTextHint": "Describe the image to help people using screen readers.",
   "postForm.video": "Video file",
   "postForm.videoReplaced": "Video replaced.",
+  "postForm.uploadingVideo": "Uploading video",
+  "postForm.checkingVideo": "Checking video",
   "postForm.poster": "Video poster",
   "postForm.url": "Destination URL",
   "postForm.youtubeUrl": "YouTube URL",
