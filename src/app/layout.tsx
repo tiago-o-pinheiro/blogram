@@ -6,9 +6,13 @@ import { getMessages } from '@/i18n'
 import { I18nProvider } from '@/i18n/i18n-context'
 import { getServerLocale } from '@/i18n/server'
 
+import { env } from '@/server/config/env'
+
 import './globals.css'
 
 export const metadata: Metadata = {
+  metadataBase: new URL(env.BETTER_AUTH_URL),
+  alternates: { types: { 'application/rss+xml': '/feed.xml' } },
   title: { default: 'Blogram', template: '%s | Blogram' },
   description: 'A personal multimedia journal',
   icons: { icon: '/brand/blogram-mark.svg' },

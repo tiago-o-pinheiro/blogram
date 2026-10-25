@@ -11,6 +11,11 @@ export type MediaVariantRecord = {
   contentType: string
 }
 
+export type MediaMetadataRecord = {
+  camera?: Record<string, string | number>
+  placeholder?: string
+}
+
 export const media = pgTable(
   'media',
   {
@@ -29,6 +34,10 @@ export const media = pgTable(
       .$type<MediaVariantRecord[]>()
       .notNull()
       .default(sql`'[]'::jsonb`),
+    metadata: jsonb('metadata')
+      .$type<MediaMetadataRecord>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [unique('media_post_role_unique').on(table.postId, table.role)],

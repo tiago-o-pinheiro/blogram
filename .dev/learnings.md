@@ -9,3 +9,6 @@
 - [gates] A local `next build` fails when `.env` holds the dev-only BETTER_AUTH_SECRET (production guard); export a unique secret for the build gate, as CI does (20261025-1128-1-improve-the-readme-add)
 - [planning] When one task sources content from a file another task rewrites (old README → new docs), give both to one coder in order, never parallel coders (20261025-1128-1-improve-the-readme-add)
 - [ci] Publish images from a job that `needs` the check job in the same workflow, not a separate push-triggered workflow, so a failing build never ships as latest (20261025-1128-1-improve-the-readme-add)
+- [i18n] The translator only interpolates `{{name}}`; write placeholders with double braces in plan contracts, or parallel UI coders each patch the shared JSON (20261025-1314-research-similar-open-source-photo)
+- [dev] `pnpm dev` does not derive the Compose port from DATABASE_URL; a non-5432 DATABASE_URL needs a matching DB_PORT in .env or db:up binds 5432 (20261025-1314-research-similar-open-source-photo)
+- [validation] Validate untrusted metadata such as EXIF per field, never as one object, so a single out-of-range value does not drop the rest (20261025-1314-research-similar-open-source-photo)

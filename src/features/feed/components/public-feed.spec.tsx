@@ -7,12 +7,13 @@ import { type Models } from '@/models'
 
 import { PublicFeed } from './public-feed'
 
-const renderFeed = (page: Models.PostPage, filter: Models.FeedFilter = 'all') =>
+const renderFeed = (page: Models.PostPage, filter: Models.FeedFilter = 'all', query?: string) =>
   render(
     <I18nProvider locale="en" messages={getMessages('en')}>
       <PublicFeed
         page={page}
         filter={filter}
+        query={query}
         owner="::owner::"
         origin="https://example.test"
         locale="en"
@@ -47,6 +48,37 @@ describe('PublicFeed', () => {
       'href',
       '/?type=video&page=3',
     )
+  })
+
+  it('Given a search, should show its heading and keep the query in filters and paging', () => {
+    renderFeed({ data: [], meta: { total: 36, page: 2, pageSize: 12 } }, 'video', 'bay')
+
+    expect(screen.getByRole('heading', { name: 'Results for “bay”' })).toBeVisible()
+    const filters = within(screen.getByRole('navigation', { name: 'Filter posts' }))
+    expect(filters.getByRole('link', { name: 'Photos' })).toHaveAttribute(
+      'href',
+      '/?type=photo&q=bay',
+    )
+    const pagination = within(screen.getByRole('navigation', { name: 'Browse the journal' }))
+    expect(pagination.getByRole('link', { name: 'Older posts' })).toHaveAttribute(
+      'href',
+      '/?type=video&q=bay&page=3',
+    )
+  })
+
+  it('Given a search without matches, should show the empty state with a clear link', () => {
+    renderFeed({ data: [], meta: { total: 0, page: 1, pageSize: 12 } }, 'all', 'nothing')
+
+    expect(screen.getByText('No posts match “nothing”.')).toBeVisible()
+    const clear = screen.getAllByRole('link', { name: 'Clear search' })
+    expect(clear.every((link) => link.getAttribute('href') === '/')).toBe(true)
+    expect(screen.queryByRole('heading', { name: 'Nothing here yet.' })).not.toBeInTheDocument()
+  })
+
+  it('Given no search, should not show a results heading', () => {
+    renderFeed({ data: [], meta: { total: 0, page: 1, pageSize: 12 } })
+
+    expect(screen.queryByText(/Results for/)).not.toBeInTheDocument()
   })
 
   it('Given no publications, should explain the empty journal', () => {

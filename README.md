@@ -20,6 +20,10 @@
 - Photos, uploaded videos, YouTube, links and news in one feed
 - Drafts, preview and publish, with an optional place on every post
 - Public feed with type filters, permanent post pages and anonymous likes
+- Search, an archive by year and month, and a places page with an opt-in map
+- Newer and older links on every post page
+- RSS feed, sitemap and robots.txt for readers and search engines
+- Camera details under photos and blurred loading previews
 - Story cards and Open Graph images for sharing
 - Local or S3-compatible storage (Cloudflare R2, MinIO, AWS)
 - Optional Google sign-in linked to the single owner

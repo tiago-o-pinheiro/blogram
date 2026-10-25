@@ -64,6 +64,62 @@ describe('Public posts HTTP', () => {
     })
   })
 
+  it('Given a search term, should match caption, title, link details and place case-insensitively', async () => {
+    await seedPost({ publicId: 'Caption123', text: 'Sunset over the BAY' })
+    await seedPost({ publicId: 'Title12345', title: 'Bay walk', text: '' })
+    await seedPost({
+      publicId: 'Link123456',
+      type: 'link',
+      text: '',
+      details: { url: 'https://example.test', source: 'bay.example.test' },
+    })
+    await seedPost({
+      publicId: 'Place12345',
+      text: '',
+      place: { name: 'Bayside', mapUrl: 'https://www.openstreetmap.org/#map=10/1/2' },
+    })
+    await seedPost({ publicId: 'Other12345', text: 'Mountains' })
+    await seedPost({ publicId: 'Draft12345', status: 'draft', text: 'bay draft' })
+
+    const response = await list(request('?q=bay'))
+    const body: unknown = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(Models.isPostPage(body)).toBe(true)
+    expect(body).toMatchObject({ meta: { total: 4 } })
+    expect(JSON.stringify(body)).not.toContain('Other12345')
+    expect(JSON.stringify(body)).not.toContain('Draft12345')
+  })
+
+  it('Given a term with wildcard characters, should treat them literally', async () => {
+    await seedPost({ publicId: 'Percent123', text: '100% sure' })
+    await seedPost({ publicId: 'Plain12345', text: '100 sure' })
+    await seedPost({ publicId: 'Under12345', text: 'a_b' })
+    await seedPost({ publicId: 'Other12345', text: 'axb' })
+
+    const percent: unknown = await (await list(request('?q=100%25'))).json()
+    const underscore: unknown = await (await list(request('?q=a_b'))).json()
+
+    expect(percent).toMatchObject({ data: [{ id: 'Percent123' }], meta: { total: 1 } })
+    expect(underscore).toMatchObject({ data: [{ id: 'Under12345' }], meta: { total: 1 } })
+  })
+
+  it('Given a search with a type filter, should keep both', async () => {
+    await seedPost({ publicId: 'Photo12345', text: 'harbour' })
+    await seedPost({ publicId: 'Video12345', type: 'video', text: 'harbour' })
+
+    const body: unknown = await (await list(request('?q=harbour&type=video'))).json()
+
+    expect(body).toMatchObject({ data: [{ id: 'Video12345' }], meta: { total: 1 } })
+  })
+
+  it.each(['?q=', `?q=${'a'.repeat(101)}`])(
+    'Given invalid search %s, should reject it',
+    async (query) => {
+      expect((await list(request(query))).status).toBe(422)
+    },
+  )
+
   it.each(['?type=invalid', '?page=0', '?pageSize=101', '?page=2x'])(
     'Given invalid query %s, should reject it',
     async (query) => {

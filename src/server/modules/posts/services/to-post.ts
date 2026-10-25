@@ -11,6 +11,14 @@ type PostRecord = {
   video?: typeof media.$inferSelect | null
 }
 
+const toImageExtras = (metadata: typeof media.$inferSelect.metadata) => ({
+  ...(Value.Check(Models.PostCamera, metadata.camera) ? { camera: metadata.camera } : {}),
+  ...(typeof metadata.placeholder === 'string' &&
+  Value.Check(Models.PostImage.properties.placeholder, metadata.placeholder)
+    ? { placeholder: metadata.placeholder }
+    : {}),
+})
+
 export const toPost = ({ post: row, media: image, video }: PostRecord): Models.Post => ({
   id: row.publicId,
   type: row.type,
@@ -28,6 +36,7 @@ export const toPost = ({ post: row, media: image, video }: PostRecord): Models.P
         width: image.width,
         height: image.height,
         altText: image.altText,
+        ...toImageExtras(image.metadata),
         variants: image.variants.flatMap((variant) => {
           const name = Models.IMAGE_VARIANT_NAMES.find((candidate) => candidate === variant.name)
           return name ? [{ name, width: variant.width, height: variant.height }] : []

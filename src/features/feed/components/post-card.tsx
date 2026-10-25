@@ -6,6 +6,7 @@ import { Models } from '@/models'
 
 import { PostPlace } from '@/components/post-place'
 import { LikeButton } from '@/features/feed/components/like-button'
+import { PhotoDetails } from '@/features/feed/components/photo-details'
 import { PostMedia } from '@/features/feed/components/post-media'
 import { ShareActions } from '@/features/feed/components/share-actions'
 
@@ -79,6 +80,9 @@ export const PostCard = ({ post, owner, origin, locale, messages }: PostCardProp
             <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">{post.text}</p>
           ) : null}
         </div>
+      ) : null}
+      {post.type === 'photo' && post.image?.camera ? (
+        <PhotoDetails camera={post.image.camera} locale={locale} messages={messages} />
       ) : null}
       <footer className="flex flex-wrap items-start justify-between gap-2 px-2 py-2">
         <LikeButton id={post.id} likes={post.likes} />

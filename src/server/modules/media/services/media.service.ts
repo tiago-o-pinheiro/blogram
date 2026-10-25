@@ -1,4 +1,6 @@
+import readExif from 'exif-reader'
 import sharp, { type Sharp } from 'sharp'
+import { Value } from 'typebox/value'
 
 import { Models } from '@/models'
 
@@ -6,6 +8,7 @@ import { env } from '@/server/config/env'
 import { PayloadTooLargeError, ValidationError } from '@/server/errors/http-errors'
 import { type DbTransaction } from '@/server/lib/db'
 import { createStorageKey, storage, type StorageDriver } from '@/server/lib/storage'
+import { type MediaMetadataRecord } from '@/server/modules/media/schemas/media.table'
 
 import { MediaCleanupService } from './media-cleanup.service'
 import { inspectVideo } from './video'
@@ -23,6 +26,10 @@ const VARIANT_WIDTHS: Record<Models.ImageVariantName, number> = {
   w960: 960,
   w1600: 1600,
 }
+const PLACEHOLDER_WIDTH = 16
+const PLACEHOLDER_QUALITY = 20
+const PLACEHOLDER_MAX_LENGTH = 1024
+const PLACEHOLDER_PREFIX = 'data:image/webp;base64,'
 const PROFILE_PHOTO_SIZE = 1024
 const PROFILE_PHOTO_QUALITY = 85
 const PROFILE_PHOTO_PREFIX = 'profile'
@@ -51,6 +58,7 @@ export type ProcessedImage = {
   height: number
   size: number
   variants: ProcessedImageVariant[]
+  metadata: MediaMetadataRecord
 }
 
 export type ProcessedVideo = {
@@ -66,6 +74,69 @@ type RenderedImage = { data: Uint8Array; width: number; height: number }
 const toRendered = async (pipeline: Sharp): Promise<RenderedImage> => {
   const { data, info } = await pipeline.toBuffer({ resolveWithObject: true })
   return { data: new Uint8Array(data), width: info.width, height: info.height }
+}
+
+const toNumber = (value: unknown): number | undefined =>
+  typeof value === 'number' && Number.isFinite(value) ? value : undefined
+
+const toText = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') {
+    return undefined
+  }
+  const text = value.replaceAll('\0', '').trim()
+  return text ? text.slice(0, Models.CAMERA_TEXT_MAX) : undefined
+}
+
+const EARLIEST_TAKEN_YEAR = 1970
+
+const toTakenOn = (value: unknown): string | undefined =>
+  value instanceof Date &&
+  !Number.isNaN(value.getTime()) &&
+  value.getUTCFullYear() >= EARLIEST_TAKEN_YEAR
+    ? value.toISOString().slice(0, 10)
+    : undefined
+
+const toIso = (value: unknown): number | undefined => {
+  const iso = toNumber(Array.isArray(value) ? value[0] : value)
+  return iso === undefined ? undefined : Math.round(iso)
+}
+
+const toCamera = (exif: Buffer | undefined): Models.PostCamera | undefined => {
+  if (!exif) {
+    return undefined
+  }
+  try {
+    const { Image: image, Photo: photo } = readExif(exif)
+    const fields = {
+      make: toText(image?.Make),
+      model: toText(image?.Model),
+      lens: toText(photo?.LensModel),
+      focalLength: toNumber(photo?.FocalLength),
+      aperture: toNumber(photo?.FNumber),
+      exposure: toNumber(photo?.ExposureTime),
+      iso: toIso(photo?.ISOSpeedRatings),
+      takenOn: toTakenOn(photo?.DateTimeOriginal),
+    }
+    const camera = Object.fromEntries(
+      Object.entries(fields).filter(
+        ([key, value]) => value !== undefined && Value.Check(Models.PostCamera, { [key]: value }),
+      ),
+    )
+    return Object.keys(camera).length > 0 && Value.Check(Models.PostCamera, camera)
+      ? camera
+      : undefined
+  } catch {
+    return undefined
+  }
+}
+
+const toPlaceholder = async (data: Uint8Array): Promise<string | undefined> => {
+  const small = await sharp(data)
+    .resize({ width: PLACEHOLDER_WIDTH })
+    .webp({ quality: PLACEHOLDER_QUALITY })
+    .toBuffer()
+  const placeholder = `${PLACEHOLDER_PREFIX}${small.toString('base64')}`
+  return placeholder.length > PLACEHOLDER_MAX_LENGTH ? undefined : placeholder
 }
 
 export class MediaService {
@@ -153,6 +224,7 @@ export class MediaService {
         height: rendered.full.height,
         size: rendered.full.data.byteLength,
         variants,
+        metadata: rendered.metadata,
       }
     } catch (error) {
       await this.deleteObjects(written)
@@ -172,14 +244,16 @@ export class MediaService {
   ): Promise<{
     full: RenderedImage
     variants: (RenderedImage & { name: Models.ImageVariantName })[]
+    metadata: MediaMetadataRecord
   }> => {
     try {
       const maxPixels = this.dependencies.getMaxPixels?.() ?? DEFAULT_MAX_INPUT_PIXELS
       const source = sharp(input, { limitInputPixels: maxPixels })
-      const { format } = await source.metadata()
+      const { format, exif } = await source.metadata()
       if (!format || !ALLOWED_FORMATS.includes(format)) {
         throw new ValidationError('Unsupported image type')
       }
+      const camera = toCamera(exif)
       const full = await toRendered(
         source
           .rotate()
@@ -202,7 +276,15 @@ export class MediaService {
         )
         variants.push({ ...rendered, name })
       }
-      return { full, variants }
+      const placeholder = await toPlaceholder(full.data)
+      return {
+        full,
+        variants,
+        metadata: {
+          ...(camera ? { camera } : {}),
+          ...(placeholder ? { placeholder } : {}),
+        },
+      }
     } catch (error) {
       if (error instanceof ValidationError) {
         throw error

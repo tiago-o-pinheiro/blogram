@@ -1,6 +1,7 @@
 import enAccount from './en/account.json'
 import enAdmin from './en/admin.json'
 import enCommon from './en/common.json'
+import enDiscover from './en/discover.json'
 import enFeed from './en/feed.json'
 import enFinalize from './en/finalize.json'
 import enGoogle from './en/google.json'
@@ -14,6 +15,7 @@ import enWizard from './en/wizard.json'
 import esAccount from './es/account.json'
 import esAdmin from './es/admin.json'
 import esCommon from './es/common.json'
+import esDiscover from './es/discover.json'
 import esFeed from './es/feed.json'
 import esFinalize from './es/finalize.json'
 import esGoogle from './es/google.json'
@@ -34,6 +36,7 @@ const en = {
   ...enWizard,
   ...enFinalize,
   ...enFeed,
+  ...enDiscover,
   ...enGoogle,
   ...enAdmin,
   ...enMediaField,
@@ -50,6 +53,7 @@ const es: Readonly<Record<keyof typeof en, string>> = {
   ...esWizard,
   ...esFinalize,
   ...esFeed,
+  ...esDiscover,
   ...esGoogle,
   ...esAdmin,
   ...esMediaField,

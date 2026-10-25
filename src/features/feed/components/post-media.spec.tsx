@@ -82,6 +82,26 @@ describe('PostMedia', () => {
     )
   })
 
+  it('Given a photo with a placeholder, should render it as the blurred background', () => {
+    const placeholder = 'data:image/webp;base64,AAAA'
+    const post = createPost()
+    renderMedia({
+      ...post,
+      image: post.image ? { ...post.image, placeholder } : null,
+    })
+
+    const image = screen.getByRole('img', { name: '::alt-text::' })
+    expect(image.getAttribute('style')).toContain(placeholder)
+  })
+
+  it('Given a photo without a placeholder, should keep the muted background only', () => {
+    renderMedia(createPost())
+
+    const image = screen.getByRole('img', { name: '::alt-text::' })
+    expect(image.getAttribute('style')).not.toContain('background-image')
+    expect(image).toHaveClass('bg-muted')
+  })
+
   it('Given an uploaded video, should defer downloading and show its poster', () => {
     renderMedia(createVideo())
 

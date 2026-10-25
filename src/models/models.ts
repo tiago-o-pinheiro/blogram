@@ -1,3 +1,4 @@
+export * from './discover.model'
 export * from './health.model'
 export * from './feed.model'
 export * from './installation.model'

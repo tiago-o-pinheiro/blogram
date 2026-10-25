@@ -119,6 +119,61 @@ describe('MediaService', () => {
         entry.isFile(),
       )
 
+    const createCameraJpeg = () =>
+      sharp({
+        create: { width: 64, height: 64, channels: 3, background: { r: 90, g: 90, b: 200 } },
+      })
+        .withExif({
+          IFD0: { Make: 'FUJIFILM', Model: 'X100V' },
+          IFD2: {
+            LensModel: 'Fixed 23mm',
+            FocalLength: '23/1',
+            FNumber: '2/1',
+            ExposureTime: '1/250',
+            ISOSpeedRatings: '200',
+            DateTimeOriginal: '2026:05:03 10:20:30',
+            BodySerialNumber: 'SERIAL-123',
+          },
+          IFD3: { GPSLatitudeRef: 'N', GPSLatitude: '41/1 24/1 0/1', GPSLongitudeRef: 'E' },
+        })
+        .jpeg()
+        .toBuffer()
+
+    it('Given a jpeg with camera EXIF, should return only the whitelisted details', async () => {
+      const file = toFile(await createCameraJpeg(), 'camera.jpg', 'image/jpeg')
+
+      const { metadata } = await service.processPostImage(file)
+
+      expect(metadata.camera).toEqual({
+        make: 'FUJIFILM',
+        model: 'X100V',
+        lens: 'Fixed 23mm',
+        focalLength: 23,
+        aperture: 2,
+        exposure: 0.004,
+        iso: 200,
+        takenOn: '2026-05-03',
+      })
+      expect(JSON.stringify(metadata)).not.toContain('SERIAL-123')
+    })
+
+    it('Given a jpeg without camera EXIF, should return no camera details', async () => {
+      const { metadata } = await service.processPostImage(
+        toFile(await createPng(), 'a.png', 'image/png'),
+      )
+
+      expect(metadata.camera).toBeUndefined()
+    })
+
+    it('Given a photo, should return a small blurred webp placeholder', async () => {
+      const { metadata } = await service.processPostImage(
+        toFile(await createCameraJpeg(), 'camera.jpg', 'image/jpeg'),
+      )
+
+      expect(metadata.placeholder).toMatch(/^data:image\/webp;base64,/)
+      expect(metadata.placeholder?.length).toBeLessThanOrEqual(1024)
+    })
+
     it('Given a wide jpeg with GPS, should store full and variants as webp without metadata', async () => {
       const file = toFile(await createWideJpegWithGps(2000, 1000), 'wide.jpg', 'image/jpeg')
 

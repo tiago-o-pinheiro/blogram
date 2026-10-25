@@ -39,12 +39,32 @@ export const ImageVariant = Type.Object({
 })
 export type ImageVariant = Static<typeof ImageVariant>
 
+export const CAMERA_TEXT_MAX = 100
+export const PLACEHOLDER_MAX = 2048
+export const PLACEHOLDER_PATTERN = '^data:image/webp;base64,'
+
+export const PostCamera = Type.Object({
+  make: Type.Optional(Type.String({ minLength: 1, maxLength: CAMERA_TEXT_MAX })),
+  model: Type.Optional(Type.String({ minLength: 1, maxLength: CAMERA_TEXT_MAX })),
+  lens: Type.Optional(Type.String({ minLength: 1, maxLength: CAMERA_TEXT_MAX })),
+  focalLength: Type.Optional(Type.Number({ exclusiveMinimum: 0 })),
+  aperture: Type.Optional(Type.Number({ exclusiveMinimum: 0 })),
+  exposure: Type.Optional(Type.Number({ exclusiveMinimum: 0 })),
+  iso: Type.Optional(Type.Integer({ minimum: 1 })),
+  takenOn: Type.Optional(Type.String({ pattern: '^\\d{4}-\\d{2}-\\d{2}$' })),
+})
+export type PostCamera = Static<typeof PostCamera>
+
 export const PostImage = Type.Object({
   id: Type.String({ format: 'uuid' }),
   width: Type.Integer({ minimum: 1 }),
   height: Type.Integer({ minimum: 1 }),
   altText: Type.String({ maxLength: ALT_TEXT_MAX }),
   variants: Type.Array(ImageVariant),
+  camera: Type.Optional(PostCamera),
+  placeholder: Type.Optional(
+    Type.String({ pattern: PLACEHOLDER_PATTERN, maxLength: PLACEHOLDER_MAX }),
+  ),
 })
 export type PostImage = Static<typeof PostImage>
 

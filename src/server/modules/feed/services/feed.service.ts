@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, sql } from 'drizzle-orm'
+import { and, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 
 import { Models } from '@/models'
@@ -13,7 +13,24 @@ import { toPost } from '@/server/modules/posts/services/to-post'
 
 const video = alias(media, 'video')
 
-const toVisibility = (filter: Models.FeedFilter = 'all') =>
+const toSearchPattern = (term: string) => `%${term.replace(/[\\%_]/g, '\\$&')}%`
+
+const toSearch = (term?: string) => {
+  if (!term) {
+    return undefined
+  }
+  const pattern = toSearchPattern(term)
+  return or(
+    ilike(post.title, pattern),
+    ilike(post.text, pattern),
+    ilike(sql`${post.details}->>'title'`, pattern),
+    ilike(sql`${post.details}->>'description'`, pattern),
+    ilike(sql`${post.details}->>'source'`, pattern),
+    ilike(sql`${post.place}->>'name'`, pattern),
+  )
+}
+
+const toVisibility = (filter: Models.FeedFilter = 'all', term?: string) =>
   and(
     eq(post.status, 'published'),
     filter === 'all'
@@ -21,11 +38,12 @@ const toVisibility = (filter: Models.FeedFilter = 'all') =>
       : filter === 'video'
         ? inArray(post.type, ['video', 'youtube'])
         : eq(post.type, filter),
+    toSearch(term),
   )
 
 export class FeedService {
   list = async (query: Models.FeedQuery): Promise<Models.PostPage> => {
-    const visibility = toVisibility(query.type)
+    const visibility = toVisibility(query.type, query.q)
     const { take, skip } = toPagination(query)
     const rows = await db
       .select({ post, media, video })

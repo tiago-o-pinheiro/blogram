@@ -155,6 +155,7 @@ export class PostService {
                 sizeBytes: processed.size,
                 altText: input.altText,
                 variants: processed.variants,
+                metadata: processed.metadata,
               })
               .returning()
           : []
@@ -256,6 +257,7 @@ export class PostService {
           sizeBytes: processed.size,
           altText: previous?.altText ?? '',
           variants: processed.variants,
+          metadata: processed.metadata,
         })
         await tx.update(post).set({ updatedAt: new Date() }).where(eq(post.id, record.post.id))
         await this.cleanup.enqueue(tx, previous ? toStoredKeys(previous) : [])

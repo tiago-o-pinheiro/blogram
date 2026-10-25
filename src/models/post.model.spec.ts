@@ -50,6 +50,29 @@ describe('Post', () => {
     expect(isPost({ ...toPost(), status: 'archived' })).toBe(false)
   })
 
+  it('Given camera details and a placeholder, should accept them', () => {
+    const post = toPost()
+    expect(
+      isPost({
+        ...post,
+        image: {
+          ...post.image,
+          camera: { make: 'Fuji', iso: 200, exposure: 0.004, takenOn: '2026-05-03' },
+          placeholder: 'data:image/webp;base64,AAAA',
+        },
+      }),
+    ).toBe(true)
+  })
+
+  it('Given invalid camera details or placeholder, should reject them', () => {
+    const post = toPost()
+    expect(isPost({ ...post, image: { ...post.image, camera: { iso: 0 } } })).toBe(false)
+    expect(isPost({ ...post, image: { ...post.image, camera: { takenOn: '3 May' } } })).toBe(false)
+    expect(
+      isPost({ ...post, image: { ...post.image, placeholder: 'data:image/png;base64,A' } }),
+    ).toBe(false)
+  })
+
   it('Given a vertical video, should accept positive media dimensions', () => {
     expect(
       isPost({

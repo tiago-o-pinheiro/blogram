@@ -103,6 +103,9 @@ export const PostMedia = ({ post }: { post: Models.Post }) => {
         height={image.height}
         alt={image.altText}
         unoptimized
+        {...(image.placeholder
+          ? { placeholder: 'blur' as const, blurDataURL: image.placeholder }
+          : {})}
         className="h-auto w-full bg-muted"
       />
     </picture>

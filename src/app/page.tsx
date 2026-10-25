@@ -6,6 +6,7 @@ import { getServerLocale } from '@/i18n/server'
 import { Models } from '@/models'
 
 import { PublicFeed } from '@/features/feed/components/public-feed'
+import { JournalNav } from '@/features/home/components/journal-nav'
 import { PendingSite } from '@/features/home/components/pending-site'
 import { ProfileHeader } from '@/features/home/components/profile-header'
 import { env } from '@/server/config/env'
@@ -43,8 +44,10 @@ const Page = async ({ searchParams }: HomePageProps = {}) => {
   const filter = Models.toFeedFilter(query?.type)
   const locale = await getServerLocale()
   const messages = getMessages(locale)
+  const search = Models.toFeedSearch(query?.q)
   const page = await feedService.list({
     type: filter,
+    q: search,
     page: Models.toFeedPage(query?.page),
     pageSize: 12,
   })
@@ -58,9 +61,11 @@ const Page = async ({ searchParams }: HomePageProps = {}) => {
           photoSrc={profile.hasPhoto ? Models.PROFILE_PHOTO_PATH : null}
         />
       </div>
+      <JournalNav />
       <PublicFeed
         page={page}
         filter={filter}
+        query={search}
         owner={profile.name}
         origin={new URL(env.BETTER_AUTH_URL).origin}
         locale={locale}

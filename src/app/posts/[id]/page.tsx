@@ -8,8 +8,10 @@ import { getServerLocale } from '@/i18n/server'
 import { Models } from '@/models'
 
 import { PostCard } from '@/features/feed/components/post-card'
+import { PostPager } from '@/features/feed/components/post-pager'
 import { env } from '@/server/config/env'
 import { NotFoundError } from '@/server/errors/http-errors'
+import { adjacentPostService } from '@/server/modules/feed/services/adjacent-post.service'
 import { feedService } from '@/server/modules/feed/services/feed.service'
 import { profileService } from '@/server/modules/profile/services/profile.service'
 
@@ -64,6 +66,7 @@ const PostPage = async ({ params }: PostPageProps) => {
   const profile = await profileService.getProfile()
   const locale = await getServerLocale()
   const messages = getMessages(locale)
+  const adjacent = await adjacentPostService.get(id)
   return (
     <main className="mx-auto min-h-dvh max-w-2xl animate-page-in space-y-6 px-4 py-8 sm:py-12">
       <h1 className="sr-only">
@@ -82,6 +85,7 @@ const PostPage = async ({ params }: PostPageProps) => {
         locale={locale}
         messages={messages}
       />
+      <PostPager adjacent={adjacent} messages={messages} />
     </main>
   )
 }
