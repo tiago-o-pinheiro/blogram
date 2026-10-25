@@ -16,25 +16,51 @@ export const Dialog = DialogPrimitive.Root
 export const DialogTrigger = DialogPrimitive.Trigger
 export const DialogClose = DialogPrimitive.Close
 
+type OverlayKeyboard = EventTarget & {
+  overlaysContent: boolean
+  boundingRect: DOMRectReadOnly
+}
+
+const isOverlayKeyboard = (value: unknown): value is OverlayKeyboard =>
+  value instanceof EventTarget && 'overlaysContent' in value && 'boundingRect' in value
+
+const readOverlayKeyboard = () => {
+  const keyboard = 'virtualKeyboard' in navigator ? navigator.virtualKeyboard : undefined
+  return isOverlayKeyboard(keyboard) ? keyboard : undefined
+}
+
 const trackVisibleViewport = () => {
   const viewport = window.visualViewport
   if (!viewport) {
     return undefined
   }
   const root = document.documentElement
+  const keyboard = readOverlayKeyboard()
+  const overlaidBefore = keyboard?.overlaysContent ?? false
+  if (keyboard) {
+    keyboard.overlaysContent = true
+  }
   const update = () => {
-    root.style.setProperty(
-      '--visible-bottom',
-      `${Math.round(viewport.offsetTop + viewport.height)}px`,
-    )
-    root.style.setProperty('--visible-height', `${Math.round(viewport.height)}px`)
+    const viewportBottom = viewport.offsetTop + viewport.height
+    const keyboardTop =
+      keyboard && keyboard.boundingRect.height > 0 ? keyboard.boundingRect.top : viewportBottom
+    const bottom = Math.min(viewportBottom, keyboardTop)
+    root.style.setProperty('--visible-bottom', `${Math.round(bottom)}px`)
+    root.style.setProperty('--visible-height', `${Math.round(bottom - viewport.offsetTop)}px`)
   }
   update()
   viewport.addEventListener('resize', update)
   viewport.addEventListener('scroll', update)
+  window.addEventListener('resize', update)
+  keyboard?.addEventListener('geometrychange', update)
   return () => {
     viewport.removeEventListener('resize', update)
     viewport.removeEventListener('scroll', update)
+    window.removeEventListener('resize', update)
+    keyboard?.removeEventListener('geometrychange', update)
+    if (keyboard) {
+      keyboard.overlaysContent = overlaidBefore
+    }
     root.style.removeProperty('--visible-bottom')
     root.style.removeProperty('--visible-height')
   }

@@ -39,10 +39,20 @@ const stubKeyboard = () => {
   return viewport
 }
 
+const stubOverlayKeyboard = (top: number, height: number) => {
+  const keyboard = Object.assign(new EventTarget(), {
+    overlaysContent: false,
+    boundingRect: new DOMRect(0, top, window.innerWidth, height),
+  })
+  Object.defineProperty(navigator, 'virtualKeyboard', { configurable: true, value: keyboard })
+  return keyboard
+}
+
 const readRootVariable = (name: string) => document.documentElement.style.getPropertyValue(name)
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  Reflect.deleteProperty(navigator, 'virtualKeyboard')
 })
 
 describe('Dialog', () => {
@@ -134,5 +144,35 @@ describe('Dialog', () => {
 
     expect(readRootVariable('--visible-bottom')).toBe('')
     expect(readRootVariable('--visible-height')).toBe('')
+  })
+
+  it('Given a keyboard that reports its own geometry, should end the sheet at the keyboard top', async () => {
+    const user = userEvent.setup()
+    const viewport = stubKeyboard()
+    const keyboard = stubOverlayKeyboard(window.innerHeight, 0)
+    renderDialog()
+    await user.click(screen.getByRole('button', { name: 'Open' }))
+
+    act(() => {
+      viewport.height = window.innerHeight
+      keyboard.boundingRect = new DOMRect(0, window.innerHeight - 200, window.innerWidth, 200)
+      keyboard.dispatchEvent(new Event('geometrychange'))
+    })
+
+    expect(keyboard.overlaysContent).toBe(true)
+    expect(readRootVariable('--visible-bottom')).toBe(`${window.innerHeight - 200}px`)
+    expect(readRootVariable('--visible-height')).toBe(`${window.innerHeight - 200}px`)
+  })
+
+  it('Given a closed sheet, should hand keyboard layout back to the browser', async () => {
+    const user = userEvent.setup()
+    stubKeyboard()
+    const keyboard = stubOverlayKeyboard(window.innerHeight, 0)
+    renderDialog()
+    await user.click(screen.getByRole('button', { name: 'Open' }))
+
+    await user.keyboard('{Escape}')
+
+    expect(keyboard.overlaysContent).toBe(false)
   })
 })
