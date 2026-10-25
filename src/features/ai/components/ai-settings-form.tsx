@@ -19,6 +19,7 @@ import {
 
 import { PasswordField } from '@/components/password-field'
 
+import { SavedApiKey } from './saved-api-key'
 import { AiApiError, saveAiSettings } from '../api/ai-api'
 
 type AiSettingsFormProps = {
@@ -39,11 +40,18 @@ export const AiSettingsForm = ({ settings }: AiSettingsFormProps) => {
   const [provider, setProvider] = useState(settings.provider)
   const [model, setModel] = useState(settings.model)
   const [apiKey, setApiKey] = useState('')
+  const [isReplacingKey, setIsReplacingKey] = useState(false)
   const [errorKey, setErrorKey] = useState<TranslationKey | null>(null)
   const [isSaved, setIsSaved] = useState(false)
   const [isPending, setIsPending] = useState(false)
 
   const hasSavedKey = saved.hasApiKey && saved.provider === provider
+  const isKeyInputShown = !hasSavedKey || isReplacingKey
+
+  const keepSavedKey = () => {
+    setIsReplacingKey(false)
+    setApiKey('')
+  }
 
   const handleProviderChange = (event: ChangeEvent<HTMLSelectElement>) => {
     const next = AI_PROVIDERS.find((candidate) => candidate === event.target.value)
@@ -53,7 +61,7 @@ export const AiSettingsForm = ({ settings }: AiSettingsFormProps) => {
     setIsSaved(false)
     setProvider(next)
     setModel(AI_MODEL_SUGGESTIONS[next][0] ?? '')
-    setApiKey('')
+    keepSavedKey()
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -69,7 +77,7 @@ export const AiSettingsForm = ({ settings }: AiSettingsFormProps) => {
         ...(apiKey === '' ? {} : { apiKey }),
       })
       setSaved(next)
-      setApiKey('')
+      keepSavedKey()
     } catch (error) {
       setIsPending(false)
       setErrorKey(toSettingsErrorKey(error))
@@ -133,23 +141,52 @@ export const AiSettingsForm = ({ settings }: AiSettingsFormProps) => {
               {t('aiSettings.modelHint')}
             </p>
           </div>
-          <PasswordField
-            label={t('aiSettings.apiKey')}
-            name="apiKey"
-            value={apiKey}
-            maxLength={AI_API_KEY_MAX}
-            disabled={isPending}
-            autoComplete="off"
-            hint={
-              hasSavedKey
-                ? `${t('aiSettings.apiKeySaved', { hint: saved.apiKeyHint })}. ${t('aiSettings.apiKeyKeep')}`
-                : undefined
-            }
-            onChange={(event) => {
-              setIsSaved(false)
-              setApiKey(event.target.value)
-            }}
-          />
+          {isKeyInputShown ? (
+            <div key="key-input" className="flex animate-rise-in flex-col gap-1">
+              <PasswordField
+                label={t('aiSettings.apiKey')}
+                name="apiKey"
+                value={apiKey}
+                maxLength={AI_API_KEY_MAX}
+                disabled={isPending}
+                autoComplete="off"
+                autoFocus={isReplacingKey}
+                hint={hasSavedKey ? t('aiSettings.apiKeyKeep') : undefined}
+                onChange={(event) => {
+                  setIsSaved(false)
+                  setApiKey(event.target.value)
+                }}
+              />
+              {hasSavedKey ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="-ms-3 self-start text-muted-foreground"
+                  disabled={isPending}
+                  onClick={keepSavedKey}
+                >
+                  {t('aiSettings.apiKeyCancel')}
+                </Button>
+              ) : null}
+            </div>
+          ) : (
+            <SavedApiKey
+              key="saved-key"
+              label={t('aiSettings.apiKey')}
+              hint={saved.apiKeyHint}
+              description={
+                saved.apiKeyHint
+                  ? t('aiSettings.apiKeySaved', { hint: saved.apiKeyHint })
+                  : t('aiSettings.apiKeySavedNoHint')
+              }
+              replaceLabel={t('aiSettings.apiKeyReplace')}
+              disabled={isPending}
+              onReplace={() => {
+                setIsSaved(false)
+                setIsReplacingKey(true)
+              }}
+            />
+          )}
         </div>
       ) : null}
       {errorKey ? (

@@ -43,6 +43,14 @@ describe('Select', () => {
     expect(screen.getByLabelText('Language')).toBeValid()
   })
 
+  it('Given a select, should hide the native arrow and draw its own chevron with room for it', () => {
+    const { container } = renderSelect()
+
+    const select = screen.getByLabelText('Language')
+    expect(select).toHaveClass('appearance-none', 'pr-10')
+    expect(container.querySelector('svg[aria-hidden="true"]')).toBeInTheDocument()
+  })
+
   it('Given the disabled prop, should disable the select', () => {
     renderSelect({ disabled: true })
 
