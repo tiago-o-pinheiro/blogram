@@ -4,7 +4,9 @@ import { describe, expect, it } from 'vitest'
 import { getMessages } from '@/i18n'
 import { I18nProvider } from '@/i18n/i18n-context'
 
-import { AccountSectionNav, type AccountSection } from './account-section-nav'
+import { type AccountSection } from '@/features/admin/lib/account-sections'
+
+import { AccountSectionNav } from './account-section-nav'
 
 const renderNav = (activeSection: AccountSection, locale: 'en' | 'es' = 'en') =>
   render(

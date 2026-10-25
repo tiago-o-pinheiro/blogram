@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import { type ReactNode } from 'react'
 
 import { useT } from '@/i18n/i18n-context'
 
@@ -9,6 +10,7 @@ type ProfileHeaderProps = {
   description: string
   photoSrc: string | null
   as?: 'h1' | 'h2'
+  children?: ReactNode
 }
 
 export const ProfileHeader = ({
@@ -16,6 +18,7 @@ export const ProfileHeader = ({
   description,
   photoSrc,
   as: Heading = 'h1',
+  children,
 }: ProfileHeaderProps) => {
   const t = useT()
 
@@ -48,6 +51,7 @@ export const ProfileHeader = ({
             {description}
           </p>
         ) : null}
+        {children}
       </div>
     </header>
   )

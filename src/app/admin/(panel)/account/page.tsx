@@ -1,11 +1,8 @@
 import { getServerTranslator } from '@/i18n/server'
 
 import { PageShell } from '@/components/page-shell'
-import {
-  ACCOUNT_SECTIONS,
-  AccountSectionNav,
-  type AccountSection,
-} from '@/features/admin/components/account-section-nav'
+import { AccountSectionNav } from '@/features/admin/components/account-section-nav'
+import { toAccountSection } from '@/features/admin/lib/account-sections'
 import { AiSettingsForm } from '@/features/ai/components/ai-settings-form'
 import { ChangePasswordForm } from '@/features/auth/components/change-password-form'
 import { GoogleAccount } from '@/features/auth/components/google-account'
@@ -21,16 +18,11 @@ type AccountPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-const DEFAULT_SECTION: AccountSection = 'security'
-
-const toSection = (value: string | string[] | undefined): AccountSection =>
-  ACCOUNT_SECTIONS.find((section) => section === value) ?? DEFAULT_SECTION
-
 const Page = async ({ searchParams }: AccountPageProps) => {
   await requireOwnerPage()
   const t = await getServerTranslator()
   const { section: rawSection } = await searchParams
-  const section = toSection(rawSection)
+  const section = toAccountSection(rawSection)
 
   return (
     <PageShell title={t('adminShell.account')}>
