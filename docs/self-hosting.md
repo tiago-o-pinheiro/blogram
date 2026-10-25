@@ -32,7 +32,7 @@ Configuration is parsed in `src/server/config/env.ts`. Keep secrets on the serve
 | `POSTGRES_PASSWORD`       | Production Compose only     | Required database password; use hex characters                              |
 | `DB_PORT`                 | Dev Compose: `5432`         | Host port of the development database; keep equal to the port in the URL    |
 | `PORT`                    | `3000`                      | Port used by `pnpm start`                                                   |
-| `BLOGRAM_VERSION`         | `latest`                    | Image tag used by production Compose                                        |
+| `BLOGRAM_VERSION`         | `latest`                    | Image tag used by production Compose: `latest`, a release such as `1.2.3`, or `sha-<short commit>` |
 
 Leave unused S3 assignments commented out, as in `.env.example`: empty strings are invalid. Set both Google values or neither.
 

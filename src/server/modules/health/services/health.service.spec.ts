@@ -1,5 +1,4 @@
-// @vitest-environment node
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { Models } from '@/models'
 
@@ -18,5 +17,17 @@ describe('HealthService', () => {
     await expect(new HealthService(failingDatabase).getStatus()).rejects.toBeInstanceOf(
       ServiceUnavailableError,
     )
+  })
+
+  it('Given the database never answers, should throw a ServiceUnavailableError after the timeout', async () => {
+    vi.useFakeTimers()
+    const silentDatabase = { execute: () => new Promise<never>(() => undefined) }
+    const outcome = expect(
+      new HealthService(silentDatabase, 50).getStatus(),
+    ).rejects.toBeInstanceOf(ServiceUnavailableError)
+
+    await vi.advanceTimersByTimeAsync(50)
+    await outcome
+    vi.useRealTimers()
   })
 })
