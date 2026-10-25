@@ -19,6 +19,7 @@ const Page = async () => {
         isAiEnabled={isEnabled}
         maxImageBytes={env.UPLOAD_MAX_IMAGE_BYTES}
         maxVideoBytes={env.UPLOAD_MAX_VIDEO_BYTES}
+        videoUploadMode={env.STORAGE_DRIVER === 's3' ? 'direct' : 'form'}
       />
     </PageShell>
   )

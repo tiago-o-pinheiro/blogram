@@ -3,17 +3,22 @@ import { StatusCodes } from 'http-status-codes'
 import { env, type Env } from '@/server/config/env'
 import { GlobalError } from '@/server/errors/global-error'
 
-import { type StorageDriver } from './driver'
+import { type DirectUploadDriver, type StorageDriver } from './driver'
 import { createLocalDriver } from './local-driver'
 import { createS3Driver } from './s3-driver'
 
 export { createStorageKey } from './driver'
-export type { ByteRange, StorageDriver, StorageObject, StorageReadOptions } from './driver'
+export type {
+  ByteRange,
+  DirectUploadDriver,
+  MultipartPart,
+  StorageDriver,
+  StoredObjectHead,
+  StorageObject,
+  StorageReadOptions,
+} from './driver'
 
-export const createStorage = (config: Env): StorageDriver => {
-  if (config.STORAGE_DRIVER === 'local') {
-    return createLocalDriver(config.STORAGE_LOCAL_DIR)
-  }
+const createConfiguredS3Driver = (config: Env) => {
   const { S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY } = config
   if (!S3_ENDPOINT || !S3_BUCKET || !S3_ACCESS_KEY_ID || !S3_SECRET_ACCESS_KEY) {
     throw new GlobalError(
@@ -31,7 +36,27 @@ export const createStorage = (config: Env): StorageDriver => {
   })
 }
 
+export const createStorage = (config: Env): StorageDriver => {
+  if (config.STORAGE_DRIVER === 'local') {
+    return createLocalDriver(config.STORAGE_LOCAL_DIR)
+  }
+  return createConfiguredS3Driver(config)
+}
+
+export const createDirectUploads = (config: Env): DirectUploadDriver | null => {
+  if (config.STORAGE_DRIVER === 'local') {
+    return null
+  }
+  return createConfiguredS3Driver(config)
+}
+
 let instance: StorageDriver | null = null
+let s3Instance: (StorageDriver & DirectUploadDriver) | null = null
+
+const getS3 = (): StorageDriver & DirectUploadDriver => {
+  s3Instance ??= createConfiguredS3Driver(env)
+  return s3Instance
+}
 
 export const storage: StorageDriver = {
   put: (key, body, contentType) => getStorage().put(key, body, contentType),
@@ -40,6 +65,9 @@ export const storage: StorageDriver = {
 }
 
 const getStorage = (): StorageDriver => {
-  instance ??= createStorage(env)
+  instance ??= env.STORAGE_DRIVER === 'local' ? createStorage(env) : getS3()
   return instance
 }
+
+export const directUploads = (): DirectUploadDriver | null =>
+  env.STORAGE_DRIVER === 'local' ? null : getS3()

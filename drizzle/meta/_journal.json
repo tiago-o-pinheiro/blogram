@@ -71,6 +71,13 @@
       "when": 1792960472904,
       "tag": "0009_perpetual_shockwave",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792963845270,
+      "tag": "0010_common_power_pack",
+      "breakpoints": true
     }
   ]
 }

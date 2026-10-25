@@ -12,6 +12,7 @@ export const PostCreateFields = Type.Object({
   type: Type.Union(Models.CREATABLE_POST_TYPES.map((type) => Type.Literal(type))),
   text: Type.String({ maxLength: Models.POST_TEXT_MAX, default: '' }),
   altText: Type.String({ maxLength: Models.ALT_TEXT_MAX, default: '' }),
+  videoUploadId: Type.Optional(Type.String({ format: 'uuid' })),
   url: Type.Optional(Type.String({ minLength: 1, maxLength: 2048 })),
   title: Type.Optional(Type.String({ maxLength: Models.POST_TITLE_MAX })),
   description: Type.Optional(Type.String({ maxLength: 1000 })),
@@ -54,6 +55,13 @@ export const putPostImageApiSchema = {
   response: { [StatusCodes.OK]: Models.Post },
 }
 export type PutPostImageApiSchema = typeof putPostImageApiSchema
+
+export const putPostVideoApiSchema = {
+  params: PostIdParams,
+  body: Models.VideoReplacement,
+  response: { [StatusCodes.OK]: Models.Post },
+}
+export type PutPostVideoApiSchema = typeof putPostVideoApiSchema
 
 export const putPostStatusApiSchema = {
   params: PostIdParams,

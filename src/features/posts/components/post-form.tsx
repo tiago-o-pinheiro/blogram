@@ -8,6 +8,7 @@ import { Button } from '@/design-system/ui/button'
 import { Field } from '@/design-system/ui/field'
 import { cn } from '@/design-system/ui/lib/cn'
 import { type MediaSelection } from '@/design-system/ui/media-input'
+import { Progress } from '@/design-system/ui/progress'
 import { Textarea } from '@/design-system/ui/textarea'
 import { type TranslationKey } from '@/i18n'
 import { useT } from '@/i18n/i18n-context'
@@ -30,19 +31,22 @@ import { PostTypePicker } from './post-type-picker'
 import {
   createPost,
   fetchLinkMetadata,
-  PostsApiError,
   replacePostImage,
   replacePostVideo,
+  replacePostVideoFromUpload,
   setPostStatus,
   updatePost,
 } from '../api/posts-api'
-import { toPostsMessageKey } from '../lib/to-posts-message'
+import { abortVideoUpload } from '../api/video-upload-api'
+import { toPostsErrorKey } from '../lib/to-posts-message'
+import { uploadVideoDirect } from '../lib/upload-video-parts'
 
 type PostFormProps = {
   post?: Models.Post
   isAiEnabled?: boolean
   maxImageBytes: number
   maxVideoBytes: number
+  videoUploadMode?: Models.VideoUploadMode
 }
 
 type Replacement = {
@@ -123,6 +127,7 @@ export const PostForm = ({
   isAiEnabled = false,
   maxImageBytes,
   maxVideoBytes,
+  videoUploadMode = 'form',
 }: PostFormProps) => {
   const t = useT()
   const { generate, pendingTarget, failureKey, resetFailure } = useAiDraft()
@@ -153,6 +158,7 @@ export const PostForm = ({
   const [errorKey, setErrorKey] = useState<TranslationKey | null>(null)
   const [statusKey, setStatusKey] = useState<TranslationKey | null>(null)
   const [isPending, setIsPending] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null)
   const [aiPrompt, setAiPrompt] = useState('')
   const [aiSnapshot, setAiSnapshot] = useState<AiSnapshot | null>(null)
   const [aiMessageKey, setAiMessageKey] = useState<TranslationKey | null>(null)
@@ -295,9 +301,30 @@ export const PostForm = ({
   }
 
   const reportFailure = (error: unknown) => {
-    setErrorKey(
-      error instanceof PostsApiError ? toPostsMessageKey(error.status) : 'posts.error.generic',
-    )
+    setErrorKey(toPostsErrorKey(error))
+  }
+
+  const uploadDirect = async <Result,>(
+    video: File,
+    consume: (uploadId: string) => Promise<Result>,
+  ): Promise<Result> => {
+    setUploadProgress(0)
+    let ready: Models.VideoUploadReady
+    try {
+      ready = await uploadVideoDirect(
+        video,
+        video.type === 'video/webm' ? 'video/webm' : 'video/mp4',
+        setUploadProgress,
+      )
+    } finally {
+      setUploadProgress(null)
+    }
+    try {
+      return await consume(ready.id)
+    } catch (error) {
+      await abortVideoUpload(ready.id).catch(() => undefined)
+      throw error
+    }
   }
 
   const handleTypeChange = (nextType: Models.PostType) => {
@@ -316,7 +343,12 @@ export const PostForm = ({
   ) => {
     setIsPending(true)
     try {
-      const savedPost = await replacement.upload(id, selection.file)
+      const savedPost =
+        replacement.media === 'video' && videoUploadMode === 'direct'
+          ? await uploadDirect(selection.file, (uploadId) =>
+              replacePostVideoFromUpload(id, uploadId),
+            )
+          : await replacement.upload(id, selection.file)
       if (replacement.media === 'image') {
         setSavedImage(savedPost.image)
       } else {
@@ -384,16 +416,22 @@ export const PostForm = ({
           await setPostStatus(post.id, 'published')
         }
       } else {
-        const draft = await createPost({
-          type: postType,
-          text,
-          ...(place ? { place } : {}),
-          altText,
-          ...(file ? { file: file.file } : {}),
-          ...(poster ? { poster: poster.file } : {}),
-          ...(isLink ? link : { title }),
-          ...(postType === 'youtube' ? { url: link.url } : {}),
-        })
+        const isDirectVideo = postType === 'video' && videoUploadMode === 'direct' && file !== null
+        const create = (videoUploadId: string | null) =>
+          createPost({
+            type: postType,
+            text,
+            ...(place ? { place } : {}),
+            altText,
+            ...(file && !isDirectVideo ? { file: file.file } : {}),
+            ...(videoUploadId ? { videoUploadId } : {}),
+            ...(poster ? { poster: poster.file } : {}),
+            ...(isLink ? link : { title }),
+            ...(postType === 'youtube' ? { url: link.url } : {}),
+          })
+        const draft = isDirectVideo
+          ? await uploadDirect(file.file, (uploadId) => create(uploadId))
+          : await create(null)
         try {
           if (shouldPublish) {
             await setPostStatus(draft.id, 'published')
@@ -537,6 +575,20 @@ export const PostForm = ({
         </div>
       </div>
       <div className="pointer-events-none sticky bottom-admin-dock z-10 flex flex-col items-end gap-2 md:bottom-6">
+        {uploadProgress !== null ? (
+          <div
+            key={uploadProgress < 1 ? 'uploading' : 'checking'}
+            className="pointer-events-auto flex w-64 animate-rise-in flex-col gap-2 rounded-xl glass px-4 py-3"
+          >
+            <p role="status" className="text-sm text-muted-foreground">
+              {t(uploadProgress < 1 ? 'postForm.uploadingVideo' : 'postForm.checkingVideo')}
+            </p>
+            <Progress
+              value={uploadProgress * 100}
+              label={t(uploadProgress < 1 ? 'postForm.uploadingVideo' : 'postForm.checkingVideo')}
+            />
+          </div>
+        ) : null}
         {errorKey ? (
           <p
             role="alert"

@@ -2,7 +2,7 @@
 
 Everything you need to run Blogram on your own server. For writing and publishing, see [Using Blogram](using-blogram.md).
 
-You need a domain with HTTPS, a PostgreSQL 17 database and somewhere to keep uploads (a local volume or a private S3-compatible bucket). Uploads are buffered in memory, so size your upload limits to your RAM.
+You need a domain with HTTPS, a PostgreSQL 17 database and somewhere to keep uploads (a local volume or a private S3-compatible bucket). Uploads are buffered in memory, so size your upload limits to your RAM. Videos are exempt with the S3 driver: the browser sends them straight to the bucket in 10 MiB parts.
 
 ## Configuration
 
@@ -66,7 +66,23 @@ Railway runs the app and PostgreSQL; a private Cloudflare R2 bucket stores media
 
 6. Deploy, open `https://<your-domain>/admin` and finish the wizard. Then remove `SETUP_PASSWORD` and redeploy. Keep `BETTER_AUTH_SECRET` the same.
 
-Browsers talk to Blogram, and Blogram talks to R2, so no public bucket URL or bucket CORS is needed. Files added directly in the bucket dashboard do not create posts.
+With the S3 driver, videos go from the browser to the bucket in 10 MiB parts using presigned URLs, so the bucket needs a CORS rule and `S3_ENDPOINT` must be reachable from browsers. Images and posters still go through Blogram, and the bucket itself stays private. Files added directly in the bucket dashboard do not create posts.
+
+7. Add a CORS rule to the bucket (**Settings → CORS Policy**). `AllowedOrigins` must list every public domain, and `ExposeHeaders` must include `ETag` so the browser can read each part's ETag:
+
+   ```json
+   [
+     {
+       "AllowedOrigins": ["https://<your-domain>.up.railway.app"],
+       "AllowedMethods": ["PUT"],
+       "AllowedHeaders": ["content-type"],
+       "ExposeHeaders": ["ETag"],
+       "MaxAgeSeconds": 3600
+     }
+   ]
+   ```
+
+8. Add an object lifecycle rule (**Settings → Object lifecycle rules**) that aborts incomplete multipart uploads after 1 day, so abandoned uploads do not keep using space.
 
 To bring local content along, restore your database backup (see [Backup and restore](#backup-and-restore)) and copy the media tree into the bucket with the same keys:
 
@@ -294,28 +310,29 @@ Username-only accounts have an internal `@owner.invalid` email; sign in with the
 
 ## Troubleshooting
 
-| Symptom                              | Check / action                                                                                                                      |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Setup not configured                 | Set `SETUP_PASSWORD` to at least 12 characters, recreate web, reload `/admin`                                                       |
-| Wrong setup password                 | Use the installer password, not the owner login; check for stray spaces or quotes                                                   |
-| Setup 429                            | Honor `Retry-After`; the guard uses a 15-minute budget                                                                              |
-| Wizard closed after installation     | Expected: use `/sign-in` with the owner credentials                                                                                 |
-| Site looks newly installed           | Confirm the original database, project name and volumes before starting another setup                                               |
-| Production build rejects auth secret | Replace the development sample secret                                                                                               |
-| Compose missing database password    | Set `POSTGRES_PASSWORD` before starting                                                                                             |
-| Database auth fails                  | Check the URL, port and original password; env changes do not change an initialized role password                                   |
-| Deploy healthcheck fails             | `/api/health` queries the database and returns 503 when it is down; check `DATABASE_URL` and the database service                   |
-| `.env` change ineffective            | Restart Node; recreate Compose containers                                                                                           |
-| Login fails behind proxy             | Check HTTPS, forwarded host and scheme, and the auth origins                                                                        |
-| Upload 413                           | Check app and proxy limits; a video request also carries its poster                                                                 |
-| Image 422                            | Check real JPEG, PNG or WebP bytes, decoded pixels and file size                                                                    |
-| Video unavailable                    | Ensure `ffprobe` is on the service `PATH`; Docker includes it                                                                       |
-| Accepted video will not play         | Check browser codecs and proxy range handling; try H.264 MP4                                                                        |
-| Blank link preview                   | The target may be blocked, private, slow or too large; enter metadata by hand                                                       |
-| S3 failures                          | Check the API origin, bucket, region, addressing and read/write/delete permissions                                                  |
-| Old bytes after storage outage       | Restore provider access and retry cleanup; queued keys stay in PostgreSQL                                                           |
-| Google button absent                 | Save the Client ID and Secret in Account > Security and turn the switch on; re-enter the secret after rotating `BETTER_AUTH_SECRET` |
-| Google callback fails                | Match the exact callback and public origin; check consent and test-user settings                                                    |
-| Google linking asks to sign in again | A session younger than five minutes is required                                                                                     |
+| Symptom                              | Check / action                                                                                                                                                        |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Setup not configured                 | Set `SETUP_PASSWORD` to at least 12 characters, recreate web, reload `/admin`                                                                                         |
+| Wrong setup password                 | Use the installer password, not the owner login; check for stray spaces or quotes                                                                                     |
+| Setup 429                            | Honor `Retry-After`; the guard uses a 15-minute budget                                                                                                                |
+| Wizard closed after installation     | Expected: use `/sign-in` with the owner credentials                                                                                                                   |
+| Site looks newly installed           | Confirm the original database, project name and volumes before starting another setup                                                                                 |
+| Production build rejects auth secret | Replace the development sample secret                                                                                                                                 |
+| Compose missing database password    | Set `POSTGRES_PASSWORD` before starting                                                                                                                               |
+| Database auth fails                  | Check the URL, port and original password; env changes do not change an initialized role password                                                                     |
+| Deploy healthcheck fails             | `/api/health` queries the database and returns 503 when it is down; check `DATABASE_URL` and the database service                                                     |
+| `.env` change ineffective            | Restart Node; recreate Compose containers                                                                                                                             |
+| Login fails behind proxy             | Check HTTPS, forwarded host and scheme, and the auth origins                                                                                                          |
+| Upload 413                           | Cloudflare's proxy rejects bodies of 100 MB or more and Railway cuts requests after 5 min; the s3 driver avoids both for videos. Otherwise check app and proxy limits |
+| "Bucket blocks browser uploads"      | The bucket CORS rule is missing `ExposeHeaders: ["ETag"]`, your origin or `PUT`; see [Railway and Cloudflare R2](#railway-and-cloudflare-r2)                          |
+| Image 422                            | Check real JPEG, PNG or WebP bytes, decoded pixels and file size                                                                                                      |
+| Video unavailable                    | Ensure `ffprobe` is on the service `PATH`; Docker includes it                                                                                                         |
+| Accepted video will not play         | Check browser codecs and proxy range handling; try H.264 MP4                                                                                                          |
+| Blank link preview                   | The target may be blocked, private, slow or too large; enter metadata by hand                                                                                         |
+| S3 failures                          | Check the API origin, bucket, region, addressing and read/write/delete permissions                                                                                    |
+| Old bytes after storage outage       | Restore provider access and retry cleanup; queued keys stay in PostgreSQL                                                                                             |
+| Google button absent                 | Save the Client ID and Secret in Account > Security and turn the switch on; re-enter the secret after rotating `BETTER_AUTH_SECRET`                                   |
+| Google callback fails                | Match the exact callback and public origin; check consent and test-user settings                                                                                      |
+| Google linking asks to sign in again | A session younger than five minutes is required                                                                                                                       |
 
 Production logs: `docker compose -f docker-compose.production.yml logs --tail=100 web migrate`. Share sanitized errors only, never environment dumps, cookies, tokens or database URLs.

@@ -15,6 +15,7 @@ import {
   patchPostApiSchema,
   postPostApiSchema,
   putPostImageApiSchema,
+  putPostVideoApiSchema,
   putPostStatusApiSchema,
 } from '@/server/modules/posts/schemas/post.api-schema'
 import { postService, type PostService } from '@/server/modules/posts/services/post.service'
@@ -70,6 +71,7 @@ export class PostController {
         place: readPlace(form),
         text: readTextField(form, 'text'),
         altText: readTextField(form, 'altText'),
+        videoUploadId: readTextField(form, 'videoUploadId'),
         url: readTextField(form, 'url'),
         title: readTextField(form, 'title'),
         description: readTextField(form, 'description'),
@@ -120,12 +122,17 @@ export class PostController {
   }
 
   replaceVideo: SessionRouteHandler = async (request, context) => {
-    const { id } = await readParams(putPostImageApiSchema.params, context)
+    const { id } = await readParams(putPostVideoApiSchema.params, context)
+    if (request.headers.get('content-type')?.includes('application/json')) {
+      const body = await readBody(putPostVideoApiSchema.body, request)
+      const replaced = await this.postService.replaceVideo(id, { uploadId: body.uploadId })
+      return Response.json(encode(Models.Post, replaced), { status: StatusCodes.OK })
+    }
     const { file } = await readForm(request, env.UPLOAD_MAX_VIDEO_BYTES)
     if (!file) {
       throw new ValidationError('Field "file" is required')
     }
-    const editedPost = await this.postService.replaceVideo(id, file)
+    const editedPost = await this.postService.replaceVideo(id, { file })
     return Response.json(encode(Models.Post, editedPost), { status: StatusCodes.OK })
   }
 

@@ -6,6 +6,10 @@ import {
   mediaCleanupService,
   type MediaCleanupService,
 } from '@/server/modules/media/services/media-cleanup.service'
+import {
+  videoUploadService,
+  type VideoUploadService,
+} from '@/server/modules/media/services/video-upload.service'
 
 const CleanupStatus = Type.Object({
   deleted: Type.Integer({ minimum: 0 }),
@@ -13,12 +17,20 @@ const CleanupStatus = Type.Object({
 })
 
 export class MediaCleanupController {
-  constructor(private readonly cleanup: MediaCleanupService) {}
+  constructor(
+    private readonly cleanup: MediaCleanupService,
+    private readonly videoUploads: Pick<VideoUploadService, 'sweepExpired'>,
+  ) {}
 
-  drain: SessionRouteHandler = async () =>
-    Response.json(encode(CleanupStatus, await this.cleanup.drain()), {
+  drain: SessionRouteHandler = async () => {
+    await this.videoUploads.sweepExpired()
+    return Response.json(encode(CleanupStatus, await this.cleanup.drain()), {
       headers: { 'Cache-Control': 'no-store' },
     })
+  }
 }
 
-export const mediaCleanupController = new MediaCleanupController(mediaCleanupService)
+export const mediaCleanupController = new MediaCleanupController(
+  mediaCleanupService,
+  videoUploadService,
+)
