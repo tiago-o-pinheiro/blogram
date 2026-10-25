@@ -110,3 +110,14 @@ export const setPostStatus = async (id: string, status: Models.PostStatus): Prom
 export const deletePost = async (id: string): Promise<void> => {
   await request(`/admin/posts/${id}`, { method: 'DELETE' })
 }
+
+export const deleteAllPosts = async (): Promise<Models.PostBulkDeleteResult> => {
+  const response = await sendJson('/admin/posts', 'DELETE', {
+    confirm: Models.DELETE_ALL_POSTS_CONFIRM,
+  })
+  const result: unknown = await response.json()
+  if (!Models.isPostBulkDeleteResult(result)) {
+    throw new PostsApiError(response.status)
+  }
+  return result
+}

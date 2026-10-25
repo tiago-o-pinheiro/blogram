@@ -13,6 +13,16 @@ import { type TranslationKey } from '@/i18n'
 import { useT } from '@/i18n/i18n-context'
 import * as Models from '@/models/models'
 
+import { AiApiError, requestAiDraft } from '@/features/ai/api/ai-api'
+import { AiFieldButton } from '@/features/ai/components/ai-field-button'
+import { AiPromptBar } from '@/features/ai/components/ai-prompt-bar'
+import {
+  type AiTarget,
+  hasAiContext,
+  toAiDraftRequest,
+  toOfferedAiFields,
+} from '@/features/ai/lib/to-ai-draft-request'
+
 import { LinkFields, type LinkFieldsValue } from './link-fields'
 import { PlaceFields } from './place-fields'
 import { PostMediaFields } from './post-media-fields'
@@ -30,6 +40,7 @@ import { toPostsMessageKey } from '../lib/to-posts-message'
 
 type PostFormProps = {
   post?: Models.Post
+  isAiEnabled?: boolean
   maxImageBytes: number
   maxVideoBytes: number
 }
@@ -47,6 +58,54 @@ type LinkDraft = {
   manual: Record<'title' | 'description' | 'source', boolean>
 }
 
+type AiValues = Record<Models.AiField, string>
+
+type AiSnapshot = Partial<AiValues>
+
+const AI_REASON_KEYS: Readonly<Record<string, TranslationKey>> = {
+  auth: 'aiAssist.errors.auth',
+  'rate-limit': 'aiAssist.errors.rateLimit',
+  model: 'aiAssist.errors.model',
+  unavailable: 'aiAssist.errors.unavailable',
+  'invalid-response': 'aiAssist.errors.invalidResponse',
+  'ai-not-configured': 'aiAssist.errors.notConfigured',
+}
+
+const toAiFailureKey = (error: unknown): TranslationKey => {
+  if (!(error instanceof AiApiError)) {
+    return 'aiAssist.errors.generic'
+  }
+  if (error.reason !== null && error.reason in AI_REASON_KEYS) {
+    return AI_REASON_KEYS[error.reason] ?? 'aiAssist.errors.generic'
+  }
+  return error.status === 422 ? 'aiAssist.errors.invalid' : 'aiAssist.errors.generic'
+}
+
+const useAiDraft = () => {
+  const [pendingTarget, setPendingTarget] = useState<AiTarget | null>(null)
+  const [failureKey, setFailureKey] = useState<TranslationKey | null>(null)
+
+  const generate = async (
+    target: AiTarget,
+    request: Parameters<typeof requestAiDraft>[0],
+  ): Promise<Models.AiDraft | null> => {
+    setFailureKey(null)
+    setPendingTarget(target)
+    try {
+      return await requestAiDraft(request)
+    } catch (error) {
+      setFailureKey(toAiFailureKey(error))
+      return null
+    } finally {
+      setPendingTarget(null)
+    }
+  }
+
+  const resetFailure = () => setFailureKey(null)
+
+  return { generate, pendingTarget, failureKey, resetFailure }
+}
+
 const IMAGE_REPLACEMENT: Replacement = {
   upload: replacePostImage,
   successKey: 'postForm.replaced',
@@ -59,8 +118,14 @@ const VIDEO_REPLACEMENT: Replacement = {
   media: 'video',
 }
 
-export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) => {
+export const PostForm = ({
+  post,
+  isAiEnabled = false,
+  maxImageBytes,
+  maxVideoBytes,
+}: PostFormProps) => {
   const t = useT()
+  const { generate, pendingTarget, failureKey, resetFailure } = useAiDraft()
   const router = useRouter()
   const isEdit = post !== undefined
   const [postType, setPostType] = useState<Models.PostType>(post?.type ?? 'photo')
@@ -88,6 +153,10 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
   const [errorKey, setErrorKey] = useState<TranslationKey | null>(null)
   const [statusKey, setStatusKey] = useState<TranslationKey | null>(null)
   const [isPending, setIsPending] = useState(false)
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [aiSnapshot, setAiSnapshot] = useState<AiSnapshot | null>(null)
+  const [aiMessageKey, setAiMessageKey] = useState<TranslationKey | null>(null)
+  const [aiRound, setAiRound] = useState(0)
   const [intent, setIntent] = useState<Intent>('save')
   const [savedImage, setSavedImage] = useState(post?.image ?? null)
   const [savedVideo, setSavedVideo] = useState(post?.video)
@@ -112,6 +181,77 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
     if (postType === 'video') {
       setFile(null)
     }
+  }
+
+  const aiValues: AiValues = { title: isLink ? link.title.trim() : title, altText, text }
+  const aiFile = (postType === 'video' ? poster : file)?.file ?? null
+  const aiMediaId = savedImage?.id
+  const hasAiImage = aiFile !== null || aiMediaId !== undefined
+  const offeredAiFields = toOfferedAiFields(postType, hasAiImage)
+  const isAiBusy = isPending || pendingTarget !== null
+  const hasContext = hasAiContext(aiPrompt, hasAiImage, aiValues)
+
+  const handleAiGenerate = async (target: AiTarget) => {
+    setAiMessageKey(null)
+    const draft = await generate(
+      target,
+      toAiDraftRequest({
+        target,
+        prompt: aiPrompt,
+        postType,
+        values: aiValues,
+        image: { file: aiFile, mediaId: aiMediaId },
+      }),
+    )
+    if (draft === null) {
+      return
+    }
+    const snapshot: AiSnapshot = {}
+    if (draft.title !== undefined) {
+      snapshot.title = title
+      setTitle(draft.title)
+    }
+    if (draft.altText !== undefined) {
+      snapshot.altText = altText
+      setAltText(draft.altText)
+    }
+    if (draft.text !== undefined) {
+      snapshot.text = text
+      setText(draft.text)
+    }
+    setAiSnapshot(snapshot)
+    setAiRound((round) => round + 1)
+    setStatusKey(null)
+    setAiMessageKey('aiAssist.applied')
+  }
+
+  const handleAiUndo = () => {
+    if (aiSnapshot === null) {
+      return
+    }
+    setTitle(aiSnapshot.title ?? title)
+    setAltText(aiSnapshot.altText ?? altText)
+    setText(aiSnapshot.text ?? text)
+    setAiSnapshot(null)
+    setAiRound((round) => round + 1)
+    resetFailure()
+    setAiMessageKey('aiAssist.undone')
+  }
+
+  const renderAiButton = (field: Models.AiField) => {
+    if (!isAiEnabled) {
+      return undefined
+    }
+    const isOffered = offeredAiFields.includes(field)
+    return (
+      <AiFieldButton
+        label={t(`aiAssist.generateField.${field}`)}
+        isPending={pendingTarget === field}
+        isDisabled={isAiBusy || !isOffered || !hasContext}
+        disabledHint={isOffered ? t('aiAssist.needsContext') : t('aiAssist.altTextNeedsImage')}
+        onClick={() => void handleAiGenerate(field)}
+      />
+    )
   }
 
   const handleLinkChange = (fields: LinkFieldsValue) => {
@@ -281,7 +421,7 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
   const isIncomplete =
     isFileMissing || isUrlMissing || (isLink && !link.title.trim()) || isFetchingMetadata
 
-  return (
+  const form = (
     <form
       onSubmit={(event) => void handleSubmit(event)}
       className="flex flex-col gap-6 rounded-xl border border-line bg-card p-4 sm:p-6"
@@ -336,7 +476,9 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
           ) : null}
           {isLink ? null : (
             <Field
+              key={`title-${aiRound}`}
               label={t('postForm.postTitle')}
+              labelAction={renderAiButton('title')}
               name="title"
               value={title}
               maxLength={Models.POST_TITLE_MAX}
@@ -360,7 +502,9 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
           ) : null}
           {hasMedia ? (
             <Field
+              key={`altText-${aiRound}`}
               label={t('postForm.altText')}
+              labelAction={renderAiButton('altText')}
               name="altText"
               value={altText}
               maxLength={Models.ALT_TEXT_MAX}
@@ -376,7 +520,9 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
             <p className="text-sm text-muted-foreground">{t('postForm.altTextHint')}</p>
           ) : null}
           <Textarea
+            key={`text-${aiRound}`}
             label={t('postForm.text')}
+            labelAction={renderAiButton('text')}
             name="text"
             value={text}
             maxLength={Models.POST_TEXT_MAX}
@@ -472,5 +618,26 @@ export const PostForm = ({ post, maxImageBytes, maxVideoBytes }: PostFormProps) 
         </div>
       </div>
     </form>
+  )
+
+  if (!isAiEnabled) {
+    return form
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <AiPromptBar
+        prompt={aiPrompt}
+        isDisabled={isAiBusy}
+        isGenerating={pendingTarget === 'all'}
+        hasContext={hasContext}
+        messageKey={failureKey ?? aiMessageKey}
+        canUndo={aiSnapshot !== null}
+        onPromptChange={setAiPrompt}
+        onGenerateAll={() => void handleAiGenerate('all')}
+        onUndo={handleAiUndo}
+      />
+      {form}
+    </div>
   )
 }

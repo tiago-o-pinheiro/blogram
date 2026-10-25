@@ -13,5 +13,21 @@
   "admin.welcome": "Welcome, {{name}}",
   "admin.accountLink": "Account settings",
   "account.session": "Session",
-  "account.sessionHint": "Sign out of Blogram on this device."
+  "account.sessionHint": "Sign out of Blogram on this device.",
+  "account.sections.label": "Account sections",
+  "account.sections.security": "Security",
+  "account.sections.ai": "AI assistant",
+  "account.sections.data": "Data",
+  "account.data.title": "Delete all posts",
+  "account.data.hint": "Removes every draft and published post with its photos and videos. This cannot be undone.",
+  "account.data.count": "{{count}} posts will be deleted.",
+  "account.deleteAll.open": "Delete all posts",
+  "account.deleteAll.title": "Delete all posts?",
+  "account.deleteAll.description": "Every post, photo and video will be removed for good.",
+  "account.deleteAll.confirmLabel": "Type the word below to confirm",
+  "account.deleteAll.confirmWord": "DELETE",
+  "account.deleteAll.submit": "Delete everything",
+  "account.deleteAll.submitting": "Deleting",
+  "account.deleteAll.done": "{{count}} posts deleted.",
+  "account.deleteAll.error": "We could not delete the posts. Try again."
 }

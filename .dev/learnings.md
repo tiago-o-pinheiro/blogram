@@ -12,3 +12,6 @@
 - [i18n] The translator only interpolates `{{name}}`; write placeholders with double braces in plan contracts, or parallel UI coders each patch the shared JSON (20261025-1314-research-similar-open-source-photo)
 - [dev] `pnpm dev` does not derive the Compose port from DATABASE_URL; a non-5432 DATABASE_URL needs a matching DB_PORT in .env or db:up binds 5432 (20261025-1314-research-similar-open-source-photo)
 - [validation] Validate untrusted metadata such as EXIF per field, never as one object, so a single out-of-range value does not drop the rest (20261025-1314-research-similar-open-source-photo)
+- [bug-hunt] BH repro specs stay in the tree, so minor BH findings fail the gate too; include every BH id in the fix round, not only blocker/major (20261025-1859-necesito-que-me-ayudes-en)
+- [ai] Map provider failures by the error body reason, not the status alone: Gemini answers 400 for both a bad key (API_KEY_INVALID) and an invalid argument (20261025-1859-necesito-que-me-ayudes-en)
+- [security] A secret sealed with a key derived from BETTER_AUTH_SECRET must count as present only if it opens; after rotation the UI otherwise shows a saved key that always fails (20261025-1859-necesito-que-me-ayudes-en)

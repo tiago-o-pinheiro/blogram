@@ -25,7 +25,7 @@ vi.mock('next/navigation', () => ({
 }))
 
 const PAGE_REQUESTS = [
-  { name: 'account', render: () => AccountPage() },
+  { name: 'account', render: () => AccountPage({ searchParams: Promise.resolve({}) }) },
   { name: 'new post', render: () => NewPostPage() },
   {
     name: 'edit post',

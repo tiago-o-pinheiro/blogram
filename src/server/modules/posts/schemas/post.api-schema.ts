@@ -61,3 +61,9 @@ export const putPostStatusApiSchema = {
   response: { [StatusCodes.OK]: Models.Post },
 }
 export type PutPostStatusApiSchema = typeof putPostStatusApiSchema
+
+export const deletePostsApiSchema = {
+  body: Models.PostBulkDelete,
+  response: { [StatusCodes.OK]: Models.PostBulkDeleteResult },
+}
+export type DeletePostsApiSchema = typeof deletePostsApiSchema

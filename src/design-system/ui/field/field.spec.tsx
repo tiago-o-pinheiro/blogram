@@ -36,6 +36,13 @@ describe('Field', () => {
     expect(screen.queryByText('Enter a valid email')).not.toBeInTheDocument()
   })
 
+  it('Given a label action, should render it beside the label and keep the input name', () => {
+    render(<Field label="Title" labelAction={<button type="button">Write</button>} />)
+
+    expect(screen.getByRole('button', { name: 'Write' })).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Title' })).toBeInTheDocument()
+  })
+
   it('Given the disabled prop, should disable the input', () => {
     render(<Field label="Email" disabled />)
 

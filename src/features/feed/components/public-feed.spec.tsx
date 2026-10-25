@@ -50,20 +50,23 @@ describe('PublicFeed', () => {
     )
   })
 
-  it('Given a search, should show its heading and keep the query in filters and paging', () => {
+  it('Given a search, should show its heading and keep the query in paging', () => {
     renderFeed({ data: [], meta: { total: 36, page: 2, pageSize: 12 } }, 'video', 'bay')
 
     expect(screen.getByRole('heading', { name: 'Results for “bay”' })).toBeVisible()
-    const filters = within(screen.getByRole('navigation', { name: 'Filter posts' }))
-    expect(filters.getByRole('link', { name: 'Photos' })).toHaveAttribute(
-      'href',
-      '/?type=photo&q=bay',
-    )
+    expect(screen.getByRole('searchbox')).toHaveValue('bay')
     const pagination = within(screen.getByRole('navigation', { name: 'Browse the journal' }))
     expect(pagination.getByRole('link', { name: 'Older posts' })).toHaveAttribute(
       'href',
       '/?type=video&q=bay&page=3',
     )
+  })
+
+  it('Given the public feed, should not render a standalone search row', () => {
+    renderFeed({ data: [], meta: { total: 0, page: 1, pageSize: 12 } })
+
+    expect(screen.queryByRole('search')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Search posts' })).toBeVisible()
   })
 
   it('Given a search without matches, should show the empty message with a single clear link', () => {

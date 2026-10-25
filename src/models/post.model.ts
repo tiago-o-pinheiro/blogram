@@ -149,6 +149,19 @@ export type PostUpdate = Static<typeof PostUpdate>
 export const PostStatusChange = Type.Object({ status: PostStatus })
 export type PostStatusChange = Static<typeof PostStatusChange>
 
+export const DELETE_ALL_POSTS_CONFIRM = 'delete-all-posts'
+
+export const PostBulkDelete = Type.Object({ confirm: Type.Literal(DELETE_ALL_POSTS_CONFIRM) })
+export type PostBulkDelete = Static<typeof PostBulkDelete>
+
+export const PostBulkDeleteResult = Type.Object({ deleted: Type.Integer({ minimum: 0 }) })
+export type PostBulkDeleteResult = Static<typeof PostBulkDeleteResult>
+
+export const isPostBulkDelete = (value: unknown): value is PostBulkDelete =>
+  Value.Check(PostBulkDelete, value)
+export const isPostBulkDeleteResult = (value: unknown): value is PostBulkDeleteResult =>
+  Value.Check(PostBulkDeleteResult, value)
+
 export const PostListQuery = Type.Intersect([
   PaginationQuery,
   Type.Object({ status: Type.Optional(PostStatus) }),

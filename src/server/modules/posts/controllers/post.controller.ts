@@ -9,6 +9,7 @@ import { readBody, readParams, readQuery } from '@/server/lib/handler'
 import { MULTIPART_OVERHEAD_BYTES, readMultipart } from '@/server/lib/multipart'
 import { type SessionRouteHandler } from '@/server/modules/auth/controllers/auth.controller'
 import {
+  deletePostsApiSchema,
   getPostApiSchema,
   getPostsApiSchema,
   patchPostApiSchema,
@@ -100,6 +101,12 @@ export class PostController {
     const { id } = await readParams(getPostApiSchema.params, context)
     await this.postService.deletePost(id)
     return new Response(null, { status: StatusCodes.NO_CONTENT })
+  }
+
+  removeAll: SessionRouteHandler = async (request) => {
+    await readBody(deletePostsApiSchema.body, request)
+    const result = await this.postService.deleteAllPosts()
+    return Response.json(encode(Models.PostBulkDeleteResult, result), { status: StatusCodes.OK })
   }
 
   replaceImage: SessionRouteHandler = async (request, context) => {

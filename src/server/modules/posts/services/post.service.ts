@@ -352,6 +352,23 @@ export class PostService {
     await this.cleanup.drain()
   }
 
+  countPosts = async (): Promise<number> => {
+    const [row] = await db.select({ total: sql<number>`count(*)::int` }).from(post)
+    return row?.total ?? 0
+  }
+
+  deleteAllPosts = async (): Promise<{ deleted: number }> => {
+    const deleted = await db.transaction(async (tx) => {
+      const locked = await tx.select({ id: post.id }).from(post).for('update')
+      const files = await tx.select().from(media)
+      await this.cleanup.enqueue(tx, files.flatMap(toStoredKeys))
+      await tx.delete(post)
+      return locked.length
+    })
+    await this.cleanup.drain()
+    return { deleted }
+  }
+
   readMedia = async (
     mediaId: string,
     access: {
