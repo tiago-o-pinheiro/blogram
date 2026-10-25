@@ -23,7 +23,7 @@ const archive: Models.Archive = {
           type: 'photo',
           title: '::sunset::',
           publishedAt: '2026-05-10T10:00:00.000Z',
-          image: { id: IMAGE_ID, width: 100, height: 100, altText: '', variants: [] },
+          image: { id: IMAGE_ID, width: 100, height: 100 },
         },
       ],
     },

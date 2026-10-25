@@ -5,6 +5,7 @@ import { Models } from '@/models'
 
 import { db } from '@/server/lib/db'
 import { PlacePinService } from '@/server/modules/feed/services/place-pin.service'
+import { media } from '@/server/modules/media/schemas/media.table'
 import { post } from '@/server/modules/posts/schemas/post.table'
 
 const service = new PlacePinService()
@@ -52,5 +53,29 @@ describe('PlacePinService', () => {
     const pins = await service.list()
 
     expect(pins.map((pin) => pin.coordinates)).toEqual([LISBON, null])
+  })
+
+  it('Given a photo post at a place, should expose only id, width and height of its image', async () => {
+    const [seeded] = await seedPost('Aaaaa11111', '2026-01-01T00:00:00Z', {
+      type: 'photo',
+      place: { name: 'Lisbon' },
+    }).returning({ id: post.id })
+    if (!seeded) {
+      throw new Error('post not seeded')
+    }
+    await db.insert(media).values({
+      postId: seeded.id,
+      key: '::key::',
+      contentType: 'image/jpeg',
+      width: 400,
+      height: 300,
+      sizeBytes: 10,
+      altText: '::alt::',
+      metadata: { camera: { make: 'Canon' }, placeholder: 'data:image/jpeg;base64,AAAA' },
+    })
+
+    const [pin] = await service.list()
+
+    expect(Object.keys(pin?.posts[0]?.image ?? {}).sort()).toEqual(['height', 'id', 'width'])
   })
 })

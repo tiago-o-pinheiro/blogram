@@ -66,12 +66,13 @@ describe('PublicFeed', () => {
     )
   })
 
-  it('Given a search without matches, should show the empty state with a clear link', () => {
+  it('Given a search without matches, should show the empty message with a single clear link', () => {
     renderFeed({ data: [], meta: { total: 0, page: 1, pageSize: 12 } }, 'all', 'nothing')
 
     expect(screen.getByText('No posts match “nothing”.')).toBeVisible()
     const clear = screen.getAllByRole('link', { name: 'Clear search' })
-    expect(clear.every((link) => link.getAttribute('href') === '/')).toBe(true)
+    expect(clear).toHaveLength(1)
+    expect(clear[0]).toHaveAttribute('href', '/')
     expect(screen.queryByRole('heading', { name: 'Nothing here yet.' })).not.toBeInTheDocument()
   })
 

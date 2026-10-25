@@ -3,7 +3,7 @@ import { and, desc, eq, isNotNull } from 'drizzle-orm'
 import { Models } from '@/models'
 
 import { db } from '@/server/lib/db'
-import { toPostSummary } from '@/server/modules/feed/services/archive.service'
+import { toPostSummary } from '@/server/modules/feed/services/to-post-summary'
 import { media } from '@/server/modules/media/schemas/media.table'
 import { post } from '@/server/modules/posts/schemas/post.table'
 import { toPost } from '@/server/modules/posts/services/to-post'

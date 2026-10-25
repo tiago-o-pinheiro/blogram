@@ -1,33 +1,13 @@
 import { and, asc, desc, eq, gt, lt, or } from 'drizzle-orm'
 
-import { Models } from '@/models'
+import { type Models } from '@/models'
 
 import { NotFoundError } from '@/server/errors/http-errors'
 import { db } from '@/server/lib/db'
+import { toPostSummary } from '@/server/modules/feed/services/to-post-summary'
 import { media } from '@/server/modules/media/schemas/media.table'
 import { post } from '@/server/modules/posts/schemas/post.table'
 import { toPost } from '@/server/modules/posts/services/to-post'
-
-const SUMMARY_TITLE_LENGTH = 80
-const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' })
-
-const toSummaryTitle = (found: Models.Post): string => {
-  const title = Models.toPostTitle(found)
-  if (title) {
-    return title
-  }
-  return Array.from(segmenter.segment(found.text), ({ segment }) => segment)
-    .slice(0, SUMMARY_TITLE_LENGTH)
-    .join('')
-}
-
-const toSummary = (found: Models.Post): Models.PostSummary => ({
-  id: found.id,
-  type: found.type,
-  title: toSummaryTitle(found),
-  publishedAt: found.publishedAt ?? found.createdAt,
-  image: found.image,
-})
 
 export class AdjacentPostService {
   get = async (id: string): Promise<Models.AdjacentPosts> => {
@@ -69,7 +49,7 @@ export class AdjacentPostService {
       .where(and(eq(post.status, 'published'), position))
       .orderBy(...order)
       .limit(1)
-    return row ? toSummary(toPost(row)) : null
+    return row ? toPostSummary(toPost(row)) : null
   }
 }
 

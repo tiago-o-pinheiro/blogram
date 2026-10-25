@@ -86,4 +86,13 @@ describe('RssService', () => {
     expect(response.status).toBe(200)
     expect(response.headers.get('Content-Type')).toBe('application/rss+xml; charset=utf-8')
   })
+
+  it('Given an untitled post with messy whitespace, should collapse and trim its item title', async () => {
+    await completeInstallation()
+    await seedPost({ type: 'photo', text: '  hello \n\n  big   world  ' })
+
+    const xml = await service.render(ORIGIN)
+
+    expect(xml).toContain('<item><title>hello big world</title>')
+  })
 })

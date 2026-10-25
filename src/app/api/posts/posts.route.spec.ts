@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { Models } from '@/models'
 
 import { db } from '@/server/lib/db'
+import { media } from '@/server/modules/media/schemas/media.table'
 import { post } from '@/server/modules/posts/schemas/post.table'
 import { postService } from '@/server/modules/posts/services/post.service'
 import { profileService } from '@/server/modules/profile/services/profile.service'
@@ -126,6 +127,61 @@ describe('Public posts HTTP', () => {
       expect((await list(request(query))).status).toBe(422)
     },
   )
+
+  it('Given a video poster and a photo with camera metadata, should expose camera only for the photo', async () => {
+    const metadata = {
+      camera: { make: 'Canon', model: 'R5' },
+      placeholder: 'data:image/webp;base64,AAAA',
+    }
+    const seedImage = async (publicId: string, type: 'photo' | 'video') => {
+      const row = await seedPost({ publicId, type })
+      if (!row) {
+        throw new Error('seed failed')
+      }
+      await db.insert(media).values({
+        postId: row.id,
+        key: `${publicId}/original`,
+        contentType: 'image/webp',
+        width: 10,
+        height: 10,
+        sizeBytes: 1,
+        metadata,
+      })
+    }
+    await seedImage('Video12345', 'video')
+    await seedImage('Photo12345', 'photo')
+
+    const listed: unknown = await (await list(request())).json()
+    const videoPage: unknown = await (
+      await get(request('/Video12345'), context('Video12345'))
+    ).json()
+    const photoPage: unknown = await (
+      await get(request('/Photo12345'), context('Photo12345'))
+    ).json()
+
+    expect(listed).toMatchObject({
+      data: expect.arrayContaining([
+        expect.objectContaining({
+          id: 'Video12345',
+          image: expect.objectContaining({ placeholder: metadata.placeholder }),
+        }),
+      ]),
+    })
+    expect(listed).toMatchObject({
+      data: expect.arrayContaining([
+        expect.objectContaining({
+          id: 'Photo12345',
+          image: expect.objectContaining({ camera: metadata.camera }),
+        }),
+      ]),
+    })
+    expect(JSON.stringify(listed).match(/Canon/g)).toHaveLength(1)
+    expect(JSON.stringify(videoPage)).not.toContain('Canon')
+    expect(videoPage).toMatchObject({ image: { placeholder: metadata.placeholder } })
+    expect(photoPage).toMatchObject({
+      image: { camera: metadata.camera, placeholder: metadata.placeholder },
+    })
+  })
 
   it('Given a draft or missing post, should hide pages and likes', async () => {
     await seedPost({ status: 'draft' })

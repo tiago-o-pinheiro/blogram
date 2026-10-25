@@ -1,29 +1,12 @@
 import { and, desc, eq, gte, lt, sql } from 'drizzle-orm'
 
-import { Models } from '@/models'
+import { type Models } from '@/models'
 
 import { db } from '@/server/lib/db'
+import { toPostSummary } from '@/server/modules/feed/services/to-post-summary'
 import { media } from '@/server/modules/media/schemas/media.table'
 import { post } from '@/server/modules/posts/schemas/post.table'
 import { toPost } from '@/server/modules/posts/services/to-post'
-
-const TITLE_GRAPHEMES = 80
-const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' })
-
-export const toPostSummary = (record: Models.Post): Models.PostSummary => {
-  const caption = [...segmenter.segment(record.text.replace(/\s+/g, ' ').trim())]
-    .slice(0, TITLE_GRAPHEMES)
-    .map((part) => part.segment)
-    .join('')
-    .trim()
-  return {
-    id: record.id,
-    type: record.type,
-    title: Models.toPostTitle(record) || caption,
-    publishedAt: record.publishedAt ?? record.createdAt,
-    image: record.image,
-  }
-}
 
 export class ArchiveService {
   get = async (year?: number): Promise<Models.Archive> => {

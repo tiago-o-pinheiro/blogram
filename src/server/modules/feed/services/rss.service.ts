@@ -2,12 +2,11 @@ import { Models } from '@/models'
 
 import { NotFoundError } from '@/server/errors/http-errors'
 import { feedService } from '@/server/modules/feed/services/feed.service'
+import { toPostSummaryTitle } from '@/server/modules/feed/services/to-post-summary'
 import { installationService } from '@/server/modules/installation/services/installation.service'
 import { profileService } from '@/server/modules/profile/services/profile.service'
 
 const RSS_ITEM_LIMIT = 20
-const TITLE_GRAPHEMES = 80
-const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' })
 
 const escapeXml = (text: string): string =>
   [...text]
@@ -27,21 +26,6 @@ const escapeXml = (text: string): string =>
       return escaped[character] ?? ''
     })
 
-const toItemTitle = (post: Models.Post, fallback: string): string => {
-  const title = Models.toPostTitle(post)
-  if (title) {
-    return title
-  }
-  const graphemes = [...segmenter.segment(post.text.replace(/\s+/g, ' ').trim())]
-  return (
-    graphemes
-      .slice(0, TITLE_GRAPHEMES)
-      .map((part) => part.segment)
-      .join('')
-      .trim() || fallback
-  )
-}
-
 const toItem = (post: Models.Post, origin: string, fallback: string): string => {
   const permalink = `${origin}/posts/${post.id}`
   const image = post.image
@@ -49,7 +33,7 @@ const toItem = (post: Models.Post, origin: string, fallback: string): string => 
     : ''
   const caption = post.text ? `<p>${escapeXml(post.text)}</p>` : ''
   const publishedAt = new Date(post.publishedAt ?? post.createdAt).toUTCString()
-  return `<item><title>${escapeXml(toItemTitle(post, fallback))}</title><link>${escapeXml(permalink)}</link><guid isPermaLink="true">${escapeXml(permalink)}</guid><pubDate>${publishedAt}</pubDate><description>${escapeXml(`${image}${caption}`)}</description></item>`
+  return `<item><title>${escapeXml(toPostSummaryTitle(post) || fallback)}</title><link>${escapeXml(permalink)}</link><guid isPermaLink="true">${escapeXml(permalink)}</guid><pubDate>${publishedAt}</pubDate><description>${escapeXml(`${image}${caption}`)}</description></item>`
 }
 
 export class RssService {

@@ -68,12 +68,6 @@ export const PublicFeed = ({
           className="animate-rise-in space-y-3 rounded-xl border border-dashed border-line-strong px-6 py-16 text-center"
         >
           <p className="text-sm text-muted-foreground">{t('search.empty', { query })}</p>
-          <Link
-            href={Models.toFeedHref(filter)}
-            className="inline-flex min-h-11 press items-center rounded-full border border-line-strong px-5 text-sm hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
-          >
-            {t('search.clear')}
-          </Link>
         </div>
       ) : page.data.length === 0 ? (
         <div className="animate-rise-in space-y-3 rounded-xl border border-dashed border-line-strong px-6 py-16 text-center">
