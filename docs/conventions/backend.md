@@ -108,7 +108,7 @@ Prisma:
 
 Drizzle: one schema file per domain (`src/db/schema/notes.ts`), same rules: explicit column selection, indexes on lookup fields, `db.transaction` for multi-writes.
 
-Dev preflight: a script (`scripts/dev-preflight.mjs`) runs before `dev`. It starts the docker database (`docker compose up -d --wait`) and applies migrations. Never require manual DB setup. [review]
+Dev setup: `pnpm dev` runs `pnpm db:up && pnpm db:migrate` before Next. It starts the docker database (`docker compose up -d --wait`) and applies migrations. Never require manual DB setup. [review]
 
 ## Framework mapping
 

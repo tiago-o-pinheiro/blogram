@@ -32,9 +32,9 @@ If a secret was committed, rotate it; removing it from history is not enough.
 
 ## Hooks
 
-- husky `pre-commit` runs lint-staged: `eslint --fix` and `prettier --write` on staged files, then related tests.
-- husky `commit-msg` runs commitlint (Conventional Commits).
-- Never bypass with `--no-verify`. Fix the failure.
+- There are no git hooks. CI runs `pnpm check` and `pnpm build` on every push and pull request; it is the gate.
+- The Claude edit hook lints each file as it is edited.
+- Conventional Commits is a written convention, not machine-enforced. Follow it.
 
 ## Pull requests
 

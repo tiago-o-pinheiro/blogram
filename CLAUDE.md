@@ -35,7 +35,7 @@ Shared schemas live in the models layer and are imported as `Models.X`.
 - `pnpm lint`
 - `pnpm build`
 
-Run `pnpm check` or `node scripts/check.mjs` (add `--full` to include build) before reporting done.
+Run `pnpm check` (and `pnpm build` for the full gate) before reporting done.
 
 ## Conventions
 
@@ -59,7 +59,7 @@ These files override any default. Read the relevant ones before writing code.
 5. Specs sit next to the source and read `it('Given X, should Y')`.
 6. No `as` casts (except `as const`), no `any`, no `!`, no enums, no comments, arrow functions only.
 7. Env is read in one typed module; never `process.env` elsewhere.
-8. Before done: `node scripts/check.mjs` must pass.
+8. Before done: `pnpm check` must pass.
 9. Everything moves. Every component animates its entrance and transitions its state changes with the motion tokens (`animate-*`, `transition`, `press`, `stagger`). Selected options slide with `SlidingPill`, dialogs and sheets animate in and out, swapped content is keyed so its entrance replays. Reduced motion keeps fades and drops movement through tokens; never switch animation off globally. See the Motion section of docs/conventions/design-system.md.
 
 ## Pipeline

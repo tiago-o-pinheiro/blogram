@@ -8,10 +8,10 @@ import { type HealthService, healthService } from '@/server/modules/health/servi
 export class HealthController {
   constructor(private readonly healthService: HealthService) {}
 
-  getHealth: RouteHandler = () => {
+  getHealth: RouteHandler = async () => {
     const health = encode(
       getHealthApiSchema.response[StatusCodes.OK],
-      this.healthService.getStatus(),
+      await this.healthService.getStatus(),
     )
     return Response.json(health, { status: StatusCodes.OK })
   }

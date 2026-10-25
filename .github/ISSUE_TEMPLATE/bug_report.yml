@@ -1,0 +1,52 @@
+name: Bug report
+description: Something is not working
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Never paste secrets, tokens, passwords or full environment files. Remove them from logs first.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: v1.0.0 or a commit hash
+    validations:
+      required: true
+  - type: dropdown
+    id: deploy
+    attributes:
+      label: Deploy method
+      options:
+        - Railway
+        - Docker Compose
+        - Node
+        - Local development
+    validations:
+      required: true
+  - type: dropdown
+    id: storage
+    attributes:
+      label: Storage driver
+      options:
+        - Local
+        - Cloudflare R2
+        - Other S3-compatible
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized logs
+      render: shell
