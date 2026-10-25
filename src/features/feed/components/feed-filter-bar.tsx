@@ -104,7 +104,7 @@ export const FeedFilterBar = ({ filter, query }: FeedFilterBarProps) => {
           <nav
             key="filters"
             aria-label={t('feed.filters')}
-            className="relative flex min-w-0 flex-1 justify-start gap-1 overflow-x-auto stagger *:animate-rise-in sm:justify-center"
+            className="relative scrollbar-none flex min-w-0 flex-1 justify-start gap-1 overflow-x-auto stagger *:animate-rise-in sm:justify-center"
           >
             <SlidingPill activeKey={filter} className="rounded-full bg-foreground shadow-sm" />
             {Models.FEED_FILTERS.map((type) => (

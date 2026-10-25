@@ -42,7 +42,7 @@ export const ArchiveView = ({ archive, locale, messages }: ArchiveViewProps) => 
         <>
           <nav
             aria-label={t('archive.years')}
-            className="relative flex animate-rise-in gap-1 overflow-x-auto rounded-full glass p-1"
+            className="relative scrollbar-none flex animate-rise-in gap-1 overflow-x-auto rounded-full glass p-1"
           >
             <SlidingPill
               activeKey={String(archive.year)}
