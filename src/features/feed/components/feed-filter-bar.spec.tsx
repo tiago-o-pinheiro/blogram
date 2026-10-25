@@ -40,6 +40,20 @@ describe('FeedFilterBar', () => {
     expect(screen.queryByRole('navigation', { name: 'Filter posts' })).not.toBeInTheDocument()
   })
 
+  it('Given filter mode, should render a sticky container inset from the feed column', () => {
+    renderBar('video')
+
+    const container = screen.getByRole('navigation', { name: 'Filter posts' }).parentElement
+    expect(container).toHaveClass('sticky', 'mx-3', 'sm:mx-6')
+  })
+
+  it('Given search mode, should render a sticky container inset from the feed column', () => {
+    renderBar('all', 'harbour')
+
+    const container = screen.getByRole('search').parentElement
+    expect(container).toHaveClass('sticky', 'mx-3', 'sm:mx-6')
+  })
+
   it('Given a blank search, should prevent the submit', async () => {
     renderBar()
     await userEvent.click(screen.getByRole('button', { name: 'Search posts' }))

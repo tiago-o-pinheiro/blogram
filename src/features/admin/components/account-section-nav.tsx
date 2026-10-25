@@ -8,9 +8,7 @@ import { SlidingPill } from '@/design-system/ui/sliding-pill'
 import { type TranslationKey } from '@/i18n'
 import { useT } from '@/i18n/i18n-context'
 
-export const ACCOUNT_SECTIONS = ['security', 'ai', 'data'] as const
-
-export type AccountSection = (typeof ACCOUNT_SECTIONS)[number]
+import { type AccountSection } from '@/features/admin/lib/account-sections'
 
 type AccountSectionNavProps = {
   activeSection: AccountSection

@@ -42,4 +42,28 @@ describe('ProfileHeader', () => {
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
     expect(screen.getByText('A')).toHaveAttribute('aria-hidden', 'true')
   })
+
+  it('Given children, should render them inside the header after the description', () => {
+    renderHeader({
+      name: '::name::',
+      description: '::about::',
+      photoSrc: null,
+      children: <a href="/archive">::link::</a>,
+    })
+
+    const header = screen.getByRole('heading', { name: '::name::' }).closest('header')
+    const link = screen.getByRole('link', { name: '::link::' })
+
+    expect(header).toContainElement(link)
+    expect(
+      screen.getByText('::about::').compareDocumentPosition(link) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+
+  it('Given no children, should render no nav', () => {
+    renderHeader({ name: '::name::', description: '::about::', photoSrc: null })
+
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument()
+  })
 })

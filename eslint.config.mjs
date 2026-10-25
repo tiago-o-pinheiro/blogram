@@ -6,6 +6,7 @@ import unicorn from 'eslint-plugin-unicorn'
 import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
+import { clientModuleExports } from './config/eslint/rules/client-module-exports.mjs'
 import { hookShape } from './config/eslint/rules/hook-shape.mjs'
 
 const SCOPE = '@blogram'
@@ -23,7 +24,10 @@ const FRAMEWORK_DEFAULT_EXPORTS = [
 ]
 const VIRTUAL_PACKAGES = ['models', 'core', 'tokens', 'ui', 'i18n', 'design-system']
 
-const devPlugin = { meta: { name: 'dev' }, rules: { 'hook-shape': hookShape } }
+const devPlugin = {
+  meta: { name: 'dev' },
+  rules: { 'hook-shape': hookShape, 'client-module-exports': clientModuleExports },
+}
 
 export default [
   {
@@ -112,6 +116,12 @@ export default [
     files: TS_FILES,
     plugins: { dev: devPlugin },
     rules: { 'dev/hook-shape': 'error' },
+  },
+  {
+    name: 'dev/client-module-exports',
+    files: TS_FILES,
+    plugins: { dev: devPlugin },
+    rules: { 'dev/client-module-exports': 'error' },
   },
   {
     name: 'dev/default-exports',

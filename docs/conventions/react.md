@@ -23,6 +23,7 @@ Tags: `[lint]` = enforced by the generated ESLint config, `[review]` = enforced 
 - Props type is `NotesListProps`. An inline object type is allowed for 2 props or fewer. `[review]`
 - File-private subcomponents and skeletons may live in the same file, unexported. `[review]`
 - Arrow functions only, no default exports (except Next page/layout/route files). `[lint]`
+- A `'use client'` module exports only components and hooks. Shared constants and helpers go in a `lib/` or models module, because server code importing them from a client module receives a client reference, not the value. `[lint]`
 
 ```tsx
 type NotesListProps = {

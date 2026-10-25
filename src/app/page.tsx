@@ -59,9 +59,10 @@ const Page = async ({ searchParams }: HomePageProps = {}) => {
           name={profile.name}
           description={profile.description}
           photoSrc={profile.hasPhoto ? Models.PROFILE_PHOTO_PATH : null}
-        />
+        >
+          <JournalNav />
+        </ProfileHeader>
       </div>
-      <JournalNav />
       <PublicFeed
         page={page}
         filter={filter}
