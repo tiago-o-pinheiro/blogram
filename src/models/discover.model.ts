@@ -16,6 +16,7 @@ export const PostSummary = Type.Object({
   title: Type.String(),
   publishedAt: Type.String(),
   image: Type.Union([PostSummaryImage, Type.Null()]),
+  thumbnailUrl: Type.Optional(Type.String({ maxLength: 2048 })),
 })
 export type PostSummary = Static<typeof PostSummary>
 

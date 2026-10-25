@@ -23,4 +23,5 @@ export const toPostSummary = (record: Models.Post): Models.PostSummary => ({
   image: record.image
     ? { id: record.image.id, width: record.image.width, height: record.image.height }
     : null,
+  ...(record.youtube ? { thumbnailUrl: record.youtube.thumbnailUrl } : {}),
 })

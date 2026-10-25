@@ -71,4 +71,23 @@ describe('toPostSummary', () => {
   it('Given a post without an image, should return a null image', () => {
     expect(toPostSummary(buildPost()).image).toBeNull()
   })
+
+  it('Given a YouTube post, should carry its video thumbnail', () => {
+    const summary = toPostSummary(
+      buildPost({
+        type: 'youtube',
+        youtube: {
+          videoId: 'dQw4w9WgXcQ',
+          url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          thumbnailUrl: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
+        },
+      }),
+    )
+
+    expect(summary.thumbnailUrl).toBe('https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg')
+  })
+
+  it('Given a post without a YouTube video, should leave the thumbnail out', () => {
+    expect(toPostSummary(buildPost())).not.toHaveProperty('thumbnailUrl')
+  })
 })

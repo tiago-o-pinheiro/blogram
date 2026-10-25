@@ -68,6 +68,32 @@ describe('ArchiveView', () => {
     expect(tile.querySelector('img')).toBeNull()
   })
 
+  it('Given a YouTube post without an uploaded image, should show the video thumbnail', () => {
+    renderView({
+      ...archive,
+      months: [
+        {
+          month: '2026-10',
+          posts: [
+            {
+              id: 'Ccccc33333',
+              type: 'youtube',
+              title: '::clip::',
+              publishedAt: '2026-10-25T10:00:00.000Z',
+              image: null,
+              thumbnailUrl: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
+            },
+          ],
+        },
+      ],
+    })
+
+    const tile = screen.getByRole('link', { name: '::clip::' })
+    expect(tile.querySelector('img')?.getAttribute('src')).toBe(
+      'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
+    )
+  })
+
   it('Given no archived posts, should show the empty state', () => {
     renderView({ years: [], year: null, months: [] })
 

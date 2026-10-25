@@ -15,6 +15,8 @@ type ArchiveViewProps = {
 const TILE_CLASS =
   'relative flex aspect-square min-h-11 press items-end overflow-hidden rounded-lg border border-line bg-muted focus-visible:outline-2 focus-visible:outline-ring'
 
+const YOUTUBE_THUMBNAIL = { width: 480, height: 360 } as const
+
 export const ArchiveView = ({ archive, locale, messages }: ArchiveViewProps) => {
   const t = createTranslator(messages)
   const formatMonth = (month: string) =>
@@ -93,6 +95,17 @@ export const ArchiveView = ({ archive, locale, messages }: ArchiveViewProps) => 
                               unoptimized
                               className="absolute inset-0 size-full object-cover transition-transform hover:scale-105"
                             />
+                          ) : summary.thumbnailUrl ? (
+                            <span className="absolute inset-0 scale-150">
+                              <Image
+                                src={summary.thumbnailUrl}
+                                width={YOUTUBE_THUMBNAIL.width}
+                                height={YOUTUBE_THUMBNAIL.height}
+                                alt=""
+                                unoptimized
+                                className="size-full animate-fade-in object-cover transition-transform hover:scale-105"
+                              />
+                            </span>
                           ) : (
                             <span className="line-clamp-4 p-3 text-sm font-medium">{label}</span>
                           )}
