@@ -37,7 +37,7 @@ export const PostMedia = ({ post }: { post: Models.Post }) => {
         controls
         playsInline
         preload="none"
-        poster={post.image ? `${Models.MEDIA_PATH}/${post.image.id}` : undefined}
+        poster={post.image ? Models.toPostImageHref(post.image) : undefined}
         width={post.video.width}
         height={post.video.height}
         className="max-h-screen w-full bg-muted object-contain"
@@ -91,14 +91,14 @@ export const PostMedia = ({ post }: { post: Models.Post }) => {
   }
   const { image } = post
   const srcSet = image.variants
-    .map((variant) => `${Models.MEDIA_PATH}/${image.id}?variant=${variant.name} ${variant.width}w`)
-    .concat(`${Models.MEDIA_PATH}/${image.id} ${image.width}w`)
+    .map((variant) => `${Models.toPostImageHref(image, variant.width)} ${variant.width}w`)
+    .concat(`${Models.toPostImageHref(image)} ${image.width}w`)
     .join(', ')
   return (
     <picture>
       <source srcSet={srcSet} sizes="(min-width: 768px) 42rem, 100vw" />
       <Image
-        src={`${Models.MEDIA_PATH}/${image.id}`}
+        src={Models.toPostImageHref(image)}
         width={image.width}
         height={image.height}
         alt={image.altText}

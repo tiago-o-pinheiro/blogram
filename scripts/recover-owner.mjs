@@ -35,6 +35,10 @@ export const recoverOwner = async (client, password) => {
       )
     }
     await client.query('DELETE FROM session WHERE user_id = $1', [ownerId])
+    await client.query(
+      "DELETE FROM verification WHERE value = $1 AND identifier LIKE 'reset-password:%'",
+      [ownerId],
+    )
     await client.query('COMMIT')
   } catch (error) {
     await client.query('ROLLBACK')

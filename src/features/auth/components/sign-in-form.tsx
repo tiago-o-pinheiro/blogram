@@ -1,20 +1,19 @@
 'use client'
 
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { type FormEvent, useState } from 'react'
 
 import { Button } from '@/design-system/ui/button'
 import { Field } from '@/design-system/ui/field'
 import { useT } from '@/i18n/i18n-context'
-import { OWNER_PASSWORD_MAX, toOwnerIdentifier } from '@/models/models'
+import { OWNER_PASSWORD_MAX } from '@/models/models'
 
 import { PasswordField } from '@/components/password-field'
-import { authClient } from '@/lib/auth-client'
 
 import { readField } from '../lib/read-field'
+import { signInOwner } from '../lib/sign-in-owner'
 import { toSignInMessageKey } from '../lib/to-auth-message'
-
-const OFFLINE_RESULT = { error: { status: 0 } }
 
 export const SignInForm = () => {
   const t = useT()
@@ -25,22 +24,12 @@ export const SignInForm = () => {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const data = new FormData(event.currentTarget)
-    const identifier = toOwnerIdentifier(readField(data, 'identifier'))
-    const password = readField(data, 'password')
-    if (!identifier) {
-      setError(t(toSignInMessageKey(401)))
-      return
-    }
     setError('')
     setIsPending(true)
-    const result = await (
-      identifier.kind === 'email'
-        ? authClient.signIn.email({ email: identifier.value, password })
-        : authClient.signIn.username({ username: identifier.value, password })
-    ).catch(() => OFFLINE_RESULT)
+    const { status } = await signInOwner(readField(data, 'identifier'), readField(data, 'password'))
     setIsPending(false)
-    if (result.error) {
-      setError(t(toSignInMessageKey(result.error.status)))
+    if (status !== null) {
+      setError(t(toSignInMessageKey(status)))
       return
     }
     router.push('/admin')
@@ -65,6 +54,12 @@ export const SignInForm = () => {
       <Button type="submit" isLoading={isPending} loadingLabel={t('signin.submitting')}>
         {t('signin.submit')}
       </Button>
+      <Link
+        href="/forgot-password"
+        className="inline-flex min-h-11 press animate-fade-in items-center justify-center rounded-md text-sm text-muted-foreground transition hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+      >
+        {t('recovery.title')}
+      </Link>
     </form>
   )
 }

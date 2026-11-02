@@ -13,9 +13,12 @@ export type StorageObject = {
   range?: { start: number; end: number }
 }
 
+export type StorageStream = Omit<StorageObject, 'body'> & { body: ReadableStream<Uint8Array> }
+
 export type StorageDriver = {
   put: (key: string, body: Uint8Array, contentType: string) => Promise<void>
   get: (key: string, options?: StorageReadOptions) => Promise<StorageObject | null>
+  stream: (key: string, options?: StorageReadOptions) => Promise<StorageStream | null>
   delete: (key: string) => Promise<void>
 }
 

@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto'
 
-import { and, asc, desc, eq, sql, type SQL } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, sql, type SQL } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 
 import { Models } from '@/models'
@@ -14,7 +14,12 @@ import {
 import { decode } from '@/server/lib/codec'
 import { db, type DbTransaction } from '@/server/lib/db'
 import { toPagination, toPaginationMeta } from '@/server/lib/pagination'
-import { storage, type StorageDriver, type StorageObject } from '@/server/lib/storage'
+import {
+  storage,
+  type StorageDriver,
+  type StorageObject,
+  type StorageStream,
+} from '@/server/lib/storage'
 import { media } from '@/server/modules/media/schemas/media.table'
 import { MediaCleanupService } from '@/server/modules/media/services/media-cleanup.service'
 import { mediaService, type MediaService } from '@/server/modules/media/services/media.service'
@@ -60,6 +65,8 @@ export type PostDraftInput = {
   description?: string
   source?: string
 }
+
+type MediaStream = Omit<StorageStream, 'body'> & { body: ReadableStream<Uint8Array> | null }
 
 const videoMedia = alias(media, 'video_media')
 
@@ -388,10 +395,14 @@ export class PostService {
   deleteAllPosts = async (): Promise<{ deleted: number }> => {
     const deleted = await db.transaction(async (tx) => {
       const locked = await tx.select({ id: post.id }).from(post).for('update')
-      const files = await tx.select().from(media)
+      const ids = locked.map((row) => row.id)
+      if (ids.length === 0) {
+        return 0
+      }
+      const files = await tx.select().from(media).where(inArray(media.postId, ids))
       await this.cleanup.enqueue(tx, files.flatMap(toStoredKeys))
-      await tx.delete(post)
-      return locked.length
+      await tx.delete(post).where(inArray(post.id, ids))
+      return ids.length
     })
     await this.cleanup.drain()
     return { deleted }
@@ -399,13 +410,48 @@ export class PostService {
 
   readMedia = async (
     mediaId: string,
+    access: { isOwner: boolean; variant?: MediaVariantKey },
+  ): Promise<{ object: StorageObject; isPublic: boolean }> => {
+    const { target, isPublic } = await this.findMedia(mediaId, access)
+    const object = await this.storage.get(target.key)
+    if (!object) {
+      throw new NotFoundError('Media not found')
+    }
+    return { object: { ...object, contentType: target.contentType }, isPublic }
+  }
+
+  streamMedia = async (
+    mediaId: string,
     access: {
       isOwner: boolean
       variant?: MediaVariantKey
       range?: string | null
       isHead?: boolean
     },
-  ): Promise<{ object: StorageObject; isPublic: boolean }> => {
+  ): Promise<{ object: MediaStream; isPublic: boolean }> => {
+    const { target, isPublic, sizeBytes } = await this.findMedia(mediaId, access)
+    const range = toByteRange(access.range, sizeBytes)
+    if (access.isHead) {
+      const probe = await this.storage.get(target.key, { range: { start: 0, end: 0 } })
+      if (!probe) {
+        throw new NotFoundError('Media not found')
+      }
+      return {
+        object: { body: null, contentType: target.contentType, size: sizeBytes, range },
+        isPublic,
+      }
+    }
+    const object = await this.storage.stream(target.key, { range })
+    if (!object) {
+      throw new NotFoundError('Media not found')
+    }
+    return { object: { ...object, contentType: target.contentType }, isPublic }
+  }
+
+  private findMedia = async (
+    mediaId: string,
+    access: { isOwner: boolean; variant?: MediaVariantKey },
+  ) => {
     if (!UUID_PATTERN.test(mediaId)) {
       throw new NotFoundError('Media not found')
     }
@@ -418,28 +464,11 @@ export class PostService {
     if (!row || (!isPublic && !access.isOwner)) {
       throw new NotFoundError('Media not found')
     }
-    const target = this.resolveTarget(row.media, access.variant ?? 'full')
-    const range = toByteRange(access.range, row.media.sizeBytes)
-    if (access.isHead) {
-      const object = await this.storage.get(target.key, { range: { start: 0, end: 0 } })
-      if (!object) {
-        throw new NotFoundError('Media not found')
-      }
-      return {
-        object: {
-          body: new Uint8Array(),
-          contentType: target.contentType,
-          size: row.media.sizeBytes,
-          range,
-        },
-        isPublic,
-      }
+    return {
+      target: this.resolveTarget(row.media, access.variant ?? 'full'),
+      isPublic,
+      sizeBytes: row.media.sizeBytes,
     }
-    const object = await this.storage.get(target.key, { range })
-    if (!object) {
-      throw new NotFoundError('Media not found')
-    }
-    return { object: { ...object, contentType: target.contentType }, isPublic }
   }
 
   private resolveTarget = (

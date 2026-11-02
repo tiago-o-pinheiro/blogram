@@ -14,12 +14,13 @@ import { Models } from '@/models'
 type FeedFilterBarProps = {
   filter: Models.FeedFilter
   query?: string
+  place?: string
 }
 
 const CLOSE_LINK_CLASS =
   'inline-flex size-11 shrink-0 press animate-fade-in items-center justify-center rounded-full text-muted-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring'
 
-export const FeedFilterBar = ({ filter, query }: FeedFilterBarProps) => {
+export const FeedFilterBar = ({ filter, query, place }: FeedFilterBarProps) => {
   const t = useT()
   const [isSearching, setIsSearching] = useState(query !== undefined)
   const [previousQuery, setPreviousQuery] = useState(query)
@@ -66,6 +67,7 @@ export const FeedFilterBar = ({ filter, query }: FeedFilterBarProps) => {
           onSubmit={handleSubmit}
           className="flex min-w-0 flex-1 items-center gap-1"
         >
+          {place ? <input type="hidden" name="place" value={place} /> : null}
           {filter === 'all' ? null : <input type="hidden" name="type" value={filter} />}
           <Input
             type="search"
@@ -80,7 +82,7 @@ export const FeedFilterBar = ({ filter, query }: FeedFilterBarProps) => {
           />
           {query !== undefined ? (
             <Link
-              href={Models.toFeedHref(filter)}
+              href={Models.toFeedHref(filter, 1, { place })}
               aria-label={t('search.clear')}
               className={CLOSE_LINK_CLASS}
             >
@@ -110,7 +112,7 @@ export const FeedFilterBar = ({ filter, query }: FeedFilterBarProps) => {
             {Models.FEED_FILTERS.map((type) => (
               <Link
                 key={type}
-                href={Models.toFeedHref(type, 1)}
+                href={Models.toFeedHref(type, 1, { q: query, place })}
                 scroll={false}
                 aria-current={filter === type ? 'page' : undefined}
                 data-active={filter === type || undefined}

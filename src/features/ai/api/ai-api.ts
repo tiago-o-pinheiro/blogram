@@ -53,7 +53,6 @@ export const saveAiSettings = async (
 
 export const requestAiDraft = async (input: AiDraftInput): Promise<Models.AiDraft> => {
   const body = new FormData()
-  body.append('prompt', input.prompt)
   body.append('postType', input.postType)
   for (const field of input.fields) {
     body.append('field', field)

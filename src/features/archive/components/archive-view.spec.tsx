@@ -23,7 +23,7 @@ const archive: Models.Archive = {
           type: 'photo',
           title: '::sunset::',
           publishedAt: '2026-05-10T10:00:00.000Z',
-          image: { id: IMAGE_ID, width: 100, height: 100 },
+          image: { id: IMAGE_ID, width: 100, height: 100, variants: [] },
         },
       ],
     },
@@ -55,14 +55,14 @@ describe('ArchiveView', () => {
     expect(years.getByRole('link', { name: '2025' })).not.toHaveAttribute('aria-current')
   })
 
-  it('Given months with photos and text posts, should show thumbnails and title tiles linking to posts', () => {
+  it('BH-AUDIT-6: Given small archive photos, should link thumbnails to existing full images', () => {
     renderView(archive)
 
     expect(screen.getByRole('heading', { level: 2, name: 'May 2026' })).toBeVisible()
     expect(screen.getByRole('heading', { level: 2, name: 'February 2026' })).toBeVisible()
     const photo = screen.getByRole('link', { name: '::sunset::' })
     expect(photo).toHaveAttribute('href', '/posts/Aaaaa11111')
-    expect(photo.querySelector('img')?.getAttribute('src')).toContain(`${IMAGE_ID}?variant=w480`)
+    expect(photo.querySelector('img')?.getAttribute('src')).toBe(`/api/media/${IMAGE_ID}`)
     const tile = screen.getByRole('link', { name: '::headline::' })
     expect(tile).toHaveAttribute('href', '/posts/Bbbbb22222')
     expect(tile.querySelector('img')).toBeNull()

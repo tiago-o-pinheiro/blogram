@@ -9,11 +9,25 @@ import { secretBox, type SecretBox } from '@/server/lib/secret-box'
 import { googleSignInSettings } from '@/server/modules/auth/schemas/google-settings.table'
 
 const SINGLETON_ID = 'singleton'
+const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
+const GOOGLE_VERIFY_TIMEOUT_MS = 5000
+const PROBE_CODE = 'blogram-credential-check'
 
 export type GoogleCredentials = { clientId: string; clientSecret: string }
 
+const readOAuthError = async (response: Response): Promise<string | null> => {
+  const body: unknown = await response.json().catch(() => null)
+  if (typeof body !== 'object' || body === null || !('error' in body)) {
+    return null
+  }
+  return typeof body.error === 'string' ? body.error : null
+}
+
 export class GoogleSettingsService {
-  constructor(private readonly box: SecretBox = secretBox) {}
+  constructor(
+    private readonly box: SecretBox = secretBox,
+    private readonly send: typeof fetch = (input, init) => fetch(input, init),
+  ) {}
 
   private hasOpenableSecret = (ciphertext: string | null | undefined): boolean =>
     Boolean(ciphertext) && this.box.open(ciphertext ?? '') !== null
@@ -73,6 +87,10 @@ export class GoogleSettingsService {
       throw new ValidationError('A client secret is required to enable Google sign-in')
     }
 
+    if (update.isEnabled && newSecret) {
+      await this.verifyCredentials({ clientId, clientSecret: newSecret })
+    }
+
     const secretColumns = newSecret ? { clientSecretCiphertext: this.box.seal(newSecret) } : {}
     const values = { isEnabled: update.isEnabled, clientId, ...secretColumns }
     await db
@@ -80,6 +98,29 @@ export class GoogleSettingsService {
       .values({ id: SINGLETON_ID, ...values })
       .onConflictDoUpdate({ target: googleSignInSettings.id, set: values })
     return this.getSettings()
+  }
+
+  private verifyCredentials = async (credentials: GoogleCredentials): Promise<void> => {
+    const response = await this.send(GOOGLE_TOKEN_URL, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: PROBE_CODE,
+        redirect_uri: this.readRedirectUri(),
+        client_id: credentials.clientId,
+        client_secret: credentials.clientSecret,
+      }),
+      signal: AbortSignal.timeout(GOOGLE_VERIFY_TIMEOUT_MS),
+    }).catch(() => null)
+    if (!response || response.ok) {
+      return
+    }
+    if ((await readOAuthError(response)) === 'invalid_client') {
+      throw new ValidationError('Google does not recognise this client ID and secret', {
+        reason: 'google-invalid-client',
+      })
+    }
   }
 
   readCredentials = async (): Promise<GoogleCredentials | null> => {

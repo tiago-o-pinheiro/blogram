@@ -15,6 +15,8 @@ Configuration is parsed in `src/server/config/env.ts`. Keep secrets on the serve
 | `BETTER_AUTH_URL`         | `http://localhost:3000`     | Public application and auth origin; HTTPS in production                                            |
 | `CORS_ORIGIN`             | `http://localhost:3000`     | Trusted auth origins, comma-separated; include every public domain                                 |
 | `SETUP_PASSWORD`          | Unset                       | Installer password, at least 12 characters; remove after setup                                     |
+| `RESEND_API_KEY`          | Unset                       | Optional Resend API key for password recovery; requires `PASSWORD_RESET_FROM`                      |
+| `PASSWORD_RESET_FROM`     | Unset                       | Recovery email sender on a verified Resend domain; requires `RESEND_API_KEY`                       |
 | `STORAGE_DRIVER`          | `local`                     | `local` or `s3`                                                                                    |
 | `STORAGE_LOCAL_DIR`       | `.data/uploads`             | Persistent media directory; use an absolute path for a service                                     |
 | `UPLOAD_MAX_IMAGE_BYTES`  | `10485760`                  | 10 MiB per image, profile photo or poster                                                          |
@@ -209,11 +211,11 @@ Replaced or deleted media go into a persistent `media_cleanup` queue in the same
 
 Optional. Password sign-in always works.
 
-1. Create a Google OAuth **Web application** client. In testing mode, add the owner as a test user.
-2. Register `https://<your-domain>/api/auth/callback/google` as the redirect URI. The Account page shows the exact value; locally it is `http://localhost:3000/api/auth/callback/google`.
-3. Sign in with your password and open `/admin/account?section=security`. Copy the redirect URI shown in the Google block.
-4. Turn the switch on, paste the Client ID and Client Secret, and save. No restart is needed.
-5. Choose **Link Google**. Linking needs a session younger than five minutes.
+Everything happens in **Account › Security › Google sign-in**, which walks you through three steps:
+
+1. **Create a Google OAuth client.** The step links straight to Google Auth Platform (app name and support email), Audience (choose External and add your Gmail as a test user) and the client creation page. It shows the exact **Authorized JavaScript origin** and **Authorized redirect URI** with copy buttons; locally they are `http://localhost:3000` and `http://localhost:3000/api/auth/callback/google`. Choose the **Web application** type.
+2. **Paste the credentials.** Use **Import Google JSON** with the `client_secret_….json` file Google lets you download, or paste that JSON into the Client ID field; both fill the Client ID and Secret. Blogram warns when the file belongs to a desktop client or does not list this site's redirect URI, then checks the pair with Google's token endpoint when you save and rejects it if Google answers `invalid_client`. If Google cannot be reached the settings are saved anyway. No restart is needed.
+3. **Link your Google account.** Choose **Link Google**. Linking and unlinking need a recent sign-in; if yours is older than five minutes, Blogram asks for your password inline and continues, without signing out.
 
 The saved secret is encrypted with `BETTER_AUTH_SECRET`. Rotating `BETTER_AUTH_SECRET` makes it unreadable, so Google sign-in turns off until you enter the secret again.
 
@@ -286,10 +288,24 @@ For S3, restore into an isolated private bucket and never test deletes against t
 
 ## Recover owner access
 
+Choose **Forgot your password?** on `/sign-in` to open `/forgot-password`. Recovery works independently of Google.
+
+### Recovery codes
+
+Generate recovery codes in **Account › Security › Recovery codes** right after installing. You confirm your current password and get eight single-use codes such as `7K2M-QX9D-4HPA`; copy or download them into a password manager. They are shown only once and generating new ones invalidates the old set.
+
+If you forget your password or your username, enter one code and a new password on `/forgot-password`. Blogram resets the password, closes every session and shows the email or username to sign in with. Codes need no email provider or Google configuration. Wrong codes are throttled per client (5 per 15 minutes) and globally. The client address comes from Cloudflare's `CF-Connecting-IP` header when present, otherwise from the last `X-Forwarded-For` entry added by your proxy.
+
+### Email link
+
+For email recovery, configure both `RESEND_API_KEY` and `PASSWORD_RESET_FROM` on the server and restart Blogram. Use a sender address from a verified Resend domain, such as `Blogram <access@your-domain.example>`, and set `BETTER_AUTH_URL` to your public HTTPS URL. Enter the email used to create the owner account. The email contains a single-use link that expires in 15 minutes. After resetting, all previous sessions are revoked and you sign in with the new password. Unknown email addresses receive the same confirmation without sending email.
+
+Email delivery uses the Resend HTTP API; no additional dependency is required. If you installed with a username, or email is unavailable, use server recovery below.
+
 With server access you can reset the owner's password without reopening setup:
 
 ```sh
-node scripts/recover-owner.mjs
+pnpm auth:recover
 ```
 
 In Docker:
@@ -298,7 +314,7 @@ In Docker:
 docker compose -f docker-compose.production.yml exec web node scripts/recover-owner.mjs
 ```
 
-Use an interactive terminal. The prompts hide the database URL, new password and confirmation, then ask you to type `RESET`. Inside Compose the URL is `postgresql://blogram:<POSTGRES_PASSWORD>@postgres:5432/blogram`. Recovery needs a completed installation, revokes all owner sessions and keeps your profile, posts and Google link. Back up before running it.
+Use an interactive terminal. The prompts hide the database URL, new password and confirmation, then ask you to type `RESET`. Inside Compose the URL is `postgresql://blogram:<POSTGRES_PASSWORD>@postgres:5432/blogram`. Recovery needs a completed installation, revokes all owner sessions and outstanding password reset links, and keeps your profile, posts and Google link. Back up before running it.
 
 To look up a forgotten identifier without reading hashes:
 
@@ -332,7 +348,7 @@ Username-only accounts have an internal `@owner.invalid` email; sign in with the
 | S3 failures                          | Check the API origin, bucket, region, addressing and read/write/delete permissions                                                                                    |
 | Old bytes after storage outage       | Restore provider access and retry cleanup; queued keys stay in PostgreSQL                                                                                             |
 | Google button absent                 | Save the Client ID and Secret in Account > Security and turn the switch on; re-enter the secret after rotating `BETTER_AUTH_SECRET`                                   |
-| Google callback fails                | Match the exact callback and public origin; check consent and test-user settings                                                                                      |
-| Google linking asks to sign in again | A session younger than five minutes is required                                                                                                                       |
+| Google callback fails                | Use the origin and redirect URI shown in step 1 exactly; add your Gmail as a test user in Audience                                                                    |
+| Google linking asks for a password   | Linking needs a sign-in from the last five minutes; confirm the password in the prompt                                                                                |
 
 Production logs: `docker compose -f docker-compose.production.yml logs --tail=100 web migrate`. Share sanitized errors only, never environment dumps, cookies, tokens or database URLs.

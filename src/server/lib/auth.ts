@@ -13,15 +13,22 @@ import {
   googleSettingsService,
   type GoogleCredentials,
 } from '@/server/modules/auth/services/google-settings.service'
+import {
+  passwordRecoveryService,
+  type PasswordRecoveryService,
+} from '@/server/modules/auth/services/password-recovery.service'
 
-const FRESH_SESSION_SECONDS = 300
+export const FRESH_SESSION_SECONDS = 300
 
-export const createAuth = (google: GoogleCredentials | null) =>
+export const createAuth = (
+  google: GoogleCredentials | null,
+  recovery: PasswordRecoveryService = passwordRecoveryService,
+) =>
   betterAuth({
     baseURL: env.BETTER_AUTH_URL,
     secret: env.BETTER_AUTH_SECRET,
     trustedOrigins: toTrustedOrigins(env.CORS_ORIGIN),
-    database: drizzleAdapter(db, { provider: 'pg', schema }),
+    database: drizzleAdapter(db, { provider: 'pg', schema, transaction: true }),
     socialProviders: google
       ? {
           google: {
@@ -95,6 +102,9 @@ export const createAuth = (google: GoogleCredentials | null) =>
       disableSignUp: true,
       minPasswordLength: OWNER_PASSWORD_MIN,
       maxPasswordLength: OWNER_PASSWORD_MAX,
+      sendResetPassword: recovery.isEnabled() ? recovery.sendResetPassword : undefined,
+      resetPasswordTokenExpiresIn: 900,
+      revokeSessionsOnPasswordReset: true,
     },
     rateLimit: { enabled: env.NODE_ENV === 'production', storage: 'database' },
     advanced: { useSecureCookies: env.NODE_ENV === 'production' },

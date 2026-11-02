@@ -1,6 +1,6 @@
 'use client'
 
-import { Check, EyeOff, Save, Send } from 'lucide-react'
+import { Check, EyeOff, Save, Send, Sparkles } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { type FormEvent, useState } from 'react'
 
@@ -16,7 +16,6 @@ import * as Models from '@/models/models'
 
 import { AiApiError, requestAiDraft } from '@/features/ai/api/ai-api'
 import { AiFieldButton } from '@/features/ai/components/ai-field-button'
-import { AiPromptBar } from '@/features/ai/components/ai-prompt-bar'
 import {
   type AiTarget,
   hasAiContext,
@@ -159,7 +158,6 @@ export const PostForm = ({
   const [statusKey, setStatusKey] = useState<TranslationKey | null>(null)
   const [isPending, setIsPending] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<number | null>(null)
-  const [aiPrompt, setAiPrompt] = useState('')
   const [aiSnapshot, setAiSnapshot] = useState<AiSnapshot | null>(null)
   const [aiMessageKey, setAiMessageKey] = useState<TranslationKey | null>(null)
   const [aiRound, setAiRound] = useState(0)
@@ -195,7 +193,7 @@ export const PostForm = ({
   const hasAiImage = aiFile !== null || aiMediaId !== undefined
   const offeredAiFields = toOfferedAiFields(postType, hasAiImage)
   const isAiBusy = isPending || pendingTarget !== null
-  const hasContext = hasAiContext(aiPrompt, hasAiImage, aiValues)
+  const hasContext = hasAiContext(hasAiImage, aiValues)
 
   const handleAiGenerate = async (target: AiTarget) => {
     setAiMessageKey(null)
@@ -203,7 +201,6 @@ export const PostForm = ({
       target,
       toAiDraftRequest({
         target,
-        prompt: aiPrompt,
         postType,
         values: aiValues,
         image: { file: aiFile, mediaId: aiMediaId },
@@ -251,7 +248,7 @@ export const PostForm = ({
     const isOffered = offeredAiFields.includes(field)
     return (
       <AiFieldButton
-        label={t(`aiAssist.generateField.${field}`)}
+        label={t(`aiAssist.improveField.${field}`)}
         isPending={pendingTarget === field}
         isDisabled={isAiBusy || !isOffered || !hasContext}
         disabledHint={isOffered ? t('aiAssist.needsContext') : t('aiAssist.altTextNeedsImage')}
@@ -459,7 +456,13 @@ export const PostForm = ({
   const isIncomplete =
     isFileMissing || isUrlMissing || (isLink && !link.title.trim()) || isFetchingMetadata
 
-  const form = (
+  const aiStatusKey = failureKey ?? aiMessageKey
+  const isAiError = failureKey !== null
+  const aiPillKey: TranslationKey | null =
+    aiStatusKey ??
+    (pendingTarget !== null ? 'aiAssist.generating' : hasContext ? null : 'aiAssist.needsContext')
+
+  return (
     <form
       onSubmit={(event) => void handleSubmit(event)}
       className="flex flex-col gap-6 rounded-xl border border-line bg-card p-4 sm:p-6"
@@ -607,7 +610,52 @@ export const PostForm = ({
             {t(statusKey)}
           </p>
         ) : null}
+        {isAiEnabled && (aiPillKey !== null || aiSnapshot !== null) ? (
+          <div
+            key={aiPillKey ?? 'undo'}
+            className="pointer-events-auto flex animate-rise-in flex-wrap items-center gap-2 rounded-full glass px-4 py-2 text-sm"
+          >
+            {aiPillKey ? (
+              <p
+                role={isAiError ? 'alert' : 'status'}
+                className={cn(
+                  'animate-fade-in',
+                  isAiError ? 'text-danger' : 'text-muted-foreground',
+                )}
+              >
+                {t(aiPillKey)}
+              </p>
+            ) : null}
+            {aiSnapshot !== null ? (
+              <Button
+                type="button"
+                variant="ghost"
+                className="animate-scale-in rounded-full"
+                disabled={isAiBusy}
+                onClick={handleAiUndo}
+              >
+                {t('aiAssist.undo')}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
         <div className="pointer-events-auto flex animate-rise-in gap-2 rounded-full glass p-1.5">
+          {isAiEnabled ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="animate-scale-in rounded-full transition"
+              aria-label={t('aiAssist.improveAll')}
+              title={t(hasContext ? 'aiAssist.improveAll' : 'aiAssist.needsContext')}
+              disabled={isAiBusy || !hasContext}
+              isLoading={pendingTarget === 'all'}
+              loadingLabel={t('aiAssist.generating')}
+              onClick={() => void handleAiGenerate('all')}
+            >
+              <Sparkles aria-hidden="true" className="size-5 animate-scale-in" />
+            </Button>
+          ) : null}
           {post?.status === 'published' ? (
             <>
               <Button
@@ -670,26 +718,5 @@ export const PostForm = ({
         </div>
       </div>
     </form>
-  )
-
-  if (!isAiEnabled) {
-    return form
-  }
-
-  return (
-    <div className="flex flex-col gap-4">
-      <AiPromptBar
-        prompt={aiPrompt}
-        isDisabled={isAiBusy}
-        isGenerating={pendingTarget === 'all'}
-        hasContext={hasContext}
-        messageKey={failureKey ?? aiMessageKey}
-        canUndo={aiSnapshot !== null}
-        onPromptChange={setAiPrompt}
-        onGenerateAll={() => void handleAiGenerate('all')}
-        onUndo={handleAiUndo}
-      />
-      {form}
-    </div>
   )
 }

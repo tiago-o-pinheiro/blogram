@@ -4,14 +4,14 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { getMessages } from '@/i18n'
 import { I18nProvider } from '@/i18n/i18n-context'
-import { type Models } from '@/models'
+import { Models } from '@/models'
 
 import { FeedFilterBar } from './feed-filter-bar'
 
-const renderBar = (filter: Models.FeedFilter = 'all', query?: string) =>
+const renderBar = (filter: Models.FeedFilter = 'all', query?: string, place?: string) =>
   render(
     <I18nProvider locale="en" messages={getMessages('en')}>
-      <FeedFilterBar filter={filter} query={query} />
+      <FeedFilterBar filter={filter} query={query} place={place} />
     </I18nProvider>,
   )
 
@@ -117,5 +117,22 @@ describe('FeedFilterBar', () => {
 
     expect(screen.queryByRole('search')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Search posts' })).toHaveFocus()
+  })
+})
+
+describe('FeedFilterBar place scope', () => {
+  it('Given a place filter, should retain it when opening search', async () => {
+    const user = userEvent.setup()
+    const place = Models.toFeedPlaceKey({ name: '::place::', coordinates: null })
+    renderBar('photo', undefined, place)
+
+    expect(screen.getByRole('link', { name: 'Videos' })).toHaveAttribute(
+      'href',
+      Models.toFeedHref('video', 1, { place }),
+    )
+    await user.click(screen.getByRole('button', { name: 'Search posts' }))
+
+    expect(screen.getByRole('search').querySelector('input[name="place"]')).toHaveValue(place)
+    expect(screen.getByRole('search').querySelector('input[name="type"]')).toHaveValue('photo')
   })
 })

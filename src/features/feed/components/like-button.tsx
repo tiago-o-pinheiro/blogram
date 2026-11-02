@@ -6,6 +6,7 @@ import { Value } from 'typebox/value'
 
 import { Button } from '@/design-system/ui/button'
 import { cn } from '@/design-system/ui/lib/cn'
+import { type TranslationKey } from '@/i18n'
 import { useT } from '@/i18n/i18n-context'
 import { Models } from '@/models'
 
@@ -21,7 +22,7 @@ export const LikeButton = ({ id, likes }: { id: string; likes: number }) => {
   const [confirmation, setConfirmation] = useState({ id, likes })
   const count = Math.max(likes, confirmation.id === id ? confirmation.likes : 0)
   const [isSaving, setIsSaving] = useState(false)
-  const [hasError, setHasError] = useState(false)
+  const [errorKey, setErrorKey] = useState<TranslationKey | null>(null)
   const [hasJustLiked, setHasJustLiked] = useState(false)
   const isSubmitting = useRef(false)
 
@@ -35,12 +36,16 @@ export const LikeButton = ({ id, likes }: { id: string; likes: number }) => {
     }
     isSubmitting.current = true
     setIsSaving(true)
-    setHasError(false)
+    setErrorKey(null)
     try {
       const response = await fetch(`/api/posts/${id}/like`, { method: 'POST' })
+      if (!response.ok) {
+        setErrorKey(response.status === 429 ? 'feed.likeRateLimited' : 'feed.likeError')
+        return
+      }
       const body: unknown = await response.json()
-      if (!response.ok || !Value.Check(Models.PostLikes, body)) {
-        setHasError(true)
+      if (!Value.Check(Models.PostLikes, body)) {
+        setErrorKey('feed.likeError')
         return
       }
       setConfirmation((currentConfirmation) => ({
@@ -50,7 +55,7 @@ export const LikeButton = ({ id, likes }: { id: string; likes: number }) => {
       rememberLike(id)
       setHasJustLiked(true)
     } catch {
-      setHasError(true)
+      setErrorKey('feed.likeError')
     } finally {
       isSubmitting.current = false
       setIsSaving(false)
@@ -78,9 +83,9 @@ export const LikeButton = ({ id, likes }: { id: string; likes: number }) => {
           </span>
         </span>
       </Button>
-      {hasError ? (
-        <p role="alert" className="animate-rise-in text-sm text-danger">
-          {t('feed.likeError')}
+      {errorKey ? (
+        <p key={errorKey} role="alert" className="animate-rise-in text-sm text-danger">
+          {t(errorKey)}
         </p>
       ) : null}
     </div>

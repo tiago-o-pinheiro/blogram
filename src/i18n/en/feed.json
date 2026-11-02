@@ -27,5 +27,7 @@
   "feed.shareError": "Sharing did not work. Copy the link or download the card.",
   "feed.copyError": "Could not copy automatically. Select and copy this link.",
   "feed.owner": "Owner access",
-  "feed.builtWith": "A personal journal, powered by"
+  "feed.builtWith": "A personal journal, powered by",
+  "feed.clearPlace": "Clear place filter",
+  "feed.likeRateLimited": "Too many likes for now. Try again in a few minutes."
 }

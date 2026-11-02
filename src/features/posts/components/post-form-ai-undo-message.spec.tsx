@@ -54,9 +54,9 @@ describe('PostForm AI undo message', () => {
       .mockResolvedValueOnce(Response.json({ details: { reason: 'auth' } }, { status: 502 }))
     renderForm()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Write the caption with AI' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Improve caption with AI' }))
     await screen.findByDisplayValue('Fresh caption')
-    await userEvent.click(screen.getByRole('button', { name: 'Write the caption with AI' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Improve caption with AI' }))
     await screen.findByRole('alert')
 
     await userEvent.click(screen.getByRole('button', { name: 'Undo' }))

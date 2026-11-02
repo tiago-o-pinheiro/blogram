@@ -1,13 +1,14 @@
 // @vitest-environment node
 import { randomUUID } from 'node:crypto'
 
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { db } from '@/server/lib/db'
 import { account } from '@/server/modules/auth/schemas/auth.table'
 import { authService } from '@/server/modules/auth/services/auth.service'
 import { googleSettingsService } from '@/server/modules/auth/services/google-settings.service'
 import { CREDENTIALS, postAuth } from '@/test/auth-session'
+import { stubGoogleTokenProbe } from '@/test/google-token-probe'
 
 const SECRET = 'google-client-secret-value'
 
@@ -32,6 +33,10 @@ const readClientId = (body: unknown): string | null => {
 }
 
 describe('google provider built from saved settings', () => {
+  beforeEach(() => {
+    stubGoogleTokenProbe()
+  })
+
   it('Given saved enabled settings, should start Google sign-in with the saved client ID', async () => {
     await saveSettings('saved-client.apps.googleusercontent.com')
 

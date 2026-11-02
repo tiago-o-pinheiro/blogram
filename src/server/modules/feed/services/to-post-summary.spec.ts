@@ -51,7 +51,7 @@ describe('toPostSummary', () => {
     expect(summary.title).toBe('')
   })
 
-  it('Given a post with a full image, should keep only id, width and height', () => {
+  it('BH-AUDIT-6: Given a post image, should retain its available variants', () => {
     const summary = toPostSummary(
       buildPost({
         image: {
@@ -59,13 +59,18 @@ describe('toPostSummary', () => {
           width: 400,
           height: 300,
           altText: '::alt::',
-          variants: [],
+          variants: [{ name: 'w480', width: 480, height: 360 }],
           placeholder: 'data:image/jpeg;base64,AAAA',
         },
       }),
     )
 
-    expect(summary.image).toEqual({ id: IMAGE_ID, width: 400, height: 300 })
+    expect(summary.image).toEqual({
+      id: IMAGE_ID,
+      width: 400,
+      height: 300,
+      variants: [{ name: 'w480', width: 480, height: 360 }],
+    })
   })
 
   it('Given a post without an image, should return a null image', () => {

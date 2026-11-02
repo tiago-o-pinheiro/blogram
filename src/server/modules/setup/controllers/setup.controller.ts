@@ -1,9 +1,10 @@
-import { getReasonPhrase, StatusCodes } from 'http-status-codes'
+import { StatusCodes } from 'http-status-codes'
 
 import { Models } from '@/models'
 
 import { env } from '@/server/config/env'
-import { TooManyRequestsError, ValidationError } from '@/server/errors/http-errors'
+import { ValidationError } from '@/server/errors/http-errors'
+import { toClientKey } from '@/server/lib/client-key'
 import { encode } from '@/server/lib/codec'
 import { readBody, type RouteHandler } from '@/server/lib/handler'
 import { MULTIPART_OVERHEAD_BYTES, readMultipart } from '@/server/lib/multipart'
@@ -22,35 +23,7 @@ import {
 } from '@/server/modules/setup/services/setup-session.service'
 import { setupService, type SetupService } from '@/server/modules/setup/services/setup.service'
 
-const UNKNOWN_CLIENT_KEY = 'unknown'
 const FINALIZE_REDIRECT = '/admin'
-
-const toClientKey = (headers: Headers): string =>
-  headers.get('x-forwarded-for')?.split(',')[0]?.trim() || UNKNOWN_CLIENT_KEY
-
-const toRetryAfterSeconds = (details: unknown): number | undefined =>
-  typeof details === 'object' &&
-  details !== null &&
-  'retryAfterSeconds' in details &&
-  typeof details.retryAfterSeconds === 'number'
-    ? details.retryAfterSeconds
-    : undefined
-
-const toThrottledResponse = (error: TooManyRequestsError): Response => {
-  const retryAfterSeconds = toRetryAfterSeconds(error.details)
-  return Response.json(
-    {
-      statusCode: error.statusCode,
-      error: getReasonPhrase(error.statusCode),
-      message: error.message,
-      details: error.details,
-    },
-    {
-      status: error.statusCode,
-      headers: retryAfterSeconds === undefined ? {} : { 'Retry-After': String(retryAfterSeconds) },
-    },
-  )
-}
 
 export class SetupController {
   constructor(
@@ -66,21 +39,14 @@ export class SetupController {
 
   unlock: RouteHandler = async (request) => {
     const body = await readBody(postSetupUnlockApiSchema.body, request)
-    try {
-      const { token, expiresAt } = await this.setupAuthService.unlock(
-        body.password,
-        toClientKey(request.headers),
-      )
-      return new Response(null, {
-        status: StatusCodes.NO_CONTENT,
-        headers: { 'Set-Cookie': this.setupSessionService.toSetCookie(token, expiresAt) },
-      })
-    } catch (error) {
-      if (error instanceof TooManyRequestsError) {
-        return toThrottledResponse(error)
-      }
-      throw error
-    }
+    const { token, expiresAt } = await this.setupAuthService.unlock(
+      body.password,
+      toClientKey(request.headers),
+    )
+    return new Response(null, {
+      status: StatusCodes.NO_CONTENT,
+      headers: { 'Set-Cookie': this.setupSessionService.toSetCookie(token, expiresAt) },
+    })
   }
 
   saveProfile: RouteHandler = async (request) => {

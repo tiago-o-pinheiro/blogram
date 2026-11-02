@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import {
   ALT_TEXT_MAX,
+  type ImageVariant,
+  toPostImageHref,
   POST_TEXT_MAX,
   isPost,
   isPostListQuery,
@@ -154,5 +156,34 @@ describe('toPostTitle', () => {
 
   it('Given no title, should return an empty title', () => {
     expect(toPostTitle({})).toBe('')
+  })
+})
+
+const IMAGE_ID = '11111111-1111-4111-8111-111111111111'
+const VARIANTS: ImageVariant[] = [
+  { name: 'w960', width: 960, height: 720 },
+  { name: 'w480', width: 480, height: 360 },
+  { name: 'w1600', width: 1600, height: 1200 },
+]
+
+describe('toPostImageHref', () => {
+  it.each([
+    [480, 'w480'],
+    [900, 'w480'],
+    [960, 'w960'],
+    [2000, 'w1600'],
+    [300, 'w480'],
+  ] as const)('BH-AUDIT-6: Given width %s, should select existing variant %s', (width, variant) => {
+    expect(toPostImageHref({ id: IMAGE_ID, variants: VARIANTS }, width)).toBe(
+      `/api/media/${IMAGE_ID}?variant=${variant}`,
+    )
+  })
+
+  it('BH-AUDIT-6: Given no variants, should fall back to the full image', () => {
+    expect(toPostImageHref({ id: IMAGE_ID, variants: [] }, 480)).toBe(`/api/media/${IMAGE_ID}`)
+  })
+
+  it('BH-AUDIT-6: Given no requested width, should use the full image', () => {
+    expect(toPostImageHref({ id: IMAGE_ID, variants: VARIANTS })).toBe(`/api/media/${IMAGE_ID}`)
   })
 })

@@ -3,17 +3,23 @@ import { describe, expect, it } from 'vitest'
 
 import { getMessages } from '@/i18n'
 import { I18nProvider } from '@/i18n/i18n-context'
-import { type Models } from '@/models'
+import { Models } from '@/models'
 
 import { PublicFeed } from './public-feed'
 
-const renderFeed = (page: Models.PostPage, filter: Models.FeedFilter = 'all', query?: string) =>
+const renderFeed = (
+  page: Models.PostPage,
+  filter: Models.FeedFilter = 'all',
+  query?: string,
+  place?: string,
+) =>
   render(
     <I18nProvider locale="en" messages={getMessages('en')}>
       <PublicFeed
         page={page}
         filter={filter}
         query={query}
+        place={place}
         owner="::owner::"
         origin="https://example.test"
         locale="en"
@@ -114,5 +120,45 @@ describe('PublicFeed', () => {
 
     expect(screen.getByRole('heading', { name: '::title::' })).toBeVisible()
     expect(screen.getByText('::caption::')).toBeVisible()
+  })
+})
+
+describe('PublicFeed place scope', () => {
+  it('Given a selected place, should show its chip and clear it keeping the type filter', () => {
+    const place = Models.toFeedPlaceKey({ name: '::place::', coordinates: null })
+    renderFeed({ data: [], meta: { total: 36, page: 2, pageSize: 12 } }, 'photo', undefined, place)
+
+    expect(screen.getByText('::place::')).toBeVisible()
+    expect(screen.getByRole('link', { name: 'Clear place filter' })).toHaveAttribute(
+      'href',
+      Models.toFeedHref('photo'),
+    )
+    expect(screen.getByRole('link', { name: 'Older posts' })).toHaveAttribute(
+      'href',
+      Models.toFeedHref('photo', 3, { place }),
+    )
+    expect(screen.getByRole('link', { name: 'Videos' })).toHaveAttribute(
+      'href',
+      Models.toFeedHref('video', 1, { place }),
+    )
+  })
+
+  it('Given a place and search, should keep both when paging and clearing search', () => {
+    const place = Models.toFeedPlaceKey({ name: '::place::', coordinates: null })
+    renderFeed({ data: [], meta: { total: 36, page: 2, pageSize: 12 } }, 'video', 'bay', place)
+
+    expect(screen.getByRole('link', { name: 'Older posts' })).toHaveAttribute(
+      'href',
+      Models.toFeedHref('video', 3, { q: 'bay', place }),
+    )
+    expect(screen.getByRole('link', { name: 'Clear search' })).toHaveAttribute(
+      'href',
+      Models.toFeedHref('video', 1, { place }),
+    )
+    expect(screen.getByRole('link', { name: 'Clear place filter' })).toHaveAttribute(
+      'href',
+      Models.toFeedHref('video', 1, { q: 'bay' }),
+    )
+    expect(screen.getByRole('search')).toContainHTML(`name="place"`)
   })
 })

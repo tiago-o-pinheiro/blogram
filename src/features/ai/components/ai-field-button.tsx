@@ -21,6 +21,7 @@ export const AiFieldButton = ({
     type="button"
     variant="ghost"
     size="icon"
+    className="animate-scale-in transition"
     aria-label={label}
     title={isDisabled && disabledHint ? disabledHint : label}
     disabled={isDisabled}
@@ -28,6 +29,6 @@ export const AiFieldButton = ({
     loadingLabel={label}
     onClick={onClick}
   >
-    <Sparkles aria-hidden="true" className="size-4" />
+    <Sparkles aria-hidden="true" className="size-4 animate-scale-in" />
   </Button>
 )

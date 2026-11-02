@@ -78,6 +78,13 @@
       "when": 1792963845270,
       "tag": "0010_common_power_pack",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793619952247,
+      "tag": "0011_recovery_codes",
+      "breakpoints": true
     }
   ]
 }

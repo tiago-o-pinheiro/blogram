@@ -92,6 +92,32 @@ describe('shrinkImage', () => {
     expect(result).toBe(file)
   })
 
+  it('BH-AUDIT-7: Given a camera JPEG with EXIF, should encode JPEG and keep its EXIF block', async () => {
+    const exif = [0xff, 0xe1, 0x00, 0x08, 0x45, 0x78, 0x69, 0x66, 0x00, 0x00]
+    const scan = [0xff, 0xda, 0x00, 0x02, 0xff, 0xd9]
+    stubDecoder({ width: 8160, height: 6120 })
+    stubCanvas(new Blob([new Uint8Array([0xff, 0xd8, ...scan])], { type: 'image/jpeg' }))
+    const file = new File([new Uint8Array([0xff, 0xd8, ...exif, ...scan])], 'IMG_0002.jpg', {
+      type: 'image/jpeg',
+    })
+    Object.defineProperty(file, 'size', { value: LARGE_BYTES })
+
+    const result = await shrinkImage(file, MAX_EDGE)
+
+    expect(HTMLCanvasElement.prototype.toBlob).not.toHaveBeenCalledWith(
+      expect.anything(),
+      'image/webp',
+      expect.anything(),
+    )
+    expect(result.name).toBe('IMG_0002.jpg')
+    expect(Array.from(new Uint8Array(await result.arrayBuffer()))).toEqual([
+      0xff,
+      0xd8,
+      ...exif,
+      ...scan,
+    ])
+  })
+
   it('Given an image the browser cannot decode, should keep the original file', async () => {
     vi.stubGlobal(
       'createImageBitmap',

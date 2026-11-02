@@ -41,13 +41,11 @@ describe('ai draft for a link post with a cover', () => {
     const values = { title: '', altText: '', text: '' }
     const request = toAiDraftRequest({
       target: 'text',
-      prompt: '',
       postType: 'link',
       values,
       image: { file: cover },
     })
     const form = new FormData()
-    form.set('prompt', request.prompt)
     form.set('postType', request.postType)
     request.fields.forEach((field) => form.append('field', field))
     form.set('title', request.title)
@@ -57,7 +55,7 @@ describe('ai draft for a link post with a cover', () => {
       form.set('file', request.file)
     }
 
-    expect(hasAiContext('', true, values)).toBe(true)
+    expect(hasAiContext(true, values)).toBe(true)
     const response = await POST(
       new Request(URL, { method: 'POST', headers: { cookie }, body: form }),
     )

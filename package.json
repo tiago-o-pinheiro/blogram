@@ -12,6 +12,7 @@
     "db:up": "docker compose up -d --wait",
     "build": "next build",
     "start": "next start",
+    "auth:recover": "node scripts/recover-owner.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

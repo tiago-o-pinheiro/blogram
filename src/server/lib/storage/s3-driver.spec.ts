@@ -133,4 +133,41 @@ describe('createS3Driver', () => {
     await expect(createS3Driver(CONFIG, sendRequest).get('../escape.webp')).rejects.toThrow()
     expect(sendRequest).not.toHaveBeenCalled()
   })
+
+  it('BH-AUDIT-1: Given a range, should pass the storage body through as a stream', async () => {
+    const { requests, sendRequest } = createRecorder(
+      new Response(new Uint8Array([2, 3]), {
+        status: 206,
+        headers: { 'content-type': 'video/mp4', 'content-range': 'bytes 2-3/10' },
+      }),
+    )
+
+    const object = await createS3Driver(CONFIG, sendRequest).stream(
+      createStorageKey('video', 'mp4'),
+      { range: { start: 2 } },
+    )
+
+    expect(requests[0]?.headers.get('range')).toBe('bytes=2-')
+    expect(object?.body).toBeInstanceOf(ReadableStream)
+    expect(object?.range).toEqual({ start: 2, end: 3 })
+    expect(object?.size).toBe(10)
+    expect(new Uint8Array(await new Response(object?.body).arrayBuffer())).toEqual(
+      new Uint8Array([2, 3]),
+    )
+  })
+
+  it('Given no range, should report the size from the content length', async () => {
+    const { sendRequest } = createRecorder(
+      new Response(new Uint8Array([1, 2, 3]), {
+        headers: { 'content-type': 'video/mp4', 'content-length': '3' },
+      }),
+    )
+
+    const object = await createS3Driver(CONFIG, sendRequest).stream(
+      createStorageKey('video', 'mp4'),
+    )
+
+    expect(object?.size).toBe(3)
+    expect(object?.range).toBeUndefined()
+  })
 })

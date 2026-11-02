@@ -29,7 +29,7 @@ const escapeXml = (text: string): string =>
 const toItem = (post: Models.Post, origin: string, fallback: string): string => {
   const permalink = `${origin}/posts/${post.id}`
   const image = post.image
-    ? `<img src="${escapeXml(`${origin}${Models.MEDIA_PATH}/${post.image.id}?variant=w960`)}" alt="${escapeXml(post.image.altText)}" />`
+    ? `<img src="${escapeXml(`${origin}${Models.toPostImageHref(post.image, 960)}`)}" alt="${escapeXml(post.image.altText)}" />`
     : ''
   const caption = post.text ? `<p>${escapeXml(post.text)}</p>` : ''
   const publishedAt = new Date(post.publishedAt ?? post.createdAt).toUTCString()

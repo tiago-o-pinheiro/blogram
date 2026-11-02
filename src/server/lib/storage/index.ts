@@ -16,6 +16,7 @@ export type {
   StoredObjectHead,
   StorageObject,
   StorageReadOptions,
+  StorageStream,
 } from './driver'
 
 const createConfiguredS3Driver = (config: Env) => {
@@ -61,6 +62,7 @@ const getS3 = (): StorageDriver & DirectUploadDriver => {
 export const storage: StorageDriver = {
   put: (key, body, contentType) => getStorage().put(key, body, contentType),
   get: (key, options) => getStorage().get(key, options),
+  stream: (key, options) => getStorage().stream(key, options),
   delete: (key) => getStorage().delete(key),
 }
 
