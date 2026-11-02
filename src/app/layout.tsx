@@ -10,12 +10,15 @@ import { env } from '@/server/config/env'
 
 import './globals.css'
 
-export const metadata: Metadata = {
-  metadataBase: new URL(env.BETTER_AUTH_URL),
-  alternates: { types: { 'application/rss+xml': '/feed.xml' } },
-  title: { default: 'Blogram', template: '%s | Blogram' },
-  description: 'A personal multimedia journal',
-  icons: { icon: '/brand/blogram-mark.svg' },
+export const generateMetadata = async (): Promise<Metadata> => {
+  const messages = getMessages(await getServerLocale())
+  return {
+    metadataBase: new URL(env.BETTER_AUTH_URL),
+    alternates: { types: { 'application/rss+xml': '/feed.xml' } },
+    title: { default: 'Blogram', template: '%s | Blogram' },
+    description: messages['site.description'],
+    icons: { icon: '/brand/blogram-mark.svg' },
+  }
 }
 
 type RootLayoutProps = {

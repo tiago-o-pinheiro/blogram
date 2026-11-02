@@ -16,5 +16,12 @@
   "home.pending.description": "Vuelve a pasar pronto.",
   "home.profile.photoAlt": "Foto de perfil de {{name}}",
   "menu.signedInAs": "Sesión iniciada como {{name}}",
-  "menu.signOut": "Cerrar sesión"
+  "menu.signOut": "Cerrar sesión",
+  "site.description": "Un diario multimedia personal",
+  "errors.page.title": "Algo ha fallado por nuestra parte",
+  "errors.page.description": "No has hecho nada mal. Inténtalo de nuevo.",
+  "errors.page.retry": "Reintentar",
+  "notFound.title": "No encontramos esa página",
+  "notFound.description": "Puede que se haya movido o que la dirección esté mal escrita.",
+  "notFound.home": "Volver al inicio"
 }

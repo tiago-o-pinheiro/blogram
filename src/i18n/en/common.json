@@ -16,5 +16,12 @@
   "home.pending.description": "Please check back soon.",
   "home.profile.photoAlt": "Profile photo of {{name}}",
   "menu.signedInAs": "Signed in as {{name}}",
-  "menu.signOut": "Sign out"
+  "menu.signOut": "Sign out",
+  "site.description": "A personal multimedia journal",
+  "errors.page.title": "Something went wrong on our side",
+  "errors.page.description": "Nothing you did caused this. Please try again.",
+  "errors.page.retry": "Try again",
+  "notFound.title": "We could not find that page",
+  "notFound.description": "It may have moved, or the address may be mistyped.",
+  "notFound.home": "Back to home"
 }
