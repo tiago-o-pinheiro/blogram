@@ -26,15 +26,15 @@
   },
   "dependencies": {
     "aws4fetch": "^1.0.20",
-    "better-auth": "^1.7.12",
+    "better-auth": "^1.7.14",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.4",
     "exif-reader": "^2.0.3",
     "http-status-codes": "^2.3.0",
     "leaflet": "^1.9.4",
-    "lucide-react": "^1.61.0",
-    "next": "^16.4.2",
+    "lucide-react": "^1.65.0",
+    "next": "^16.4.3",
     "pg": "^8.23.1",
     "radix-ui": "^1.8.1",
     "react": "^19.3.1",
@@ -44,10 +44,10 @@
     "typebox": "^1.4.2"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "^0.5.11",
-    "@electric-sql/pglite-socket": "^0.2.14",
+    "@electric-sql/pglite": "^0.5.13",
+    "@electric-sql/pglite-socket": "^0.2.16",
     "@eslint/js": "^10.0.1",
-    "@next/eslint-plugin-next": "^16.4.2",
+    "@next/eslint-plugin-next": "^16.4.3",
     "@tailwindcss/postcss": "^4.3.3",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",
@@ -72,7 +72,7 @@
     "react-dom": "^19.3.1",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.72.0",
+    "typescript-eslint": "^8.72.1",
     "vitest": "^5.0.5"
   }
 }
