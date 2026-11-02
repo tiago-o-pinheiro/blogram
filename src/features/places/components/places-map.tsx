@@ -7,6 +7,8 @@ import { useEffect, useRef } from 'react'
 import { useT } from '@/i18n/i18n-context'
 import { Models } from '@/models'
 
+import { FIT_PADDING_BOTTOM_RIGHT, FIT_PADDING_TOP_LEFT } from '../lib/map-fit'
+
 type PlacesMapProps = { pins: Models.PlacePin[] }
 
 const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
@@ -56,7 +58,11 @@ export const PlacesMap = ({ pins }: PlacesMapProps) => {
         .addTo(map)
     }
     if (points.length > 0) {
-      map.fitBounds(L.latLngBounds(points), { maxZoom: Models.PLACE_MAP_ZOOM, padding: [32, 32] })
+      map.fitBounds(L.latLngBounds(points), {
+        maxZoom: Models.PLACE_MAP_ZOOM,
+        paddingTopLeft: FIT_PADDING_TOP_LEFT,
+        paddingBottomRight: FIT_PADDING_BOTTOM_RIGHT,
+      })
     } else {
       map.setView([0, 0], 1)
     }

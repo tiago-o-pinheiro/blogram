@@ -25,7 +25,7 @@ const seedPost = (publicId: string, overrides: Partial<typeof post.$inferInsert>
   })
 
 describe('FeedService place filter', () => {
-  it('Given identical names at different coordinates, should match only the selected pin', async () => {
+  it('Given one place under several names and pins, should match all of it and nothing far away', async () => {
     await seedPost('Aaaaa11111')
     await seedPost('Bbbbb22222', {
       place: { name: PLACE.name, mapUrl: 'https://www.openstreetmap.org/#map=15/38.7/-9.1' },
@@ -40,15 +40,19 @@ describe('FeedService place filter', () => {
     const page = await service.list({ place: FILTER, page: 1, pageSize: 12 })
     const pins = await new PlacePinService().list()
 
-    expect(page.meta.total).toBe(2)
-    expect(page.data.map((item) => item.id).sort()).toEqual(['Aaaaa11111', 'Bbbbb22222'])
+    expect(page.data.map((item) => item.id).sort()).toEqual([
+      'Aaaaa11111',
+      'Bbbbb22222',
+      'Ddddd44444',
+      'Eeeee55555',
+    ])
     expect(pins.find((pin) => pin.place === FILTER)?.count).toBe(page.meta.total)
   })
 
-  it('Given a place without coordinates, should exclude coordinate pins with that name', async () => {
+  it('Given the key of a place merged into another, should still load the whole place', async () => {
     await seedPost('Aaaaa11111')
-    await seedPost('Bbbbb22222', { place: { name: PLACE.name } })
-    await seedPost('Ccccc33333', { place: { name: PLACE.name, mapUrl: 'https://example.test' } })
+    await seedPost('Bbbbb22222')
+    await seedPost('Ccccc33333', { place: { name: PLACE.name } })
 
     const page = await service.list({
       place: Models.toFeedPlaceKey({ name: PLACE.name, coordinates: null }),
@@ -56,8 +60,11 @@ describe('FeedService place filter', () => {
       pageSize: 12,
     })
 
-    expect(page.meta.total).toBe(2)
-    expect(page.data.map((item) => item.id).sort()).toEqual(['Bbbbb22222', 'Ccccc33333'])
+    expect(page.data.map((item) => item.id).sort()).toEqual([
+      'Aaaaa11111',
+      'Bbbbb22222',
+      'Ccccc33333',
+    ])
   })
 
   it('Given place, search and type filters, should combine them before pagination', async () => {

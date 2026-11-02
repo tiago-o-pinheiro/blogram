@@ -68,7 +68,7 @@ describe('PlacePinService', () => {
     expect(pins[0]?.place).toBe(Models.toFeedPlaceKey({ name: 'Lisbon', coordinates: LISBON }))
   })
 
-  it('Given a place without coordinates, should keep it as its own list-only pin', async () => {
+  it('Given a place without coordinates, should group it with the same name on the map', async () => {
     await seedPost('Aaaaa11111', '2026-01-01T00:00:00Z', { place: { name: 'Lisbon' } })
     await seedPost('Bbbbb22222', '2026-02-01T00:00:00Z', {
       place: { name: 'Lisbon', mapUrl: Models.toPlaceMapUrl(LISBON) },
@@ -76,7 +76,34 @@ describe('PlacePinService', () => {
 
     const pins = await service.list()
 
-    expect(pins.map((pin) => pin.coordinates)).toEqual([LISBON, null])
+    expect(pins).toEqual([expect.objectContaining({ coordinates: LISBON, count: 2 })])
+  })
+
+  it('Given one city named in two languages at two spots, should list a single place', async () => {
+    const center = Models.toPlaceMapUrl({ lat: 41.38258, lon: 2.17707 })
+    await seedPhoto('Aaaaa11111', '2026-01-01T00:00:00Z', {
+      name: 'Barcelona, Spain',
+      mapUrl: center,
+    })
+    await seedPhoto('Bbbbb22222', '2026-02-01T00:00:00Z', {
+      name: 'Barcelona, España',
+      mapUrl: center,
+    })
+    await seedPhoto('Ccccc33333', '2026-03-01T00:00:00Z', {
+      name: 'Barcelona, España',
+      mapUrl: Models.toPlaceMapUrl({ lat: 41.35419, lon: 2.15376 }),
+    })
+    await seedPhoto('Ddddd44444', '2026-04-01T00:00:00Z', {
+      name: 'İstanbul, Türkiye',
+      mapUrl: Models.toPlaceMapUrl({ lat: 41.00638, lon: 28.97587 }),
+    })
+
+    const pins = await service.list()
+
+    expect(pins.map((pin) => [pin.name, pin.count, pin.cover?.id])).toEqual([
+      ['İstanbul, Türkiye', 1, 'Ddddd44444'],
+      ['Barcelona, España', 3, 'Ccccc33333'],
+    ])
   })
 
   it('Given a photo post at a place, should expose its image and available variants', async () => {

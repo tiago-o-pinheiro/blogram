@@ -19,13 +19,14 @@ export const dynamic = 'force-dynamic'
 type HomePageProps = { searchParams?: Promise<Record<string, string | string[] | undefined>> }
 
 export const generateMetadata = async (): Promise<Metadata> => {
+  const description = getMessages(await getServerLocale())['site.description']
   if ((await installationService.getStatus()) !== 'completed') {
-    return { title: 'Blogram', description: 'A personal multimedia journal' }
+    return { title: 'Blogram', description }
   }
   const profile = await profileService.getProfile()
   return {
     title: profile?.name ?? 'Blogram',
-    description: profile?.description ?? 'A personal multimedia journal',
+    description: profile?.description ?? description,
   }
 }
 

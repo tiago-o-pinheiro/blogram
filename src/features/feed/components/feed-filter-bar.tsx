@@ -56,7 +56,7 @@ export const FeedFilterBar = ({ filter, query, place }: FeedFilterBarProps) => {
   }
 
   return (
-    <div className="sticky top-3 z-10 mx-3 flex animate-rise-in items-center gap-1 rounded-full glass p-1 transition sm:mx-6">
+    <div className="sticky top-3 z-10 flex animate-rise-in items-center gap-1 rounded-full glass p-1 transition">
       {isSearching ? (
         <form
           key="search"
