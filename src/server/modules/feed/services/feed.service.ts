@@ -6,6 +6,7 @@ import { Models } from '@/models'
 import { NotFoundError, ValidationError } from '@/server/errors/http-errors'
 import { db } from '@/server/lib/db'
 import { toPagination, toPaginationMeta } from '@/server/lib/pagination'
+import { placePinService } from '@/server/modules/feed/services/place-pin.service'
 import { media } from '@/server/modules/media/schemas/media.table'
 import { post } from '@/server/modules/posts/schemas/post.table'
 import { postService } from '@/server/modules/posts/services/post.service'
@@ -58,29 +59,15 @@ const toPlaceVisibility = async (param?: string) => {
     return undefined
   }
   const key = Models.toFeedPlace(param)
-  const place = key ? Models.readFeedPlace(key) : undefined
-  if (!place) {
+  if (!key || !Models.readFeedPlace(key)) {
     throw new ValidationError('Invalid place filter')
   }
   const name = sql<string>`${post.place}->>'name'`
   const mapUrl = sql<string>`coalesce(${post.place}->>'mapUrl', '')`
-  const urls = await db
-    .selectDistinct({ mapUrl })
-    .from(post)
-    .where(and(eq(post.status, 'published'), eq(name, place.name)))
-  const matchingUrls = urls
-    .filter(
-      (row) =>
-        Models.toFeedPlaceKey({
-          name: place.name,
-          coordinates: Models.readPlaceCoordinates(row.mapUrl),
-        }) === key,
-    )
-    .map((row) => row.mapUrl)
-  return and(
-    eq(name, place.name),
-    matchingUrls.length > 0 ? inArray(mapUrl, matchingUrls) : sql`false`,
-  )
+  const sources = await placePinService.findSources(key)
+  return sources.length > 0
+    ? or(...sources.map((source) => and(eq(name, source.name), eq(mapUrl, source.mapUrl ?? ''))))
+    : sql`false`
 }
 
 export class FeedService {

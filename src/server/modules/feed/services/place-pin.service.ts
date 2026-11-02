@@ -3,6 +3,7 @@ import { and, count, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm'
 import { Models } from '@/models'
 
 import { db } from '@/server/lib/db'
+import { groupPlaces, type PlaceGroup } from '@/server/modules/feed/services/group-places'
 import { toPostSummary } from '@/server/modules/feed/services/to-post-summary'
 import { media } from '@/server/modules/media/schemas/media.table'
 import { post } from '@/server/modules/posts/schemas/post.table'
@@ -11,9 +12,14 @@ import { toPost } from '@/server/modules/posts/services/to-post'
 const name = sql<string>`${post.place}->>'name'`
 const mapUrl = sql<string | null>`${post.place}->>'mapUrl'`
 
+export type PlaceSource = { name: string; mapUrl: string | null }
+
+const toPlaceKey = (group: Pick<PlaceGroup, 'name' | 'coordinates'>): string =>
+  Models.toFeedPlaceKey({ name: group.name, coordinates: group.coordinates })
+
 export class PlacePinService {
-  list = async (): Promise<Models.PlacePin[]> => {
-    const groups = await db
+  private loadGroups = async () => {
+    const rows = await db
       .select({
         name,
         mapUrl,
@@ -28,8 +34,17 @@ export class PlacePinService {
       .where(and(eq(post.status, 'published'), isNotNull(post.place), isNotNull(name)))
       .groupBy(name, mapUrl)
       .orderBy(desc(sql`max(${post.publishedAt})`), name, mapUrl)
+    return groupPlaces(
+      rows.map((row) => ({
+        ...row,
+        coordinates: Models.readPlaceCoordinates(row.mapUrl ?? undefined),
+      })),
+    )
+  }
 
-    const coverIds = groups.flatMap((group) => (group.coverId ? [group.coverId] : []))
+  list = async (): Promise<Models.PlacePin[]> => {
+    const places = await this.loadGroups()
+    const coverIds = places.flat().flatMap((group) => (group.coverId ? [group.coverId] : []))
     const covers =
       coverIds.length > 0
         ? await db
@@ -39,29 +54,30 @@ export class PlacePinService {
             .where(inArray(post.id, coverIds))
             .orderBy(desc(post.publishedAt), desc(post.id))
         : []
-    const coverRank = new Map(covers.map((row, index) => [row.post.id, index]))
-    const coverById = new Map(covers.map((row) => [row.post.id, toPostSummary(toPost(row))]))
-    const pins = new Map<string, Models.PlacePin>()
-    const pinCoverRanks = new Map<string, number>()
-
-    for (const group of groups) {
-      const coordinates = Models.readPlaceCoordinates(group.mapUrl ?? undefined)
-      const key = Models.toFeedPlaceKey({ name: group.name, coordinates })
-      const rank = group.coverId ? (coverRank.get(group.coverId) ?? Infinity) : Infinity
-      const cover = group.coverId ? (coverById.get(group.coverId) ?? null) : null
-      const pin = pins.get(key)
-      if (pin) {
-        pin.count += group.count
-        if (rank < (pinCoverRanks.get(key) ?? Infinity)) {
-          pin.cover = cover
-          pinCoverRanks.set(key, rank)
-        }
-      } else {
-        pins.set(key, { name: group.name, coordinates, place: key, count: group.count, cover })
-        pinCoverRanks.set(key, rank)
+    const newestCover = (place: ReadonlyArray<{ coverId: string | null }>) =>
+      covers.find((row) => place.some((group) => group.coverId === row.post.id))
+    return places.flatMap((place) => {
+      const [anchor] = place
+      if (!anchor) {
+        return []
       }
-    }
-    return [...pins.values()]
+      const cover = newestCover(place)
+      return [
+        {
+          name: anchor.name,
+          coordinates: anchor.coordinates,
+          place: toPlaceKey(anchor),
+          count: place.reduce((sum, group) => sum + group.count, 0),
+          cover: cover ? toPostSummary(toPost(cover)) : null,
+        },
+      ]
+    })
+  }
+
+  findSources = async (placeKey: string): Promise<PlaceSource[]> => {
+    const places = await this.loadGroups()
+    const place = places.find((groups) => groups.some((group) => toPlaceKey(group) === placeKey))
+    return (place ?? []).map((group) => ({ name: group.name, mapUrl: group.mapUrl }))
   }
 }
 
