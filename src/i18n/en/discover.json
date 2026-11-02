@@ -15,7 +15,6 @@
   "archive.back": "Back to the journal",
   "places.title": "Places",
   "places.list": "All places",
-  "places.showMap": "Show map",
   "places.mapConsent": "The map loads tiles from OpenStreetMap.",
   "places.empty": "No places yet.",
   "places.posts": "Posts: {{count}}",
@@ -25,5 +24,8 @@
   "journalNav.label": "Explore the journal",
   "journalNav.archive": "Archive",
   "journalNav.places": "Places",
-  "journalNav.rss": "RSS feed"
+  "journalNav.rss": "RSS feed",
+  "places.goToPosts": "Go to posts",
+  "places.viewPosts": "View posts",
+  "places.map": "Map of places"
 }

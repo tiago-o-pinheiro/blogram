@@ -6,7 +6,6 @@ type AiImage = { file: File | null; mediaId?: string }
 
 type AiDraftRequestInput = {
   target: AiTarget
-  prompt: string
   postType: Models.PostType
   values: Record<Models.AiField, string>
   image: AiImage
@@ -29,7 +28,6 @@ export const toOfferedAiFields = (
 
 export const toAiDraftRequest = ({
   target,
-  prompt,
   postType,
   values,
   image,
@@ -37,14 +35,13 @@ export const toAiDraftRequest = ({
   const hasImage = image.file !== null || image.mediaId !== undefined
   const fields = target === 'all' ? toOfferedAiFields(postType, hasImage) : [target]
   const request: Models.AiDraftRequest & { file?: File } = {
-    prompt: prompt.trim(),
     postType,
     fields,
     title: values.title,
     altText: values.altText,
     text: values.text,
   }
-  const hasTextContext = hasAiContext(request.prompt, false, values)
+  const hasTextContext = hasAiContext(false, values)
   if (hasTextContext && !Models.shouldAttachAiImage(fields, postType, values.altText)) {
     return request
   }
@@ -57,9 +54,5 @@ export const toAiDraftRequest = ({
   return request
 }
 
-export const hasAiContext = (
-  prompt: string,
-  hasImage: boolean,
-  values: Record<Models.AiField, string>,
-): boolean =>
-  prompt.trim() !== '' || hasImage || Models.AI_FIELDS.some((field) => values[field].trim() !== '')
+export const hasAiContext = (hasImage: boolean, values: Record<Models.AiField, string>): boolean =>
+  hasImage || Models.AI_FIELDS.some((field) => values[field].trim() !== '')

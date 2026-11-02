@@ -66,6 +66,30 @@ describe('Owner recovery', () => {
     }
   })
 
+  it('Given an outstanding recovery link, should revoke it when recovering from the server', async () => {
+    const owner = await createCompletedOwner()
+    const client = await connectedClient()
+    try {
+      await client.query(
+        "INSERT INTO verification (id, identifier, value, expires_at) VALUES ($1, 'reset-password:outstanding', $2, NOW() + INTERVAL '15 minutes')",
+        ['::verification::', owner.id],
+      )
+
+      await recoverOwner(client, NEW_PASSWORD)
+
+      expect(
+        (
+          await client.query(
+            "SELECT id FROM verification WHERE identifier = 'reset-password:outstanding'",
+          )
+        ).rowCount,
+      ).toBe(0)
+      expect((await authService.signInOwner('owner@example.test', NEW_PASSWORD)).ok).toBe(true)
+    } finally {
+      await client.end()
+    }
+  })
+
   it('Given a missing credential account, should restore password access for the same owner', async () => {
     const owner = await createCompletedOwner()
     const client = await connectedClient()

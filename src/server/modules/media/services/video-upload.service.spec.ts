@@ -30,11 +30,23 @@ const createService = (
     inspectUrl?: (url: string) => Promise<VideoProbeResult>
     maxBytes?: number
     isLocal?: boolean
+    failedAborts?: { remaining: number }
   } = {},
 ) => {
   const driver = createS3Driver(fake.config)
+  const failedAborts = overrides.failedAborts ?? { remaining: 0 }
+  const uploads = {
+    ...driver,
+    abortMultipartUpload: async (key: string, uploadId: string) => {
+      if (failedAborts.remaining > 0) {
+        failedAborts.remaining -= 1
+        throw new Error('storage unavailable')
+      }
+      await driver.abortMultipartUpload(key, uploadId)
+    },
+  }
   return new VideoUploadService({
-    getUploads: () => (overrides.isLocal ? null : driver),
+    getUploads: () => (overrides.isLocal ? null : uploads),
     getMaxVideoBytes: () => overrides.maxBytes ?? 1_000_000_000,
     inspectUrl: overrides.inspectUrl ?? (async () => WEBM_PROBE),
     cleanup: new MediaCleanupService(driver),
@@ -211,6 +223,36 @@ describe('VideoUploadService.abort', () => {
 
     expect(await db.$count(videoUpload)).toBe(0)
     expect(fake.listObjects()).toEqual([])
+  })
+})
+
+describe('VideoUploadService.abort when storage fails', () => {
+  it('BH-AUDIT-3: Given a failed multipart abort, should keep the upload so a retry can drop it', async () => {
+    const service = createService({ failedAborts: { remaining: 1 } })
+    const session = await service.start({ contentType: 'video/webm', size: 3 })
+
+    await expect(service.abort(session.id)).rejects.toThrow('storage unavailable')
+    expect(await db.$count(videoUpload)).toBe(1)
+
+    await service.abort(session.id)
+
+    expect(fake.listUploads()).toEqual([])
+    expect(await db.$count(videoUpload)).toBe(0)
+  })
+
+  it('BH-AUDIT-3: Given a failed abort during the expiry sweep, should keep that upload for the next sweep', async () => {
+    const failedAborts = { remaining: 0 }
+    const service = createService({ failedAborts })
+    await service.start({ contentType: 'video/webm', size: 3 })
+    clock = new Date(clock.getTime() + 7 * HOUR_MS)
+    failedAborts.remaining = 1
+
+    expect(await service.sweepExpired()).toEqual({ removed: 0 })
+    expect(await db.$count(videoUpload)).toBe(1)
+
+    expect(await service.sweepExpired()).toEqual({ removed: 1 })
+    expect(fake.listUploads()).toEqual([])
+    expect(await db.$count(videoUpload)).toBe(0)
   })
 })
 

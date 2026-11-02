@@ -1,13 +1,9 @@
 import { Type, type Static } from 'typebox'
 
 import { PlaceCoordinates } from './place.model'
-import { PostType } from './post.model'
+import { PostImage, PostType } from './post.model'
 
-export const PostSummaryImage = Type.Object({
-  id: Type.String({ format: 'uuid' }),
-  width: Type.Integer({ minimum: 1 }),
-  height: Type.Integer({ minimum: 1 }),
-})
+export const PostSummaryImage = Type.Pick(PostImage, ['id', 'width', 'height', 'variants'])
 export type PostSummaryImage = Static<typeof PostSummaryImage>
 
 export const PostSummary = Type.Object({
@@ -42,7 +38,9 @@ export type Archive = Static<typeof Archive>
 export const PlacePin = Type.Object({
   name: Type.String(),
   coordinates: Type.Union([PlaceCoordinates, Type.Null()]),
-  posts: Type.Array(PostSummary),
+  place: Type.String(),
+  count: Type.Integer({ minimum: 1 }),
+  cover: Type.Union([PostSummary, Type.Null()]),
 })
 export type PlacePin = Static<typeof PlacePin>
 

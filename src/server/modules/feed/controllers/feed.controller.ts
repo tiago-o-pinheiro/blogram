@@ -2,6 +2,7 @@ import { StatusCodes } from 'http-status-codes'
 
 import { Models } from '@/models'
 
+import { toClientKey } from '@/server/lib/client-key'
 import { encode } from '@/server/lib/codec'
 import { readParams, readQuery, type RouteHandler } from '@/server/lib/handler'
 import { feedService, type FeedService } from '@/server/modules/feed/services/feed.service'
@@ -24,12 +25,15 @@ export class FeedController {
     })
   }
 
-  like: RouteHandler = async (_request, context) => {
+  like: RouteHandler = async (request, context) => {
     const { id } = await readParams(PostIdParams, context)
-    return Response.json(encode(Models.PostLikes, await this.feedService.like(id)), {
-      status: StatusCodes.OK,
-      headers: { 'Cache-Control': 'no-store' },
-    })
+    return Response.json(
+      encode(Models.PostLikes, await this.feedService.like(id, toClientKey(request.headers))),
+      {
+        status: StatusCodes.OK,
+        headers: { 'Cache-Control': 'no-store' },
+      },
+    )
   }
 }
 

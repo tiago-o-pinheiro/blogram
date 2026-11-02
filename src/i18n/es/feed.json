@@ -27,5 +27,7 @@
   "feed.shareError": "No se pudo compartir. Copia el enlace o descarga la tarjeta.",
   "feed.copyError": "No se pudo copiar automáticamente. Selecciona y copia este enlace.",
   "feed.owner": "Acceso del propietario",
-  "feed.builtWith": "Un diario personal, creado con"
+  "feed.builtWith": "Un diario personal, creado con",
+  "feed.clearPlace": "Quitar filtro de lugar",
+  "feed.likeRateLimited": "Demasiados me gusta por ahora. Inténtalo de nuevo en unos minutos."
 }

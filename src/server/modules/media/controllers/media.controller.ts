@@ -34,18 +34,19 @@ export class MediaController {
     const { id } = await readParams(MediaIdParams, context)
     const variant = toVariant(new URL(request.url).searchParams.get('variant'))
     const user = await this.authService.findUser(request.headers)
-    const { object, isPublic } = await this.postService.readMedia(id, {
+    const { object, isPublic } = await this.postService.streamMedia(id, {
       isOwner: user !== null,
       variant,
       range: variant === FULL_VARIANT ? request.headers.get('range') : null,
       isHead: request.method === 'HEAD' && variant === FULL_VARIANT,
     })
     const range = object.range
-    return new Response(request.method === 'HEAD' ? null : new Uint8Array(object.body), {
+    const length = range ? range.end - range.start + 1 : object.size
+    return new Response(request.method === 'HEAD' ? null : object.body, {
       status: range ? StatusCodes.PARTIAL_CONTENT : StatusCodes.OK,
       headers: {
         'Content-Type': object.contentType,
-        'Content-Length': String(range ? range.end - range.start + 1 : object.size),
+        ...(Number.isFinite(length) ? { 'Content-Length': String(length) } : {}),
         'Accept-Ranges': 'bytes',
         ...(range ? { 'Content-Range': `bytes ${range.start}-${range.end}/${object.size}` } : {}),
         'Cache-Control': isPublic ? PUBLIC_CACHE_CONTROL : PRIVATE_CACHE_CONTROL,

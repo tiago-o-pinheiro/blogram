@@ -1,4 +1,4 @@
-import { mkdir, open, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, open, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, extname, resolve, sep } from 'node:path'
 
 import { ValidationError } from '@/server/errors/http-errors'
@@ -14,6 +14,7 @@ const CONTENT_TYPES: Record<string, string> = {
   '.webm': 'video/webm',
 }
 const FALLBACK_CONTENT_TYPE = 'application/octet-stream'
+const STREAM_CHUNK_BYTES = 256 * 1024
 
 const isMissingFileError = (error: unknown): boolean =>
   error instanceof Error && 'code' in error && error.code === 'ENOENT'
@@ -24,6 +25,31 @@ const toSlice = (total: number, range: ByteRange): { start: number; end: number 
     throw new ValidationError('Invalid byte range')
   }
   return { start: range.start, end }
+}
+
+const toFileStream = (path: string, start: number, end: number): ReadableStream<Uint8Array> => {
+  const cursor = { position: start }
+  const opened = open(path, 'r')
+  opened.catch(() => undefined)
+  return new ReadableStream<Uint8Array>({
+    pull: async (controller) => {
+      const handle = await opened
+      const length = Math.min(STREAM_CHUNK_BYTES, end - cursor.position + 1)
+      const chunk = new Uint8Array(Math.max(length, 0))
+      const { bytesRead } =
+        length > 0 ? await handle.read(chunk, 0, length, cursor.position) : { bytesRead: 0 }
+      if (bytesRead === 0) {
+        await handle.close()
+        controller.close()
+        return
+      }
+      cursor.position += bytesRead
+      controller.enqueue(chunk.subarray(0, bytesRead))
+    },
+    cancel: async () => {
+      await (await opened).close()
+    },
+  })
 }
 
 export const createLocalDriver = (directory: string): StorageDriver => {
@@ -62,6 +88,21 @@ export const createLocalDriver = (directory: string): StorageDriver => {
         } finally {
           await handle.close()
         }
+      } catch (error) {
+        if (isMissingFileError(error)) {
+          return null
+        }
+        throw error
+      }
+    },
+    stream: async (key, options) => {
+      const path = toPath(key)
+      try {
+        const { size } = await stat(path)
+        const contentType = CONTENT_TYPES[extname(path)] ?? FALLBACK_CONTENT_TYPE
+        const range = options?.range ? toSlice(size, options.range) : undefined
+        const body = toFileStream(path, range?.start ?? 0, range?.end ?? size - 1)
+        return range ? { body, contentType, size, range } : { body, contentType, size }
       } catch (error) {
         if (isMissingFileError(error)) {
           return null

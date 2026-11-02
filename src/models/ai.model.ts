@@ -16,7 +16,6 @@ export const AI_MODEL_SUGGESTIONS: Readonly<Record<AiProvider, readonly string[]
 export const AI_MODEL_MAX = 200
 export const AI_MODEL_PATTERN = '^[A-Za-z0-9._:/-]+$'
 export const AI_API_KEY_MAX = 500
-export const AI_PROMPT_MAX = 500
 export const AI_FIELDS = ['title', 'altText', 'text'] as const
 export type AiField = (typeof AI_FIELDS)[number]
 export const AI_FAILURE_REASONS = [
@@ -62,7 +61,6 @@ export const AiSettingsUpdate = Type.Object({
 export type AiSettingsUpdate = Static<typeof AiSettingsUpdate>
 
 export const AiDraftRequest = Type.Object({
-  prompt: Type.String({ maxLength: AI_PROMPT_MAX }),
   postType: PostType,
   fields: Type.Array(AiFieldName, { minItems: 1, uniqueItems: true }),
   title: Type.String({ maxLength: POST_TITLE_MAX }),

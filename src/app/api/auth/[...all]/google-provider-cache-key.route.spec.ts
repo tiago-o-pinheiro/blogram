@@ -1,8 +1,9 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { googleSettingsService } from '@/server/modules/auth/services/google-settings.service'
 import { postAuth } from '@/test/auth-session'
+import { stubGoogleTokenProbe } from '@/test/google-token-probe'
 
 const startGoogleSignIn = async () => {
   const response = await postAuth(
@@ -22,6 +23,10 @@ const readClientId = (body: unknown): string | null => {
 }
 
 describe('google provider cache key', () => {
+  beforeEach(() => {
+    stubGoogleTokenProbe()
+  })
+
   it('BH-1: Given a client ID and secret change whose concatenation is unchanged, should start Google sign-in with the new client ID', async () => {
     await googleSettingsService.saveSettings({
       isEnabled: true,

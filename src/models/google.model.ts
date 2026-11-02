@@ -7,6 +7,10 @@ export const GOOGLE_CLIENT_SECRET_MAX = 255
 export const GOOGLE_SETTINGS_SOURCES = ['env', 'settings'] as const
 export type GoogleSettingsSource = (typeof GOOGLE_SETTINGS_SOURCES)[number]
 export const GOOGLE_CALLBACK_PATH = '/api/auth/callback/google'
+export const GOOGLE_CLIENT_ID_SUFFIX = '.apps.googleusercontent.com'
+
+export const isGoogleWebClientId = (value: string): boolean =>
+  value.trim().endsWith(GOOGLE_CLIENT_ID_SUFFIX)
 
 export const GoogleSignInSettings = Type.Object({
   source: Type.Union([Type.Literal('env'), Type.Literal('settings')]),

@@ -15,6 +15,13 @@ vi.mock('next/navigation', () => ({
 }))
 
 const REDIRECT_URI = 'https://blog.example/api/auth/callback/google'
+const IMPORTED_ID = '::imported::.apps.googleusercontent.com'
+const IMPORTED_SECRET = '::imported-secret::'
+
+const toClientJson = (redirectUris: string[]) =>
+  JSON.stringify({
+    web: { client_id: IMPORTED_ID, client_secret: IMPORTED_SECRET, redirect_uris: redirectUris },
+  })
 
 const SETTINGS: GoogleSignInSettings = {
   source: 'settings',
@@ -128,25 +135,81 @@ describe('GoogleSignInSettingsForm', () => {
     expect(screen.queryByRole('button', { name: 'Save Google settings' })).not.toBeInTheDocument()
   })
 
-  it('Given the redirect URI, should copy it and announce it', async () => {
+  it('Given a downloaded Google JSON file, should fill the credentials and keep sign-in on', async () => {
     const user = userEvent.setup()
-    renderForm()
-    const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue()
+    renderForm({ ...SETTINGS, isEnabled: false })
+    const file = new File([toClientJson([REDIRECT_URI])], 'client_secret.json', {
+      type: 'application/json',
+    })
 
-    expect(screen.getByText(REDIRECT_URI)).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Copy redirect URI' }))
+    await user.upload(screen.getByLabelText('Import Google JSON', { selector: 'input' }), file)
 
-    expect(writeText).toHaveBeenCalledWith(REDIRECT_URI)
-    expect(await screen.findByText('Redirect URI copied')).toBeInTheDocument()
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Credentials imported. Save to turn on Google sign-in.',
+    )
+    expect(screen.getByLabelText('Client ID')).toHaveValue(IMPORTED_ID)
+    expect(screen.getByLabelText('Client Secret')).toHaveValue(IMPORTED_SECRET)
+    expect(screen.getByRole('switch')).toBeChecked()
   })
 
-  it('Given a clipboard failure, should announce the fallback message', async () => {
+  it('Given the JSON pasted into the client ID, should split it into both fields', async () => {
     const user = userEvent.setup()
-    renderForm(ENV_SETTINGS)
-    vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('denied'))
+    renderForm()
+    await user.clear(screen.getByLabelText('Client ID'))
 
-    await user.click(screen.getByRole('button', { name: 'Copy redirect URI' }))
+    await user.click(screen.getByLabelText('Client ID'))
+    await user.paste(toClientJson([REDIRECT_URI]))
 
-    expect(await screen.findByText(/Could not copy/)).toBeInTheDocument()
+    expect(screen.getByLabelText('Client ID')).toHaveValue(IMPORTED_ID)
+    expect(screen.getByLabelText('Client Secret')).toHaveValue(IMPORTED_SECRET)
+  })
+
+  it('Given a client JSON without this redirect URI, should warn before saving', async () => {
+    const user = userEvent.setup()
+    renderForm()
+
+    await user.click(screen.getByLabelText('Client ID'))
+    await user.paste(toClientJson(['https://elsewhere.example/callback']))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/does not list this site/)
+  })
+
+  it('Given a desktop client JSON, should ask for a web application client', async () => {
+    const user = userEvent.setup()
+    renderForm()
+
+    await user.click(screen.getByLabelText('Client ID'))
+    await user.paste('{"installed":{"client_id":"::id::"}}')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/desktop client/)
+  })
+
+  it('Given a client ID that is not a Google web client, should block saving', async () => {
+    const user = userEvent.setup()
+    renderForm()
+
+    await user.clear(screen.getByLabelText('Client ID'))
+    await user.type(screen.getByLabelText('Client ID'), '::not-google::')
+
+    expect(screen.getByText(/must end in .apps.googleusercontent.com/)).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Save Google settings' })).toBeDisabled()
+  })
+
+  it('Given credentials Google rejects, should explain they do not match', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      Response.json({ details: { reason: 'google-invalid-client' } }, { status: 422 }),
+    )
+    renderForm()
+
+    await user.click(screen.getByRole('button', { name: 'Save Google settings' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/does not recognise/)
+  })
+
+  it('Given nothing saved yet, should start with Google sign-in switched on', () => {
+    renderForm({ ...SETTINGS, isEnabled: false, clientId: '', hasClientSecret: false })
+
+    expect(screen.getByRole('switch')).toBeChecked()
   })
 })

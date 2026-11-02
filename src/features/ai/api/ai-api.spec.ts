@@ -51,7 +51,6 @@ describe('saveAiSettings', () => {
 
 describe('requestAiDraft', () => {
   const input: AiDraftRequest = {
-    prompt: 'sunset',
     postType: 'photo',
     fields: ['title', 'text'],
     title: '',
@@ -73,7 +72,8 @@ describe('requestAiDraft', () => {
     if (body instanceof FormData) {
       expect(body.getAll('field')).toEqual(['title', 'text'])
       expect(body.has('file')).toBe(false)
-      expect(body.get('prompt')).toBe('sunset')
+      expect(body.has('prompt')).toBe(false)
+      expect(body.get('altText')).toBe('A beach')
     }
   })
 

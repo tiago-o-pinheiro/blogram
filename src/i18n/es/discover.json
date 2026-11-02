@@ -15,7 +15,6 @@
   "archive.back": "Volver al diario",
   "places.title": "Lugares",
   "places.list": "Todos los lugares",
-  "places.showMap": "Mostrar mapa",
   "places.mapConsent": "El mapa carga teselas de OpenStreetMap.",
   "places.empty": "Todavía no hay lugares.",
   "places.posts": "Publicaciones: {{count}}",
@@ -25,5 +24,8 @@
   "journalNav.label": "Explorar el diario",
   "journalNav.archive": "Archivo",
   "journalNav.places": "Lugares",
-  "journalNav.rss": "Canal RSS"
+  "journalNav.rss": "Canal RSS",
+  "places.goToPosts": "Ir a posts",
+  "places.viewPosts": "Ver posts",
+  "places.map": "Mapa de lugares"
 }

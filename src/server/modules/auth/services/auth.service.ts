@@ -6,7 +6,7 @@ import { and, eq } from 'drizzle-orm'
 import { Models } from '@/models'
 
 import { ConflictError, ValidationError } from '@/server/errors/http-errors'
-import { getAuth } from '@/server/lib/auth'
+import { FRESH_SESSION_SECONDS, getAuth } from '@/server/lib/auth'
 import { db, type DbTransaction } from '@/server/lib/db'
 import { account, user } from '@/server/modules/auth/schemas/auth.table'
 import { googleSettingsService } from '@/server/modules/auth/services/google-settings.service'
@@ -41,18 +41,29 @@ export class AuthService {
   }
 
   getGoogleAccount = async (headers: Headers) => {
-    const owner = await this.findUser(headers)
-    if (!owner) {
+    const current = await (await getAuth()).api.getSession({ headers })
+    if (!current) {
       return null
     }
-    const [linkedAccount] = await db
-      .select({ id: account.id })
-      .from(account)
-      .where(and(eq(account.userId, owner.id), eq(account.providerId, 'google')))
-      .limit(1)
+    const ownerId = current.user.id
+    const [[linkedAccount], [owner]] = await Promise.all([
+      db
+        .select({ id: account.id })
+        .from(account)
+        .where(and(eq(account.userId, ownerId), eq(account.providerId, 'google')))
+        .limit(1),
+      db
+        .select({ username: user.username, email: user.email })
+        .from(user)
+        .where(eq(user.id, ownerId))
+        .limit(1),
+    ])
     return {
       isConfigured: (await googleSettingsService.readCredentials()) !== null,
       accountId: linkedAccount?.id ?? null,
+      signInName: owner?.username ?? owner?.email ?? current.user.email,
+      isSessionFresh:
+        Date.now() - current.session.createdAt.getTime() < FRESH_SESSION_SECONDS * 1000,
     }
   }
 

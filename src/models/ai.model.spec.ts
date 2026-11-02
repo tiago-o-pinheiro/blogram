@@ -4,7 +4,6 @@ import { describe, expect, it } from 'vitest'
 import {
   AI_MODEL_MAX,
   AI_MODEL_SUGGESTIONS,
-  AI_PROMPT_MAX,
   AI_PROVIDERS,
   AiDraftRequest,
   AiSettingsUpdate,
@@ -16,7 +15,6 @@ import { DELETE_ALL_POSTS_CONFIRM, PostBulkDelete } from './post.model'
 
 const validUpdate = { isEnabled: true, provider: 'openai', model: 'gpt-5.4-nano', apiKey: 'k' }
 const validDraftRequest = {
-  prompt: '',
   postType: 'photo',
   fields: ['title'],
   title: '',
@@ -59,7 +57,7 @@ describe('AiSettingsUpdate', () => {
 })
 
 describe('AiDraftRequest', () => {
-  it('Given an empty prompt and one field, should accept it', () => {
+  it('Given current values and one target field, should accept it', () => {
     expect(Value.Check(AiDraftRequest, validDraftRequest)).toBe(true)
   })
 
@@ -71,12 +69,6 @@ describe('AiDraftRequest', () => {
     expect(Value.Check(AiDraftRequest, { ...validDraftRequest, fields: ['title', 'title'] })).toBe(
       false,
     )
-  })
-
-  it('Given a prompt above the maximum, should reject it', () => {
-    const prompt = 'x'.repeat(AI_PROMPT_MAX + 1)
-
-    expect(Value.Check(AiDraftRequest, { ...validDraftRequest, prompt })).toBe(false)
   })
 })
 

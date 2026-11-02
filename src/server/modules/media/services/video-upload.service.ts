@@ -1,4 +1,4 @@
-import { and, eq, gt, lt } from 'drizzle-orm'
+import { and, eq, gt, inArray, lt } from 'drizzle-orm'
 import { Value } from 'typebox/value'
 
 import { Models } from '@/models'
@@ -190,6 +190,13 @@ export class VideoUploadService {
 
   abort = async (id: string): Promise<void> => {
     const uploads = this.requireUploads()
+    const [pending] = await db.select().from(videoUpload).where(eq(videoUpload.id, id))
+    if (!pending) {
+      throw new NotFoundError('Video upload not found')
+    }
+    if (pending.status === STATUS_PENDING) {
+      await uploads.abortMultipartUpload(pending.key, pending.multipartId)
+    }
     const row = await db.transaction(async (tx) => {
       const [removed] = await tx.delete(videoUpload).where(eq(videoUpload.id, id)).returning()
       if (removed) {
@@ -199,9 +206,6 @@ export class VideoUploadService {
     })
     if (!row) {
       throw new NotFoundError('Video upload not found')
-    }
-    if (row.status === STATUS_PENDING) {
-      await uploads.abortMultipartUpload(row.key, row.multipartId)
     }
     await this.dependencies.cleanup.drain()
   }
@@ -230,30 +234,33 @@ export class VideoUploadService {
   }
 
   sweepExpired = async (): Promise<{ removed: number }> => {
+    const candidates = await db
+      .select()
+      .from(videoUpload)
+      .where(lt(videoUpload.createdAt, this.cutoff()))
+    const uploads = this.dependencies.getUploads()
+    const released = await Promise.all(
+      candidates.map((row) =>
+        row.status === STATUS_PENDING && uploads
+          ? uploads.abortMultipartUpload(row.key, row.multipartId).then(
+              () => row.id,
+              () => null,
+            )
+          : Promise.resolve(row.id),
+      ),
+    )
+    const ids = released.filter((id) => id !== null)
+    if (ids.length === 0) {
+      return { removed: 0 }
+    }
     const expired = await db.transaction(async (tx) => {
-      const rows = await tx
-        .delete(videoUpload)
-        .where(lt(videoUpload.createdAt, this.cutoff()))
-        .returning()
+      const rows = await tx.delete(videoUpload).where(inArray(videoUpload.id, ids)).returning()
       await this.dependencies.cleanup.enqueue(
         tx,
         rows.map((row) => row.key),
       )
       return rows
     })
-    if (expired.length === 0) {
-      return { removed: 0 }
-    }
-    const uploads = this.dependencies.getUploads()
-    if (uploads) {
-      await Promise.all(
-        expired
-          .filter((row) => row.status === STATUS_PENDING)
-          .map((row) =>
-            uploads.abortMultipartUpload(row.key, row.multipartId).catch(() => undefined),
-          ),
-      )
-    }
     await this.dependencies.cleanup.drain()
     return { removed: expired.length }
   }

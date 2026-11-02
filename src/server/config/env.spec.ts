@@ -9,6 +9,22 @@ import { Models } from '@/models'
 import { parseEnv, toTrustedOrigins } from './env'
 
 describe('parseEnv', () => {
+  it.each([
+    { RESEND_API_KEY: '::key::' },
+    { PASSWORD_RESET_FROM: 'Blogram <access@example.test>' },
+  ])('Given incomplete recovery email settings, should reject the configuration', (settings) => {
+    expect(() => parseEnv(settings)).toThrow(/RESEND_API_KEY and PASSWORD_RESET_FROM/)
+  })
+
+  it('Given both recovery email settings, should accept the configuration', () => {
+    expect(
+      parseEnv({
+        RESEND_API_KEY: '::key::',
+        PASSWORD_RESET_FROM: 'Blogram <access@example.test>',
+      }).PASSWORD_RESET_FROM,
+    ).toBe('Blogram <access@example.test>')
+  })
+
   it('Given the documented example environment, should accept local storage without S3 credentials', () => {
     const source = parseDotenv(
       readFileSync(resolve(import.meta.dirname, '../../../.env.example'), 'utf8'),

@@ -1,3 +1,4 @@
+import { MapPin, X } from 'lucide-react'
 import Link from 'next/link'
 
 import { type Locale, type Messages, createTranslator } from '@/i18n'
@@ -10,6 +11,7 @@ type PublicFeedProps = {
   page: Models.PostPage
   filter: Models.FeedFilter
   query?: string
+  place?: string
   owner: string
   origin: string
   locale: Locale
@@ -20,23 +22,44 @@ export const PublicFeed = ({
   page,
   filter,
   query,
+  place,
   owner,
   origin,
   locale,
   messages,
 }: PublicFeedProps) => {
   const t = createTranslator(messages)
-  const scope = { q: query }
+  const scope = { q: query, place }
+  const selectedPlace = place ? Models.readFeedPlace(place) : undefined
   const hasPrevious = page.meta.page > 1
   const hasNext = page.meta.page * page.meta.pageSize < page.meta.total
   return (
     <section className="mx-auto w-full max-w-2xl space-y-8" aria-label={t('feed.label')}>
+      {selectedPlace ? (
+        <div
+          key={place}
+          className="flex w-fit animate-scale-in items-center gap-2 rounded-full border border-line bg-card py-1 pr-1 pl-4 transition"
+        >
+          <span className="flex animate-fade-in items-center gap-1 text-sm">
+            <MapPin aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+            {selectedPlace.name}
+          </span>
+          <Link
+            href={Models.toFeedHref(filter, 1, { q: query })}
+            aria-label={t('feed.clearPlace')}
+            title={t('feed.clearPlace')}
+            className="inline-flex size-11 press animate-scale-in items-center justify-center rounded-full transition hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            <X aria-hidden="true" className="size-4" />
+          </Link>
+        </div>
+      ) : null}
       {query ? (
         <h2 key={query} className="animate-rise-in text-lg font-medium">
           {t('search.results', { query })}
         </h2>
       ) : null}
-      <FeedFilterBar filter={filter} query={query} />
+      <FeedFilterBar filter={filter} query={query} place={place} />
       {page.data.length === 0 && query ? (
         <div
           key={`empty-${query}`}
@@ -50,7 +73,10 @@ export const PublicFeed = ({
           <p className="text-sm text-muted-foreground">{t('feed.emptyHint')}</p>
         </div>
       ) : (
-        <div key={`${filter}-${query ?? ''}-${page.meta.page}`} className="space-y-8 stagger">
+        <div
+          key={`${filter}-${query ?? ''}-${place ?? ''}-${page.meta.page}`}
+          className="space-y-8 stagger"
+        >
           {page.data.map((post) => (
             <PostCard
               key={post.id}

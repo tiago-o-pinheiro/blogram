@@ -3,15 +3,27 @@ import { alias } from 'drizzle-orm/pg-core'
 
 import { Models } from '@/models'
 
-import { NotFoundError } from '@/server/errors/http-errors'
+import { NotFoundError, ValidationError } from '@/server/errors/http-errors'
 import { db } from '@/server/lib/db'
 import { toPagination, toPaginationMeta } from '@/server/lib/pagination'
 import { media } from '@/server/modules/media/schemas/media.table'
 import { post } from '@/server/modules/posts/schemas/post.table'
 import { postService } from '@/server/modules/posts/services/post.service'
 import { toPost } from '@/server/modules/posts/services/to-post'
+import {
+  AttemptThrottleService,
+  type ThrottlePolicy,
+} from '@/server/modules/setup/services/attempt-throttle.service'
 
 const video = alias(media, 'video')
+
+const LIKE_WINDOW_SECONDS = 24 * 60 * 60
+const LIKE_RATE_POLICY: ThrottlePolicy = {
+  scope: 'like:rate',
+  clientMaxFailures: 60,
+  globalMaxFailures: Number.MAX_SAFE_INTEGER,
+  windowSeconds: 15 * 60,
+}
 
 const toSearchPattern = (term: string) => `%${term.replace(/[\\%_]/g, '\\$&')}%`
 
@@ -41,10 +53,45 @@ const toVisibility = (filter: Models.FeedFilter = 'all', term?: string) =>
     toSearch(term),
   )
 
+const toPlaceVisibility = async (param?: string) => {
+  if (param === undefined) {
+    return undefined
+  }
+  const key = Models.toFeedPlace(param)
+  const place = key ? Models.readFeedPlace(key) : undefined
+  if (!place) {
+    throw new ValidationError('Invalid place filter')
+  }
+  const name = sql<string>`${post.place}->>'name'`
+  const mapUrl = sql<string>`coalesce(${post.place}->>'mapUrl', '')`
+  const urls = await db
+    .selectDistinct({ mapUrl })
+    .from(post)
+    .where(and(eq(post.status, 'published'), eq(name, place.name)))
+  const matchingUrls = urls
+    .filter(
+      (row) =>
+        Models.toFeedPlaceKey({
+          name: place.name,
+          coordinates: Models.readPlaceCoordinates(row.mapUrl),
+        }) === key,
+    )
+    .map((row) => row.mapUrl)
+  return and(
+    eq(name, place.name),
+    matchingUrls.length > 0 ? inArray(mapUrl, matchingUrls) : sql`false`,
+  )
+}
+
 export class FeedService {
+  constructor(private readonly throttle = new AttemptThrottleService()) {}
+
   list = async (query: Models.FeedQuery): Promise<Models.PostPage> => {
-    const visibility = toVisibility(query.type, query.q)
-    const { take, skip } = toPagination(query)
+    const visibility = and(toVisibility(query.type, query.q), await toPlaceVisibility(query.place))
+    const total = await db.$count(post, visibility)
+    const lastPage = Math.max(1, Math.ceil(total / query.pageSize))
+    const pageQuery = { ...query, page: total > 0 ? Math.min(query.page, lastPage) : query.page }
+    const { take, skip } = toPagination(pageQuery)
     const rows = await db
       .select({ post, media, video })
       .from(post)
@@ -54,10 +101,9 @@ export class FeedService {
       .orderBy(desc(post.publishedAt), desc(post.id))
       .limit(take)
       .offset(skip)
-    const total = await db.$count(post, visibility)
     return {
       data: rows.map(toPost),
-      meta: toPaginationMeta(total, query),
+      meta: toPaginationMeta(total, pageQuery),
     }
   }
 
@@ -72,16 +118,39 @@ export class FeedService {
     return found
   }
 
-  like = async (id: string): Promise<Models.PostLikes> => {
-    const [liked] = await db
-      .update(post)
-      .set({ likes: sql`${post.likes} + 1` })
-      .where(and(eq(post.publicId, id), eq(post.status, 'published')))
-      .returning({ likes: post.likes })
-    if (!liked) {
-      throw new NotFoundError('Post not found')
-    }
-    return liked
+  like = async (id: string, clientKey: string): Promise<Models.PostLikes> => {
+    await this.throttle.pruneExpired('like:post:', LIKE_WINDOW_SECONDS)
+    await this.throttle.pruneExpired('like:rate:', LIKE_RATE_POLICY.windowSeconds)
+    return db.transaction(async (tx) => {
+      const hasClaimed = await this.throttle.claim(
+        {
+          scope: `like:post:${id}`,
+          windowSeconds: LIKE_WINDOW_SECONDS,
+        },
+        clientKey,
+        tx,
+      )
+      if (!hasClaimed) {
+        const [currentPost] = await tx
+          .select({ likes: post.likes })
+          .from(post)
+          .where(and(eq(post.publicId, id), eq(post.status, 'published')))
+        if (!currentPost) {
+          throw new NotFoundError('Post not found')
+        }
+        return currentPost
+      }
+      await this.throttle.consume(LIKE_RATE_POLICY, clientKey, tx)
+      const [liked] = await tx
+        .update(post)
+        .set({ likes: sql`${post.likes} + 1` })
+        .where(and(eq(post.publicId, id), eq(post.status, 'published')))
+        .returning({ likes: post.likes })
+      if (!liked) {
+        throw new NotFoundError('Post not found')
+      }
+      return liked
+    })
   }
 }
 

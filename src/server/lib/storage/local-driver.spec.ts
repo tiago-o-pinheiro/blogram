@@ -90,4 +90,32 @@ describe('createLocalDriver', () => {
       await expect(driver.delete(key)).rejects.toThrow()
     },
   )
+
+  it('BH-AUDIT-1: Given a byte range, should stream only that slice in chunks', async () => {
+    const key = createStorageKey('video', 'mp4')
+    await driver.put(key, new Uint8Array([10, 11, 12, 13, 14]), 'video/mp4')
+
+    const object = await driver.stream(key, { range: { start: 1 } })
+
+    expect(object?.range).toEqual({ start: 1, end: 4 })
+    expect(object?.size).toBe(5)
+    expect(new Uint8Array(await new Response(object?.body).arrayBuffer())).toEqual(
+      new Uint8Array([11, 12, 13, 14]),
+    )
+  })
+
+  it('BH-AUDIT-1: Given no range, should stream the whole file', async () => {
+    const key = createStorageKey('video', 'mp4')
+    const bytes = new Uint8Array(600 * 1024).map((_, index) => index % 251)
+    await driver.put(key, bytes, 'video/mp4')
+
+    const object = await driver.stream(key)
+
+    expect(object?.contentType).toBe('video/mp4')
+    expect(new Uint8Array(await new Response(object?.body).arrayBuffer())).toEqual(bytes)
+  })
+
+  it('Given a missing file, should stream nothing', async () => {
+    expect(await driver.stream(createStorageKey('video', 'mp4'))).toBeNull()
+  })
 })

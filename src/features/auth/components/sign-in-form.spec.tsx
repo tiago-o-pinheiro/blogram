@@ -122,6 +122,10 @@ describe('SignInForm', () => {
       </I18nProvider>,
     )
 
-    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /sign up/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Forgot your password?' })).toHaveAttribute(
+      'href',
+      '/forgot-password',
+    )
   })
 })

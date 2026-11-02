@@ -1,9 +1,13 @@
+import { readJpegExif, withJpegExif } from './jpeg-exif'
+
 const ENCODE_QUALITY = 0.9
 const KEEP_BELOW_BYTES = 1_500_000
-const ENCODINGS = [
-  { type: 'image/webp', extension: 'webp' },
-  { type: 'image/jpeg', extension: 'jpg' },
-] as const
+const WEBP = { type: 'image/webp', extension: 'webp' } as const
+const JPEG = { type: 'image/jpeg', extension: 'jpg' } as const
+const ENCODINGS = [WEBP, JPEG] as const
+const EXIF_ENCODINGS = [JPEG] as const
+
+type Encoding = (typeof ENCODINGS)[number]
 
 type Encoded = { blob: Blob; extension: string }
 
@@ -18,8 +22,9 @@ const toBlob = (canvas: HTMLCanvasElement, type: string): Promise<Blob | null> =
 const encode = async (
   canvas: HTMLCanvasElement,
   context: CanvasRenderingContext2D,
+  encodings: readonly Encoding[],
 ): Promise<Encoded | null> => {
-  for (const encoding of ENCODINGS) {
+  for (const encoding of encodings) {
     if (encoding.type === 'image/jpeg') {
       context.globalCompositeOperation = 'destination-over'
       context.fillStyle = 'white'
@@ -53,12 +58,17 @@ export const shrinkImage = async (file: File, maxEdge: number): Promise<File> =>
   context.imageSmoothingQuality = 'high'
   context.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
   bitmap.close()
-  const encoded = await encode(canvas, context)
-  if (!encoded || encoded.blob.size >= file.size) {
+  const exif = await readJpegExif(file).catch(() => null)
+  const encoded = await encode(canvas, context, exif ? EXIF_ENCODINGS : ENCODINGS)
+  if (!encoded) {
     return file
   }
-  return new File([encoded.blob], toFileName(file.name, encoded.extension), {
-    type: encoded.blob.type,
+  const blob = exif ? await withJpegExif(encoded.blob, exif) : encoded.blob
+  if (blob.size >= file.size) {
+    return file
+  }
+  return new File([blob], toFileName(file.name, encoded.extension), {
+    type: blob.type,
     lastModified: file.lastModified,
   })
 }

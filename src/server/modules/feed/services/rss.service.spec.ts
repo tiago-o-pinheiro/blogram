@@ -1,12 +1,15 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 
+import { type Models } from '@/models'
+
 import { GET } from '@/app/feed.xml/route'
 import { NotFoundError } from '@/server/errors/http-errors'
 import { db } from '@/server/lib/db'
 import { authService } from '@/server/modules/auth/services/auth.service'
 import { RssService } from '@/server/modules/feed/services/rss.service'
 import { installationService } from '@/server/modules/installation/services/installation.service'
+import { media } from '@/server/modules/media/schemas/media.table'
 import { post } from '@/server/modules/posts/schemas/post.table'
 
 const ORIGIN = 'http://localhost:3000'
@@ -31,7 +34,55 @@ const seedPost = (overrides: Partial<typeof post.$inferInsert> = {}) =>
     ...overrides,
   })
 
+const seedImage = async (variants: Models.ImageVariant[]) => {
+  const [record] = await seedPost({ type: 'photo' }).returning({ id: post.id })
+  if (!record) {
+    throw new Error('post not seeded')
+  }
+  const [image] = await db
+    .insert(media)
+    .values({
+      postId: record.id,
+      key: '::image-key::',
+      contentType: 'image/jpeg',
+      width: 800,
+      height: 600,
+      sizeBytes: 10,
+      altText: '::alt::',
+      variants: variants.map((variant) => ({
+        ...variant,
+        key: `::${variant.name}::`,
+        contentType: 'image/webp',
+      })),
+    })
+    .returning({ id: media.id })
+  if (!image) {
+    throw new Error('image not seeded')
+  }
+  return image.id
+}
+
 describe('RssService', () => {
+  it('BH-AUDIT-6: Given no image variants, should use the full image in RSS', async () => {
+    await completeInstallation()
+    const id = await seedImage([])
+
+    const xml = await service.render(ORIGIN)
+
+    expect(xml).toContain(`${ORIGIN}/api/media/${id}&quot;`)
+    expect(xml).not.toContain('?variant=')
+  })
+
+  it('BH-AUDIT-6: Given a missing large variant, should use the available smaller RSS image', async () => {
+    await completeInstallation()
+    const id = await seedImage([{ name: 'w480', width: 480, height: 360 }])
+
+    const xml = await service.render(ORIGIN)
+
+    expect(xml).toContain(`${ORIGIN}/api/media/${id}?variant=w480`)
+    expect(xml).not.toContain('?variant=w960')
+  })
+
   it('Given a pending install, should throw NotFoundError', async () => {
     await expect(service.render(ORIGIN)).rejects.toBeInstanceOf(NotFoundError)
     expect((await GET(new Request(`${ORIGIN}/feed.xml`))).status).toBe(404)

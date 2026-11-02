@@ -88,7 +88,7 @@ export const ArchiveView = ({ archive, locale, messages }: ArchiveViewProps) => 
                         >
                           {summary.image ? (
                             <Image
-                              src={`${Models.MEDIA_PATH}/${summary.image.id}?variant=w480`}
+                              src={Models.toPostImageHref(summary.image, 480)}
                               width={summary.image.width}
                               height={summary.image.height}
                               alt=""

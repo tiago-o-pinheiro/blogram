@@ -60,18 +60,16 @@ describe('PostForm AI assistance', () => {
     renderForm(false, POST)
 
     expect(screen.queryByRole('region', { name: 'AI assistant' })).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Write the title with AI' }),
-    ).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Improve title with AI' })).not.toBeInTheDocument()
   })
 
-  it('Given AI is enabled, should show the prompt card and the field buttons', () => {
+  it('Given AI is enabled, should show dock and field improvements', () => {
     renderForm(true, POST)
 
-    expect(screen.getByRole('region', { name: 'AI assistant' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Write the title with AI' })).toBeEnabled()
-    expect(screen.getByRole('button', { name: 'Write the alt text with AI' })).toBeEnabled()
-    expect(screen.getByRole('button', { name: 'Write the caption with AI' })).toBeEnabled()
+    expect(screen.queryByRole('textbox', { name: /Tell the AI/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Improve title with AI' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Improve alt text with AI' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Improve caption with AI' })).toBeEnabled()
   })
 
   it('Given a field button, should request and fill only that field', async () => {
@@ -80,22 +78,30 @@ describe('PostForm AI assistance', () => {
       .mockResolvedValue(Response.json({ title: 'Golden hour' }))
     renderForm(true, POST)
 
-    await userEvent.click(screen.getByRole('button', { name: 'Write the title with AI' }))
+    const user = userEvent.setup()
+    await user.clear(screen.getByLabelText('Title (optional)'))
+    await user.type(screen.getByLabelText('Title (optional)'), 'foto en la playa, algo poetico')
+    await user.click(screen.getByRole('button', { name: 'Improve title with AI' }))
 
     expect(await screen.findByDisplayValue('Golden hour')).toBeInTheDocument()
     expect(screen.getByDisplayValue('Sunrise')).toBeInTheDocument()
     expect(screen.getByDisplayValue('A sunrise')).toBeInTheDocument()
     expect(fetchSpy).toHaveBeenCalledTimes(1)
     expect(requestedFields(fetchSpy.mock.calls[0] ?? [])).toEqual(['title'])
+    const body = fetchSpy.mock.calls[0]?.[1]?.body
+    expect(body instanceof FormData ? body.get('title') : null).toBe(
+      'foto en la playa, algo poetico',
+    )
+    expect(body instanceof FormData && body.has('prompt')).toBe(false)
   })
 
-  it('Given Generate all, should send every offered field, fill them and undo restores them', async () => {
+  it('Given Improve all with AI, should send every offered field, fill them and undo restores them', async () => {
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValue(Response.json({ title: 'New', altText: 'New alt', text: 'New caption' }))
     renderForm(true, POST)
 
-    await userEvent.click(screen.getByRole('button', { name: 'Generate all' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Improve all with AI' }))
 
     expect(await screen.findByDisplayValue('New caption')).toBeInTheDocument()
     expect(screen.getByDisplayValue('New')).toBeInTheDocument()
@@ -114,19 +120,19 @@ describe('PostForm AI assistance', () => {
     vi.spyOn(globalThis, 'fetch').mockReturnValue(pending)
     renderForm(true, POST)
 
-    await userEvent.click(screen.getByRole('button', { name: 'Write the caption with AI' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Improve caption with AI' }))
 
-    expect(screen.getByRole('button', { name: 'Generate all' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Write the title with AI' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Write the alt text with AI' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Improve all with AI' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Improve title with AI' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Improve alt text with AI' })).toBeDisabled()
   })
 
-  it('Given no prompt, image or text, should disable the AI buttons with the hint', () => {
+  it('Given no image or text, should disable the AI buttons with the hint', () => {
     renderForm(true)
 
-    expect(screen.getByRole('button', { name: 'Generate all' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Write the title with AI' })).toBeDisabled()
-    expect(screen.getByText('Write a prompt or add a photo first')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Improve all with AI' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Improve title with AI' })).toBeDisabled()
+    expect(screen.getByText('Write in a field or add a photo first')).toBeInTheDocument()
   })
 
   it('Given a link post with only a link title, should enable the caption button and send the link title', async () => {
@@ -147,7 +153,7 @@ describe('PostForm AI assistance', () => {
       },
     })
 
-    const button = screen.getByRole('button', { name: 'Write the caption with AI' })
+    const button = screen.getByRole('button', { name: 'Improve caption with AI' })
     expect(button).toBeEnabled()
     await userEvent.click(button)
 
@@ -163,7 +169,7 @@ describe('PostForm AI assistance', () => {
     )
     renderForm(true, POST)
 
-    await userEvent.click(screen.getByRole('button', { name: 'Generate all' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Improve all with AI' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'The provider rejected the API key. Check it in Account settings.',

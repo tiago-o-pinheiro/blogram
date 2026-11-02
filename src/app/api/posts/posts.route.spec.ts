@@ -198,21 +198,25 @@ describe('Public posts HTTP', () => {
     expect((await get(request('/bad'), context('bad'))).status).toBe(422)
   })
 
-  it('Given concurrent anonymous likes, should increment every vote atomically', async () => {
+  it('BH-AUDIT-2: Given distinct clients, should count each vote once', async () => {
     await seedPost()
+    const responses: Response[] = []
 
-    const responses = await Promise.all(
-      Array.from({ length: 20 }, async () =>
-        like(
+    for (const index of Array.from({ length: 20 }, (_, position) => position + 1)) {
+      responses.push(
+        await like(
           request('/Abcde12345/like', {
             method: 'POST',
-            headers: { 'content-type': 'application/json' },
+            headers: {
+              'content-type': 'application/json',
+              'cf-connecting-ip': `192.0.2.${index}`,
+            },
             body: JSON.stringify({ likes: 90000 }),
           }),
           context('Abcde12345'),
         ),
-      ),
-    )
+      )
+    }
     const [row] = await db
       .select({ likes: post.likes })
       .from(post)

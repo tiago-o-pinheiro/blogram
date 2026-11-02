@@ -25,6 +25,8 @@ export const Env = Type.Object({
   SETUP_PASSWORD: Type.Optional(Type.String()),
   GOOGLE_CLIENT_ID: Type.Optional(Type.String()),
   GOOGLE_CLIENT_SECRET: Type.Optional(Type.String()),
+  RESEND_API_KEY: Type.Optional(Type.String()),
+  PASSWORD_RESET_FROM: Type.Optional(Type.String()),
   STORAGE_DRIVER: Type.Union([Type.Literal('local'), Type.Literal('s3')], { default: 'local' }),
   STORAGE_LOCAL_DIR: Type.String({ minLength: 1, default: '.data/uploads' }),
   S3_ENDPOINT: Type.Optional(Type.String({ minLength: 1 })),
@@ -69,6 +71,12 @@ export const parseEnv = (source: Record<string, string | undefined>): Env => {
   if (Boolean(parsed.GOOGLE_CLIENT_ID) !== Boolean(parsed.GOOGLE_CLIENT_SECRET)) {
     throw new GlobalError(
       'Configure both GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET',
+      StatusCodes.INTERNAL_SERVER_ERROR,
+    )
+  }
+  if (Boolean(parsed.RESEND_API_KEY?.trim()) !== Boolean(parsed.PASSWORD_RESET_FROM?.trim())) {
+    throw new GlobalError(
+      'Configure both RESEND_API_KEY and PASSWORD_RESET_FROM',
       StatusCodes.INTERNAL_SERVER_ERROR,
     )
   }

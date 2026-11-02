@@ -38,11 +38,10 @@ const sendDraft = (fields: Record<string, string | readonly string[] | File>, co
 }
 
 const baseFields = {
-  prompt: 'Sunset in Lisbon',
   postType: 'photo',
   title: '',
   altText: '',
-  text: '',
+  text: 'Sunset in Lisbon',
 }
 
 const readProviderBody = (spy: ReturnType<typeof spyOnFetch>) => {
@@ -99,7 +98,7 @@ describe('ai draft route', () => {
     expect(await response.json()).toEqual({ title: 'Lisbon glow' })
     expect(JSON.stringify(sent)).not.toContain('image_url')
     expect(JSON.stringify(sent)).not.toContain(API_KEY)
-    expect(sent.max_completion_tokens).toBe(72)
+    expect(sent.max_completion_tokens).toBe(168)
   })
 
   it('Given a photo post with empty alt text, should attach one small low-detail image', async () => {
@@ -114,7 +113,7 @@ describe('ai draft route', () => {
     expect(await response.json()).toEqual({ title: 'Hi', text: 'Warm light.' })
     expect(JSON.stringify(sent)).toContain('data:image/jpeg;base64,')
     expect(JSON.stringify(sent)).toContain('"detail":"low"')
-    expect(sent.max_completion_tokens).toBe(672)
+    expect(sent.max_completion_tokens).toBe(768)
   })
 
   it('Given a saved image id, should read it from storage and attach it for alt text', async () => {
@@ -149,11 +148,11 @@ describe('ai draft route', () => {
     expect(spy).not.toHaveBeenCalled()
   })
 
-  it('Given no prompt, no image and empty values, should answer 422', async () => {
+  it('Given no image and empty values, should answer 422', async () => {
     const spy = spyOnFetch('{"text":"x"}')
 
     const response = await POST(
-      sendDraft({ ...baseFields, prompt: ' ', postType: 'youtube', field: ['text'] }, cookie),
+      sendDraft({ ...baseFields, text: ' ', postType: 'youtube', field: ['text'] }, cookie),
     )
 
     expect(response.status).toBe(StatusCodes.UNPROCESSABLE_ENTITY)

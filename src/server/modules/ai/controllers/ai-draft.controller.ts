@@ -25,7 +25,6 @@ export class AiDraftController {
     const file = form.get('file')
     const mediaId = readText(form, 'mediaId')
     const body = decode(postAiDraftApiSchema.body, {
-      prompt: readText(form, 'prompt'),
       postType: readText(form, 'postType'),
       fields: form.getAll('field').filter((value) => typeof value === 'string'),
       title: readText(form, 'title'),

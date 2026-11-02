@@ -1,12 +1,13 @@
 // @vitest-environment node
 import { StatusCodes } from 'http-status-codes'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { GET, PUT } from '@/app/api/admin/google/settings/route'
 import { db } from '@/server/lib/db'
 import { createSecretBox } from '@/server/lib/secret-box'
 import { googleSignInSettings } from '@/server/modules/auth/schemas/google-settings.table'
 import { createOwnerSession } from '@/test/auth-session'
+import { stubGoogleTokenProbe } from '@/test/google-token-probe'
 
 const URL = 'http://localhost:3000/api/admin/google/settings'
 const CLIENT_ID = 'abc123.apps.googleusercontent.com'
@@ -28,6 +29,7 @@ describe('google settings routes', () => {
   let cookie: string
 
   beforeEach(async () => {
+    stubGoogleTokenProbe()
     cookie = await createOwnerSession()
   })
 
@@ -118,5 +120,24 @@ describe('google settings routes', () => {
 
     expect(await read.json()).toMatchObject({ hasClientSecret: false })
     expect(enable.status).toBe(StatusCodes.UNPROCESSABLE_ENTITY)
+  })
+
+  it('Given credentials Google rejects, should answer 422 with the reason and save nothing', async () => {
+    stubGoogleTokenProbe('invalid_client')
+
+    const response = await PUT(sendPut(enabledUpdate, cookie))
+
+    expect(response.status).toBe(StatusCodes.UNPROCESSABLE_ENTITY)
+    expect(await response.json()).toMatchObject({ details: { reason: 'google-invalid-client' } })
+    expect(await db.select().from(googleSignInSettings)).toHaveLength(0)
+  })
+
+  it('Given Google cannot be reached, should still save the credentials', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('offline'))
+
+    const response = await PUT(sendPut(enabledUpdate, cookie))
+
+    expect(response.status).toBe(StatusCodes.OK)
+    expect(await response.json()).toMatchObject({ isEnabled: true, hasClientSecret: true })
   })
 })

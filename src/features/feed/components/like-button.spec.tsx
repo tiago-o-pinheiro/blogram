@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getMessages } from '@/i18n'
 import { I18nProvider } from '@/i18n/i18n-context'
 
+import { readLiked, rememberLike } from '@/features/feed/lib/liked-store'
+
 import { LikeButton } from './like-button'
 
 const renderLike = (id: string) =>
@@ -17,6 +19,36 @@ const renderLike = (id: string) =>
 beforeEach(() => localStorage.clear())
 
 describe('Anonymous like button', () => {
+  it('BH-AUDIT-2: Given a rate limited vote, should preserve likes and allow retry', async () => {
+    const user = userEvent.setup()
+    const fetcher = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        Response.json({ statusCode: 429 }, { status: 429, headers: { 'Retry-After': '900' } }),
+      )
+      .mockResolvedValueOnce(Response.json({ likes: 4 }))
+    rememberLike('OtherLiked')
+    renderLike('RateLimit1')
+
+    await user.click(screen.getByRole('button', { name: 'Like' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Too many likes for now')
+    expect(screen.getByRole('button', { name: 'Like' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Like' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByText('3')).toBeVisible()
+    expect(localStorage.getItem('post:RateLimit1:liked')).toBeNull()
+    expect(readLiked('RateLimit1')).toBe(false)
+    expect(readLiked('OtherLiked')).toBe(true)
+
+    await user.click(screen.getByRole('button', { name: 'Like' }))
+
+    expect(await screen.findByRole('button', { name: 'Liked' })).toBeDisabled()
+    expect(screen.getByText('4')).toBeVisible()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(readLiked('RateLimit1')).toBe(true)
+    expect(fetcher).toHaveBeenCalledTimes(2)
+  })
+
   it('BH-8: Given refreshed server likes, should show the latest counter', () => {
     const view = renderLike('Refresh123')
 

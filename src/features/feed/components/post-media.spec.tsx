@@ -69,6 +69,29 @@ const renderPlayers = () =>
   )
 
 describe('PostMedia', () => {
+  it('BH-AUDIT-6: Given a narrow image without variants, should offer only the full image', () => {
+    const { container } = renderMedia(
+      createPost({
+        image: {
+          id: '3f0c6f0e-6f7e-4e0b-8f3e-0a1b2c3d4e5f',
+          width: 200,
+          height: 300,
+          altText: '::narrow::',
+          variants: [],
+        },
+      }),
+    )
+
+    expect(screen.getByRole('img', { name: '::narrow::' })).toHaveAttribute(
+      'src',
+      '/api/media/3f0c6f0e-6f7e-4e0b-8f3e-0a1b2c3d4e5f',
+    )
+    expect(container.querySelector('source')).toHaveAttribute(
+      'srcset',
+      '/api/media/3f0c6f0e-6f7e-4e0b-8f3e-0a1b2c3d4e5f 200w',
+    )
+  })
+
   it('Given a portrait photo, should preserve dimensions and optimized choices', () => {
     const { container } = renderMedia(createPost())
 

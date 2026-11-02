@@ -4,7 +4,12 @@ import { StatusCodes } from 'http-status-codes'
 import { GlobalError } from '@/server/errors/global-error'
 import { ValidationError } from '@/server/errors/http-errors'
 
-import { assertStorageKey, type DirectUploadDriver, type StorageDriver } from './driver'
+import {
+  assertStorageKey,
+  type ByteRange,
+  type DirectUploadDriver,
+  type StorageDriver,
+} from './driver'
 
 export type S3Config = {
   endpoint: string
@@ -89,6 +94,28 @@ export const createS3Driver = (
     return target.toString()
   }
 
+  const openObject = async (key: string, range: ByteRange | undefined) => {
+    const response = await send(toUrl(key), {
+      method: 'GET',
+      headers: range ? { range: `bytes=${range.start}-${range.end ?? ''}` } : {},
+    })
+    if (response.status === StatusCodes.NOT_FOUND) {
+      return null
+    }
+    if (!response.ok) {
+      throw toFailure('get', response)
+    }
+    const contentType = response.headers.get('content-type') ?? FALLBACK_CONTENT_TYPE
+    const contentRange = range ? parseContentRange(response.headers.get('content-range')) : null
+    const length = Number(response.headers.get('content-length') ?? Number.NaN)
+    return {
+      response,
+      contentType,
+      size: contentRange ? contentRange.total : length,
+      range: contentRange ? { start: contentRange.start, end: contentRange.end } : undefined,
+    }
+  }
+
   return {
     put: async (key, body, contentType) => {
       const response = await send(toUrl(key), {
@@ -104,29 +131,24 @@ export const createS3Driver = (
       }
     },
     get: async (key, options) => {
-      const range = options?.range
-      const response = await send(toUrl(key), {
-        method: 'GET',
-        headers: range ? { range: `bytes=${range.start}-${range.end ?? ''}` } : {},
-      })
-      if (response.status === StatusCodes.NOT_FOUND) {
+      const opened = await openObject(key, options?.range)
+      if (!opened) {
         return null
       }
-      if (!response.ok) {
-        throw toFailure('get', response)
+      const body = new Uint8Array(await opened.response.arrayBuffer())
+      return opened.range
+        ? { body, contentType: opened.contentType, size: opened.size, range: opened.range }
+        : { body, contentType: opened.contentType, size: body.byteLength }
+    },
+    stream: async (key, options) => {
+      const opened = await openObject(key, options?.range)
+      if (!opened) {
+        return null
       }
-      const body = new Uint8Array(await response.arrayBuffer())
-      const contentType = response.headers.get('content-type') ?? FALLBACK_CONTENT_TYPE
-      const contentRange = parseContentRange(response.headers.get('content-range'))
-      if (!range || !contentRange) {
-        return { body, contentType, size: body.byteLength }
-      }
-      return {
-        body,
-        contentType,
-        size: contentRange.total,
-        range: { start: contentRange.start, end: contentRange.end },
-      }
+      const body = opened.response.body ?? new Blob().stream()
+      return opened.range
+        ? { body, contentType: opened.contentType, size: opened.size, range: opened.range }
+        : { body, contentType: opened.contentType, size: opened.size }
     },
     delete: async (key) => {
       const response = await send(toUrl(key), { method: 'DELETE' })

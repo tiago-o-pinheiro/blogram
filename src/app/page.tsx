@@ -29,7 +29,7 @@ export const generateMetadata = async (): Promise<Metadata> => {
   }
 }
 
-const Page = async ({ searchParams }: HomePageProps = {}) => {
+const Page = async ({ searchParams }: HomePageProps) => {
   const status = await installationService.getStatus()
   if (status === 'pending') {
     return <PendingSite />
@@ -45,7 +45,9 @@ const Page = async ({ searchParams }: HomePageProps = {}) => {
   const locale = await getServerLocale()
   const messages = getMessages(locale)
   const search = Models.toFeedSearch(query?.q)
+  const place = Models.toFeedPlace(query?.place)
   const page = await feedService.list({
+    place,
     type: filter,
     q: search,
     page: Models.toFeedPage(query?.page),
@@ -67,6 +69,7 @@ const Page = async ({ searchParams }: HomePageProps = {}) => {
         page={page}
         filter={filter}
         query={search}
+        place={place}
         owner={profile.name}
         origin={new URL(env.BETTER_AUTH_URL).origin}
         locale={locale}

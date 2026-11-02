@@ -68,6 +68,19 @@ export const PostImage = Type.Object({
 })
 export type PostImage = Static<typeof PostImage>
 
+export const toPostImageHref = (
+  image: Pick<PostImage, 'id' | 'variants'>,
+  preferredWidth?: number,
+): string => {
+  const base = `${MEDIA_PATH}/${image.id}`
+  if (preferredWidth === undefined) {
+    return base
+  }
+  const variants = image.variants.toSorted((left, right) => left.width - right.width)
+  const variant = variants.findLast((candidate) => candidate.width <= preferredWidth) ?? variants[0]
+  return variant ? `${base}?variant=${variant.name}` : base
+}
+
 export const PostVideo = Type.Object({
   id: Type.String({ format: 'uuid' }),
   width: Type.Integer({ minimum: 1 }),

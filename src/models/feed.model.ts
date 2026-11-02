@@ -1,6 +1,9 @@
 import { Type, type Static } from 'typebox'
+import { Value } from 'typebox/value'
 
 import { PaginationQuery } from './pagination.model'
+import { PlaceCoordinates } from './place.model'
+import { PLACE_NAME_MAX } from './post.model'
 
 export const FEED_FILTERS = ['all', 'photo', 'video', 'link', 'news'] as const
 export const FeedFilter = Type.Union([
@@ -13,18 +16,63 @@ export const FeedFilter = Type.Union([
 export type FeedFilter = Static<typeof FeedFilter>
 
 export const FEED_SEARCH_MAX = 100
+export const FEED_PLACE_MAX = 1400
 const ARCHIVE_YEAR_MIN = 1970
+
+export const FeedPlace = Type.Object(
+  {
+    name: Type.String({ minLength: 1, maxLength: PLACE_NAME_MAX }),
+    coordinates: Type.Union([PlaceCoordinates, Type.Null()]),
+  },
+  { additionalProperties: false },
+)
+export type FeedPlace = Static<typeof FeedPlace>
+
+export const toFeedPlaceKey = ({ name, coordinates }: FeedPlace): string =>
+  JSON.stringify({
+    name,
+    coordinates: coordinates ? { lat: coordinates.lat, lon: coordinates.lon } : null,
+  })
+
+export const readFeedPlace = (value: string): FeedPlace | undefined => {
+  try {
+    const place: unknown = JSON.parse(value)
+    return Value.Check(FeedPlace, place) ? place : undefined
+  } catch {
+    return undefined
+  }
+}
+
+export const toFeedPlace = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') {
+    return undefined
+  }
+  const param = value.trim()
+  if (param.length === 0 || param.length > FEED_PLACE_MAX) {
+    return undefined
+  }
+  const place = readFeedPlace(param)
+  return place ? toFeedPlaceKey(place) : undefined
+}
 
 export const FeedQuery = Type.Intersect([
   PaginationQuery,
   Type.Object({
     type: Type.Optional(FeedFilter),
     q: Type.Optional(Type.String({ minLength: 1, maxLength: FEED_SEARCH_MAX })),
+    place: Type.Optional(
+      Type.String({
+        minLength: 1,
+        maxLength: FEED_PLACE_MAX,
+        description:
+          'JSON object {name,coordinates:{lat,lon}|null}. Matches the exact place name and parsed mapUrl coordinates; null matches only places without coordinates.',
+      }),
+    ),
   }),
 ])
 export type FeedQuery = Static<typeof FeedQuery>
 
-export type FeedScope = { q?: string }
+export type FeedScope = Pick<FeedQuery, 'q' | 'place'>
 
 export const PostLikes = Type.Object({ likes: Type.Integer({ minimum: 0 }) })
 export type PostLikes = Static<typeof PostLikes>
@@ -62,6 +110,10 @@ export const toFeedHref = (filter: FeedFilter, page = 1, scope: FeedScope = {}):
   }
   if (scope.q) {
     query.set('q', scope.q)
+  }
+  const place = toFeedPlace(scope.place)
+  if (place) {
+    query.set('place', place)
   }
   if (page > 1) {
     query.set('page', String(page))
