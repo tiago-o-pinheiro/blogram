@@ -6,9 +6,35 @@ import { describe, expect, it } from 'vitest'
 
 import { Models } from '@/models'
 
-import { parseEnv, toTrustedOrigins } from './env'
+import { parseEnv, resolveBundledFfprobe, toTrustedOrigins } from './env'
+
+describe('resolveBundledFfprobe', () => {
+  it('Given a bundled binary, should use its path', () => {
+    expect(resolveBundledFfprobe(() => ({ path: '/bundle/ffprobe' }))).toBe('/bundle/ffprobe')
+  })
+
+  it('Given a bundle that fails to load, should fall back to ffprobe on the PATH', () => {
+    expect(
+      resolveBundledFfprobe(() => {
+        throw new Error('Unsupported platform')
+      }),
+    ).toBe('ffprobe')
+  })
+
+  it('Given a bundle without a path, should fall back to ffprobe on the PATH', () => {
+    expect(resolveBundledFfprobe(() => ({}))).toBe('ffprobe')
+  })
+})
 
 describe('parseEnv', () => {
+  it('Given FFPROBE_PATH, should prefer it over the bundled binary', () => {
+    expect(parseEnv({ FFPROBE_PATH: '/usr/bin/ffprobe' }).FFPROBE_PATH).toBe('/usr/bin/ffprobe')
+  })
+
+  it('Given no FFPROBE_PATH, should resolve a non-empty binary path', () => {
+    expect(parseEnv({}).FFPROBE_PATH).not.toBe('')
+  })
+
   it.each([
     { RESEND_API_KEY: '::key::' },
     { PASSWORD_RESET_FROM: 'Blogram <access@example.test>' },

@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process'
 
 import { Type } from 'typebox'
 
+import { env } from '@/server/config/env'
 import { ServiceUnavailableError, ValidationError } from '@/server/errors/http-errors'
 import { decode } from '@/server/lib/codec'
 
@@ -28,17 +29,22 @@ const URL_READ_TIMEOUT_MICROSECONDS = '15000000'
 
 const runProbe = (args: string[], timeout: number, input?: Uint8Array): Promise<VideoProbeResult> =>
   new Promise<string>((resolve, reject) => {
-    const child = execFile('ffprobe', args, { timeout, maxBuffer: 65536 }, (error, stdout) => {
-      if (error) {
-        if ('code' in error && error.code === 'ENOENT') {
-          reject(new ServiceUnavailableError('Video uploads require ffprobe on the server'))
+    const child = execFile(
+      env.FFPROBE_PATH,
+      args,
+      { timeout, maxBuffer: 65536 },
+      (error, stdout) => {
+        if (error) {
+          if ('code' in error && error.code === 'ENOENT') {
+            reject(new ServiceUnavailableError('Video uploads require ffprobe on the server'))
+            return
+          }
+          reject(new ValidationError('Invalid video'))
           return
         }
-        reject(new ValidationError('Invalid video'))
-        return
-      }
-      resolve(stdout)
-    })
+        resolve(stdout)
+      },
+    )
     if (input) {
       child.stdin?.on('error', () => undefined)
       child.stdin?.end(input)

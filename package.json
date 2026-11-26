@@ -25,6 +25,8 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@ffprobe-installer/ffprobe": "^2.1.2",
+    "@vercel/functions": "^3.11.4",
     "aws4fetch": "^1.0.20",
     "better-auth": "^1.7.12",
     "class-variance-authority": "^0.7.1",

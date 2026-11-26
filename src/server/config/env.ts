@@ -1,3 +1,5 @@
+import { createRequire } from 'node:module'
+
 import { StatusCodes } from 'http-status-codes'
 import { Type, type Static } from 'typebox'
 import { Value } from 'typebox/value'
@@ -5,6 +7,29 @@ import { Value } from 'typebox/value'
 import { Models } from '@/models'
 
 import { GlobalError } from '@/server/errors/global-error'
+
+const FFPROBE_FALLBACK = 'ffprobe'
+
+export const resolveBundledFfprobe = (load: () => unknown): string => {
+  try {
+    const bundled = load()
+    if (
+      typeof bundled === 'object' &&
+      bundled !== null &&
+      'path' in bundled &&
+      typeof bundled.path === 'string' &&
+      bundled.path
+    ) {
+      return bundled.path
+    }
+  } catch {
+    return FFPROBE_FALLBACK
+  }
+  return FFPROBE_FALLBACK
+}
+
+const loadBundledFfprobe = (): unknown =>
+  createRequire(import.meta.url)('@ffprobe-installer/ffprobe')
 
 export const Env = Type.Object({
   NODE_ENV: Type.Union(
@@ -21,6 +46,10 @@ export const Env = Type.Object({
   DATABASE_URL: Type.String({
     minLength: 1,
     default: 'postgresql://postgres:postgres@localhost:5432/app',
+  }),
+  FFPROBE_PATH: Type.String({
+    minLength: 1,
+    default: resolveBundledFfprobe(loadBundledFfprobe),
   }),
   SETUP_PASSWORD: Type.Optional(Type.String()),
   GOOGLE_CLIENT_ID: Type.Optional(Type.String()),
