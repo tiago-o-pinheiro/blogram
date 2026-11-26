@@ -3,3 +3,5 @@ import { aiDraftController } from '@/server/modules/ai/controllers/ai-draft.cont
 import { requireSession } from '@/server/modules/auth/guards/auth.guard'
 
 export const POST = withErrorHandler(requireSession(aiDraftController.draft))
+
+export const maxDuration = 300

@@ -3,3 +3,5 @@ import { requireSession } from '@/server/modules/auth/guards/auth.guard'
 import { postController } from '@/server/modules/posts/controllers/post.controller'
 
 export const PUT = withErrorHandler(requireSession(postController.replaceVideo))
+
+export const maxDuration = 300
