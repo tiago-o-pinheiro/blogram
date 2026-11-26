@@ -3,3 +3,5 @@ import { requireSession } from '@/server/modules/auth/guards/auth.guard'
 import { videoUploadController } from '@/server/modules/media/controllers/video-upload.controller'
 
 export const POST = withErrorHandler(requireSession(videoUploadController.start))
+
+export const maxDuration = 300
